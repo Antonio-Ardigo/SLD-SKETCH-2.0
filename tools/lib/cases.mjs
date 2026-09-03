@@ -38,5 +38,5 @@ export function loadCase(dir) {
 
 /** Draw a loaded case with the engine. */
 export function drawCase(c, opts) {
-  return draw(c.data.info || {}, c.rows, opts);
+  return draw(c.data.info || {}, c.rows, { view: c.data.view || null, ...(opts || {}) });
 }

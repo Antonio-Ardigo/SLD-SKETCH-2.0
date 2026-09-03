@@ -1,6 +1,8 @@
 import { TYPE_LABELS } from "../core/types.js";
 import { esc, buildModel } from "../core/model.js";
 import { layout } from "../core/layout.js";
+import { applyView } from "../core/geometry.js";
+import { normalizeView, VIEW_DEFAULTS } from "../core/views.js";
 import { render } from "../core/render.js";
 import { renderDxf } from "../core/dxf.js";
 import { SVG } from "../core/svg.js";
@@ -10,6 +12,7 @@ import { R, PRESETS } from "./presets.generated.js";
 /* ------------------------------------------------ UI wiring */
 const FIELDS=["id","type","desc","rating","voltage","prot","from","notes"];
 let state={info:{site:"",date:"",by:"",notes:""},rows:[]};
+let view_={...VIEW_DEFAULTS};      /* the view options: stored beside the table, never in it */
 
 const $=s=>document.querySelector(s);
 const eqbody=$("#eqbody");
@@ -80,6 +83,7 @@ function redraw(){
   }
   showProblems(errors, warnings);
   if(errors.length) return; /* keep the last good drawing on screen */
+  applyView(view_);
   const width=layout(items,order);
   const svgStr=render(state.info,items,order,width,warnings);
   $("#sheet").innerHTML=svgStr;
@@ -366,7 +370,7 @@ function loadView(){
   }catch(e){}
   view.fitted=true;
 }
-function applyView(){
+function applyZoom(){
   sheetbox.style.width=(view.w?view.w*view.z+2*PAD:0)+"px";
   sheetbox.style.height=(view.h?view.h*view.z+2*PAD:0)+"px";
   sheetEl.style.transform=`scale(${view.z})`;
@@ -378,7 +382,7 @@ function setZoom(z, cx, cy){
   if(cx===undefined){ cx=viewport.clientWidth/2; cy=viewport.clientHeight/2; }
   const u=(viewport.scrollLeft+cx-PAD)/view.z, v=(viewport.scrollTop+cy-PAD)/view.z;
   view.z=z; view.fitted=false;
-  applyView();
+  applyZoom();
   viewport.scrollLeft=u*z+PAD-cx;
   viewport.scrollTop=v*z+PAD-cy;
   saveView();
@@ -389,7 +393,7 @@ function fitView(){
   else view.z=Math.min(ZMAX,Math.max(ZMIN,
     Math.min((vw-2*PAD)/view.w,(vh-2*PAD)/view.h)));
   view.fitted=true;
-  applyView();
+  applyZoom();
   viewport.scrollLeft=0; viewport.scrollTop=0;
   saveView();
 }
@@ -402,7 +406,7 @@ function syncView(){
   const refit=view.fitted || !view.w || !w || big(view.w,w) || big(view.h,h);
   view.w=w; view.h=h;
   if(refit){ fitView(); return; }
-  applyView();
+  applyZoom();
   if(view.sl!==null){                 /* the saved scroll, once at boot */
     viewport.scrollLeft=view.sl; viewport.scrollTop=view.st;
     view.sl=view.st=null;
@@ -483,14 +487,14 @@ function syncView(){
   $("#v-in").addEventListener("click",()=>setZoom(view.z*ZSTEP));
   $("#v-out").addEventListener("click",()=>setZoom(view.z/ZSTEP));
   if(typeof ResizeObserver!=="undefined")
-    new ResizeObserver(()=>{ if(view.fitted) fitView(); else applyView(); })
+    new ResizeObserver(()=>{ if(view.fitted) fitView(); else applyZoom(); })
       .observe(viewport);
 })();
 
 /* saved table: {v:2, info, rows}; a v1 blob (no "v") has the same shape */
-const STATE_KEY="sld-sketchpad", STATE_VERSION=2;
+const STATE_KEY="sld-sketchpad", STATE_VERSION=3;
 function persist(){
-  try{ localStorage.setItem(STATE_KEY, JSON.stringify({v:STATE_VERSION, info:state.info, rows:state.rows})); }catch(e){}
+  try{ localStorage.setItem(STATE_KEY, JSON.stringify({v:STATE_VERSION, info:state.info, rows:state.rows, view:view_})); }catch(e){}
 }
 function loadState(){
   try{
@@ -499,6 +503,7 @@ function loadState(){
     if((s.v||1)>STATE_VERSION) return null;        /* from a newer page: start clean */
     const info={site:"",date:"",by:"",notes:"",...s.info};
     const rows=s.rows.map(r=>R(r.id||"",r.type||"",r.desc||"",r.rating||"",r.voltage||"",r.from||"",r.notes||"",r.prot||""));
+    view_=normalizeView(s.view);
     return {info, rows};
   }catch(e){ return null; }
 }
@@ -656,6 +661,7 @@ $("#copysvg").addEventListener("click",async ()=>{
 function currentDxf(){
   const {items,order,errors}=buildModel(state.rows);
   if(!order.length || errors.length) return null;
+  applyView(view_);
   const width=layout(items,order);
   return renderDxf(state.info,items,order,width);
 }
@@ -701,6 +707,25 @@ $("#copydxf").addEventListener("click",async ()=>{
   setTimeout(()=>{ out.textContent=""; },6000);
 });
 
+/* ------------------------------------------------ view options and focus mode */
+function writeViewInputs(){
+  $("#v-spacing").value=view_.spacing; $("#v-legend").checked=view_.legend; $("#v-title").checked=view_.titleBlock;
+}
+function setView(patch){
+  view_=normalizeView({...view_,...patch});
+  writeViewInputs(); view.fitted=true; redraw(); persist();
+}
+$("#v-spacing").addEventListener("change",e=>setView({spacing:e.target.value}));
+$("#v-legend").addEventListener("change",e=>setView({legend:e.target.checked}));
+$("#v-title").addEventListener("change",e=>setView({titleBlock:e.target.checked}));
+function setFocus(on){
+  document.body.classList.toggle("focus",on);
+  $("#focus").textContent=on?"Leave focus":"Focus drawing";
+  view.fitted=true; requestAnimationFrame(()=>fitView());
+}
+$("#focus").addEventListener("click",()=>setFocus(!document.body.classList.contains("focus")));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && document.body.classList.contains("focus")) setFocus(false); });
+
 /* the how-to-fill page */
 const helpEl=$("#help");
 function showHelp(open){
@@ -716,6 +741,7 @@ helpEl.addEventListener("toggle",()=>$("#helpbtn").classList.toggle("on",helpEl.
 (function(){
   state=loadState()||JSON.parse(JSON.stringify(PRESETS["1"]));
   buildPalette();
+  writeViewInputs();
   loadView();
   writeInfoInputs(); rebuildTable(); redraw(); persist(); updateUndo();
 })();

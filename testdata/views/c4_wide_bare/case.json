@@ -1,0 +1,30 @@
+{
+  "name": "c4_wide_bare",
+  "group": "views",
+  "description": "The C4 five-RMU ring drawn wide, with no legend and no title block: the sheet is the drawing alone",
+  "info": {
+    "site": "View: C4 wide, bare",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "view": {
+    "spacing": "wide",
+    "legend": false,
+    "titleBlock": false
+  },
+  "expect": {
+    "golden": true,
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    },
+    "legacy": {
+      "items": 31,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

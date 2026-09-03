@@ -1,5 +1,5 @@
 import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, LV_LOADS, hasWord, earthBelow, stateWords, protFor } from "./types.js";
-import { Y_LABEL, Y_MV_TOP, Y_RMU_TOP, Y_RMU_BOT, Y_MVBUS, PUMP_R, TX_R, STEPUP_H, GEN_H, LV_SUB_H, Y_GEN, Y_SU_C1, Y_SU_C2, STEPUP_SHIFT, Y_PUMP, Y_TX_C1, Y_TX_C2, Y_BUS, Y_ARROW, DIAG_H, LABEL_CHAR, extendSheet, labelClearance, allocLanes, setTiers, genFeeds, mvGens, rmuHang, hangHas, suMid, lvSubs, stepUps, genBelow, mvDepth, levelLinks, tierOffsets } from "./geometry.js";
+import { Y_LABEL, Y_MV_TOP, Y_RMU_TOP, Y_RMU_BOT, Y_MVBUS, PUMP_R, TX_R, STEPUP_H, GEN_H, LV_SUB_H, Y_GEN, Y_SU_C1, Y_SU_C2, STEPUP_SHIFT, Y_PUMP, Y_TX_C1, Y_TX_C2, Y_BUS, Y_ARROW, DIAG_H, LABEL_CHAR, extendSheet, labelClearance, allocLanes, setTiers, VIEW, genFeeds, mvGens, rmuHang, hangHas, suMid, lvSubs, stepUps, genBelow, mvDepth, levelLinks, tierOffsets } from "./geometry.js";
 import { childrenOf } from "./model.js";
 import { mccLoads, subBoardsOf, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
 import { SVG } from "./svg.js";
@@ -1013,26 +1013,30 @@ function render(info, items, order, width, warnings, canvas){
      it names: the sheet grows so no label leaves the paper */
   width=Math.max(width,svg.maxX+24);
 
-  /* title block */
+  /* title block (a view option) */
   svg.layer="frame";
-  const tbW=288,tbH=96,tbX=width-tbW-24,tbY=DIAG_H-tbH-20;
-  svg.rect(tbX,tbY,tbW,tbH,1.5);
-  svg.line(tbX,tbY+24,tbX+tbW,tbY+24,1.5);
-  svg.text(tbX+10,tbY+17,"SLD SKETCH — SITE SURVEY",{size:12,anchor:"start",bold:true});
-  /* the value field runs from the label column to the block's inner edge; a
-     longer entry is cut there rather than running off the sheet */
-  const fits=Math.floor((tbW-58-10)/LABEL_CHAR);
-  let ty=tbY+40;
-  for(const [k,v0] of [["Site",info.site],["Date",info.date],["By",info.by],["Notes",info.notes]]){
-    const v=v0||"";
-    svg.text(tbX+10,ty,k+":",{size:11,anchor:"start",bold:true});
-    svg.text(tbX+58,ty,v.length<=fits?v:v.slice(0,fits-1).replace(/\s+$/,"")+"…",
-             {size:11,anchor:"start"});
-    ty+=16;
+  if(VIEW.titleBlock){
+    const tbW=288,tbH=96,tbX=width-tbW-24,tbY=DIAG_H-tbH-20;
+    svg.rect(tbX,tbY,tbW,tbH,1.5);
+    svg.line(tbX,tbY+24,tbX+tbW,tbY+24,1.5);
+    svg.text(tbX+10,tbY+17,"SLD SKETCH — SITE SURVEY",{size:12,anchor:"start",bold:true});
+    /* the value field runs from the label column to the block's inner edge; a
+       longer entry is cut there rather than running off the sheet */
+    const fits=Math.floor((tbW-58-10)/LABEL_CHAR);
+    let ty=tbY+40;
+    for(const [k,v0] of [["Site",info.site],["Date",info.date],["By",info.by],["Notes",info.notes]]){
+      const v=v0||"";
+      svg.text(tbX+10,ty,k+":",{size:11,anchor:"start",bold:true});
+      svg.text(tbX+58,ty,v.length<=fits?v:v.slice(0,fits-1).replace(/\s+$/,"")+"…",
+               {size:11,anchor:"start"});
+      ty+=16;
+    }
   }
 
+  /* legend (a view option) */
   const used=new Set(order.map(i=>items[i].type));
   if(order.some(i=>earthBelow(items,items[i]))) used.add(EARTHING);
+  if(!VIEW.legend){ svg.layer="drawing"; return svg.document(width,DIAG_H); }
   svg.layer="legend";
   drawLegend(svg,used,width);
   svg.layer="drawing";

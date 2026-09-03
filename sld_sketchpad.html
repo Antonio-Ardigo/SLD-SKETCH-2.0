@@ -166,6 +166,14 @@
     text-transform: uppercase; color: var(--muted);
   }
   .sheet-bar .copystate { font-size: 12.5px; color: var(--muted); }
+  .viewopts { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .viewopts label { display: inline-flex; align-items: center; gap: 4px; }
+  .viewopts select { padding: 3px 6px; font-size: 12px; }
+  /* focus mode: the drawing takes the window; the table and the panels step aside */
+  body.focus .wrap { max-width: none; padding: 8px 12px; }
+  body.focus header.top, body.focus .panel, body.focus .problems, body.focus .palette, body.focus footer.note { display: none; }
+  body.focus .viewport { height: calc(100vh - 64px); }
+  body.focus #focus { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .viewtools { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .viewtools button { padding: 4px 9px; min-width: 30px; }
   .readout {
@@ -406,6 +414,14 @@
       <button id="dxf" title="Download a DXF of the sketch with the equipment table under it">Download DXF</button>
       <button id="copydxf" title="Copy the DXF text, to paste into a .dxf file where downloads are blocked">Copy DXF</button>
       <span class="copystate" id="copystate"></span>
+      <span class="viewopts" aria-label="View options: they change the drawing, never the table">
+        <label title="Horizontal spacing of ways and boards">Spacing
+          <select id="v-spacing"><option value="compact">compact</option><option value="normal" selected>normal</option><option value="wide">wide</option></select>
+        </label>
+        <label title="Show the legend under the sheet"><input type="checkbox" id="v-legend" checked> legend</label>
+        <label title="Show the title block"><input type="checkbox" id="v-title" checked> title block</label>
+        <button id="focus" title="Give the drawing the whole window (Esc to leave)">Focus drawing</button>
+      </span>
       <span class="viewtools">
         <button id="v-fit" title="Fit the whole drawing (0)">Fit</button>
         <button id="v-100" title="Actual size (1)">100%</button>
@@ -593,9 +609,44 @@ function diagFromMessage(message) {
 /** "CODE:firstId" — the compact form fixtures assert on. */
 function diagKey(d) { return d.ids.length ? `${d.code}:${d.ids[0]}` : d.code; }
 
+/* View options — constitution §4: a view changes the drawing, never the data
+ * or the graph. They are applied after the graph and its facts exist, are
+ * stored beside the table (never in it), and are never exported with it.
+ *
+ *   spacing     "compact" | "normal" | "wide"   horizontal pitch of ways and boards
+ *   legend      true | false                    the legend strip under the sheet
+ *   titleBlock  true | false                    the title block at the bottom right
+ *
+ * Adding an option: add it here with its default, read it where the drawing
+ * is made (geometry/layout/render), and extend test/views.test.js — the test
+ * proves the graph and the facts are the same under every value. */
+const VIEW_DEFAULTS = Object.freeze({ spacing: "normal", legend: true, titleBlock: true });
+const VIEW_OPTIONS = Object.freeze({
+  spacing: ["compact", "normal", "wide"],
+  legend: [true, false],
+  titleBlock: [true, false],
+});
+
+/** A complete, valid view from a partial one (unknown keys and values dropped). */
+function normalizeView(v) {
+  const out = { ...VIEW_DEFAULTS };
+  if (!v || typeof v !== "object") return out;
+  if (VIEW_OPTIONS.spacing.includes(v.spacing)) out.spacing = v.spacing;
+  if (typeof v.legend === "boolean") out.legend = v.legend;
+  if (typeof v.titleBlock === "boolean") out.titleBlock = v.titleBlock;
+  return out;
+}
+
+function isDefaultView(v) {
+  const n = normalizeView(v);
+  return Object.keys(VIEW_DEFAULTS).every(k => n[k] === VIEW_DEFAULTS[k]);
+}
+
 /* ------------------------------------------------ geometry constants */
-const MARGIN=90, FEEDER_SPACING=95, BUS_GAP=110, MIN_BUS_WIDTH=170,
-      SLOT_GAP=30, PUMP_SLOT=115, TX_LABEL_W=150, RMU_TEE=40,
+/* horizontal spacing follows the view's spacing scale (applyView); the
+   default scale is 1, which is exactly the historical geometry */
+let FEEDER_SPACING=95, BUS_GAP=110, MIN_BUS_WIDTH=170, SLOT_GAP=30, PUMP_SLOT=115;
+const MARGIN=90, TX_LABEL_W=150, RMU_TEE=40,
       Y_LABEL=34, Y_MV_TOP=62, Y_RMU_TOP=150, Y_RMU_BOT=268, Y_MVBUS=208,
       PUMP_R=20, TX_R=19, TIER_H=150, TIER_LINK_H=200, STEPUP_H=170,
       GEN_H=110, LV_SUB_H=200, SUB_PAD=20,
@@ -606,6 +657,19 @@ let STEPUP_SHIFT=0;
 let Y_PUMP=352, Y_TX_C1=342, Y_TX_C2=Y_TX_C1+27, Y_BUS=486,
     Y_FEED_BRK=516, Y_ARROW=574, Y_FEED_LBL=592, DIAG_H=780;
 const LABEL_CHAR=6.6;      /* width of one character of an 11 px rotated label */
+/* the view in force for the drawing being made: constitution §4 — a view
+   changes the drawing, never the data or the graph */
+const VIEW={spacing:"normal", legend:true, titleBlock:true};
+const SPACING_SCALE={compact:0.8, normal:1, wide:1.25};
+function applyView(view){
+  const v=Object.assign({spacing:"normal", legend:true, titleBlock:true}, view||{});
+  if(!(v.spacing in SPACING_SCALE)) v.spacing="normal";
+  VIEW.spacing=v.spacing; VIEW.legend=v.legend!==false; VIEW.titleBlock=v.titleBlock!==false;
+  const k=SPACING_SCALE[v.spacing];
+  FEEDER_SPACING=Math.round(95*k); BUS_GAP=Math.round(110*k); MIN_BUS_WIDTH=Math.round(170*k);
+  SLOT_GAP=Math.round(30*k); PUMP_SLOT=Math.round(115*k);
+  return VIEW;
+}
 function extendSheet(extra){ DIAG_H+=extra; }  /* title and bottom move, rows stay */
 function labelClearance(items, order, lvY){
   /* how much the sheet must grow so no rotated way label reaches the
@@ -2864,26 +2928,30 @@ function render(info, items, order, width, warnings, canvas){
      it names: the sheet grows so no label leaves the paper */
   width=Math.max(width,svg.maxX+24);
 
-  /* title block */
+  /* title block (a view option) */
   svg.layer="frame";
-  const tbW=288,tbH=96,tbX=width-tbW-24,tbY=DIAG_H-tbH-20;
-  svg.rect(tbX,tbY,tbW,tbH,1.5);
-  svg.line(tbX,tbY+24,tbX+tbW,tbY+24,1.5);
-  svg.text(tbX+10,tbY+17,"SLD SKETCH — SITE SURVEY",{size:12,anchor:"start",bold:true});
-  /* the value field runs from the label column to the block's inner edge; a
-     longer entry is cut there rather than running off the sheet */
-  const fits=Math.floor((tbW-58-10)/LABEL_CHAR);
-  let ty=tbY+40;
-  for(const [k,v0] of [["Site",info.site],["Date",info.date],["By",info.by],["Notes",info.notes]]){
-    const v=v0||"";
-    svg.text(tbX+10,ty,k+":",{size:11,anchor:"start",bold:true});
-    svg.text(tbX+58,ty,v.length<=fits?v:v.slice(0,fits-1).replace(/\s+$/,"")+"…",
-             {size:11,anchor:"start"});
-    ty+=16;
+  if(VIEW.titleBlock){
+    const tbW=288,tbH=96,tbX=width-tbW-24,tbY=DIAG_H-tbH-20;
+    svg.rect(tbX,tbY,tbW,tbH,1.5);
+    svg.line(tbX,tbY+24,tbX+tbW,tbY+24,1.5);
+    svg.text(tbX+10,tbY+17,"SLD SKETCH — SITE SURVEY",{size:12,anchor:"start",bold:true});
+    /* the value field runs from the label column to the block's inner edge; a
+       longer entry is cut there rather than running off the sheet */
+    const fits=Math.floor((tbW-58-10)/LABEL_CHAR);
+    let ty=tbY+40;
+    for(const [k,v0] of [["Site",info.site],["Date",info.date],["By",info.by],["Notes",info.notes]]){
+      const v=v0||"";
+      svg.text(tbX+10,ty,k+":",{size:11,anchor:"start",bold:true});
+      svg.text(tbX+58,ty,v.length<=fits?v:v.slice(0,fits-1).replace(/\s+$/,"")+"…",
+               {size:11,anchor:"start"});
+      ty+=16;
+    }
   }
 
+  /* legend (a view option) */
   const used=new Set(order.map(i=>items[i].type));
   if(order.some(i=>earthBelow(items,items[i]))) used.add(EARTHING);
+  if(!VIEW.legend){ svg.layer="drawing"; return svg.document(width,DIAG_H); }
   svg.layer="legend";
   drawLegend(svg,used,width);
   svg.layer="drawing";
@@ -3140,8 +3208,9 @@ function normalizeRows(rows) {
   });
 }
 
-function draw(info, rows, { dxf = false, check = false } = {}) {
+function draw(info, rows, { dxf = false, check = false, view = null } = {}) {
   const norm = normalizeRows(rows);
+  applyView(normalizeView(view));       /* the view in force for this drawing (default: the historical geometry) */
   const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
   const { items, order, errors, warnings, diagnostics } = buildModel(norm);
   const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, facts: null, svg: null, dxf: null };
@@ -3325,6 +3394,7 @@ const PRESETS={
 /* ------------------------------------------------ UI wiring */
 const FIELDS=["id","type","desc","rating","voltage","prot","from","notes"];
 let state={info:{site:"",date:"",by:"",notes:""},rows:[]};
+let view_={...VIEW_DEFAULTS};      /* the view options: stored beside the table, never in it */
 
 const $=s=>document.querySelector(s);
 const eqbody=$("#eqbody");
@@ -3395,6 +3465,7 @@ function redraw(){
   }
   showProblems(errors, warnings);
   if(errors.length) return; /* keep the last good drawing on screen */
+  applyView(view_);
   const width=layout(items,order);
   const svgStr=render(state.info,items,order,width,warnings);
   $("#sheet").innerHTML=svgStr;
@@ -3681,7 +3752,7 @@ function loadView(){
   }catch(e){}
   view.fitted=true;
 }
-function applyView(){
+function applyZoom(){
   sheetbox.style.width=(view.w?view.w*view.z+2*PAD:0)+"px";
   sheetbox.style.height=(view.h?view.h*view.z+2*PAD:0)+"px";
   sheetEl.style.transform=`scale(${view.z})`;
@@ -3693,7 +3764,7 @@ function setZoom(z, cx, cy){
   if(cx===undefined){ cx=viewport.clientWidth/2; cy=viewport.clientHeight/2; }
   const u=(viewport.scrollLeft+cx-PAD)/view.z, v=(viewport.scrollTop+cy-PAD)/view.z;
   view.z=z; view.fitted=false;
-  applyView();
+  applyZoom();
   viewport.scrollLeft=u*z+PAD-cx;
   viewport.scrollTop=v*z+PAD-cy;
   saveView();
@@ -3704,7 +3775,7 @@ function fitView(){
   else view.z=Math.min(ZMAX,Math.max(ZMIN,
     Math.min((vw-2*PAD)/view.w,(vh-2*PAD)/view.h)));
   view.fitted=true;
-  applyView();
+  applyZoom();
   viewport.scrollLeft=0; viewport.scrollTop=0;
   saveView();
 }
@@ -3717,7 +3788,7 @@ function syncView(){
   const refit=view.fitted || !view.w || !w || big(view.w,w) || big(view.h,h);
   view.w=w; view.h=h;
   if(refit){ fitView(); return; }
-  applyView();
+  applyZoom();
   if(view.sl!==null){                 /* the saved scroll, once at boot */
     viewport.scrollLeft=view.sl; viewport.scrollTop=view.st;
     view.sl=view.st=null;
@@ -3798,14 +3869,14 @@ function syncView(){
   $("#v-in").addEventListener("click",()=>setZoom(view.z*ZSTEP));
   $("#v-out").addEventListener("click",()=>setZoom(view.z/ZSTEP));
   if(typeof ResizeObserver!=="undefined")
-    new ResizeObserver(()=>{ if(view.fitted) fitView(); else applyView(); })
+    new ResizeObserver(()=>{ if(view.fitted) fitView(); else applyZoom(); })
       .observe(viewport);
 })();
 
 /* saved table: {v:2, info, rows}; a v1 blob (no "v") has the same shape */
-const STATE_KEY="sld-sketchpad", STATE_VERSION=2;
+const STATE_KEY="sld-sketchpad", STATE_VERSION=3;
 function persist(){
-  try{ localStorage.setItem(STATE_KEY, JSON.stringify({v:STATE_VERSION, info:state.info, rows:state.rows})); }catch(e){}
+  try{ localStorage.setItem(STATE_KEY, JSON.stringify({v:STATE_VERSION, info:state.info, rows:state.rows, view:view_})); }catch(e){}
 }
 function loadState(){
   try{
@@ -3814,6 +3885,7 @@ function loadState(){
     if((s.v||1)>STATE_VERSION) return null;        /* from a newer page: start clean */
     const info={site:"",date:"",by:"",notes:"",...s.info};
     const rows=s.rows.map(r=>R(r.id||"",r.type||"",r.desc||"",r.rating||"",r.voltage||"",r.from||"",r.notes||"",r.prot||""));
+    view_=normalizeView(s.view);
     return {info, rows};
   }catch(e){ return null; }
 }
@@ -3971,6 +4043,7 @@ $("#copysvg").addEventListener("click",async ()=>{
 function currentDxf(){
   const {items,order,errors}=buildModel(state.rows);
   if(!order.length || errors.length) return null;
+  applyView(view_);
   const width=layout(items,order);
   return renderDxf(state.info,items,order,width);
 }
@@ -4016,6 +4089,25 @@ $("#copydxf").addEventListener("click",async ()=>{
   setTimeout(()=>{ out.textContent=""; },6000);
 });
 
+/* ------------------------------------------------ view options and focus mode */
+function writeViewInputs(){
+  $("#v-spacing").value=view_.spacing; $("#v-legend").checked=view_.legend; $("#v-title").checked=view_.titleBlock;
+}
+function setView(patch){
+  view_=normalizeView({...view_,...patch});
+  writeViewInputs(); view.fitted=true; redraw(); persist();
+}
+$("#v-spacing").addEventListener("change",e=>setView({spacing:e.target.value}));
+$("#v-legend").addEventListener("change",e=>setView({legend:e.target.checked}));
+$("#v-title").addEventListener("change",e=>setView({titleBlock:e.target.checked}));
+function setFocus(on){
+  document.body.classList.toggle("focus",on);
+  $("#focus").textContent=on?"Leave focus":"Focus drawing";
+  view.fitted=true; requestAnimationFrame(()=>fitView());
+}
+$("#focus").addEventListener("click",()=>setFocus(!document.body.classList.contains("focus")));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && document.body.classList.contains("focus")) setFocus(false); });
+
 /* the how-to-fill page */
 const helpEl=$("#help");
 function showHelp(open){
@@ -4031,6 +4123,7 @@ helpEl.addEventListener("toggle",()=>$("#helpbtn").classList.toggle("on",helpEl.
 (function(){
   state=loadState()||JSON.parse(JSON.stringify(PRESETS["1"]));
   buildPalette();
+  writeViewInputs();
   loadView();
   writeInfoInputs(); rebuildTable(); redraw(); persist(); updateUndo();
 })();

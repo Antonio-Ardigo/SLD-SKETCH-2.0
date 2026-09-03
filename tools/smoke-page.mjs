@@ -146,8 +146,24 @@ try {
   await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))`);
   check("undo removes the dropped row", await evaluate(`state.rows.length`) === rowsBefore);
 
+  /* view options change the picture, not the table */
+  const w0 = await evaluate(`+document.querySelector('#sheet svg').getAttribute('width')`);
+  const rowsJson = await evaluate(`JSON.stringify(state.rows)`);
+  await evaluate(`(function(){ const s=document.querySelector('#v-spacing'); s.value='wide'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  check("wide spacing widens the sheet", await evaluate(`+document.querySelector('#sheet svg').getAttribute('width')`) > w0,
+    await evaluate(`'w0='+${w0}+' now='+document.querySelector('#sheet svg').getAttribute('width')+' FEEDER_SPACING='+FEEDER_SPACING+' view_='+JSON.stringify(view_)+' rows='+state.rows.length+' problems='+document.querySelector('#problems').textContent.slice(0,120)`));
+  check("the table is untouched by the view", await evaluate(`JSON.stringify(state.rows)`) === rowsJson);
+  await evaluate(`(function(){ const c=document.querySelector('#v-legend'); c.checked=false; c.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  check("legend off removes the legend", await evaluate(`!document.querySelector('#sheet svg').innerHTML.includes('>LEGEND<')`));
+  check("view is saved beside the table", await evaluate(`JSON.parse(localStorage.getItem('sld-sketchpad')).view.spacing`) === "wide");
+  await evaluate(`document.querySelector('#focus').click()`);
+  check("focus mode hides the table", await evaluate(`document.body.classList.contains('focus') && getComputedStyle(document.querySelector('.panel')).display==='none'`));
+  await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+  check("Escape leaves focus mode", await evaluate(`!document.body.classList.contains('focus')`));
+  await evaluate(`(function(){ const s=document.querySelector('#v-spacing'); s.value='normal'; s.dispatchEvent(new Event('change',{bubbles:true})); const c=document.querySelector('#v-legend'); c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+
   /* saved state is versioned */
-  check("saved state has a version", await evaluate(`JSON.parse(localStorage.getItem('sld-sketchpad')).v`) === 2);
+  check("saved state has a version", await evaluate(`JSON.parse(localStorage.getItem('sld-sketchpad')).v`) === 3);
 
   check("no page errors", errors.length === 0, errors.join(" || "));
 } catch (e) {

@@ -27,14 +27,15 @@ export function engineSource(html = fs.readFileSync(PAGE, "utf8")) {
 
 export function loadEngine() {
   if (cached) return cached;
-  const wrapper = `"use strict";\n${engineSource()}\n;({ buildModel, layout, render, renderDxf })`;
+  const wrapper = `"use strict";\n${engineSource()}\n;({ buildModel, layout, render, renderDxf, applyView, normalizeView })`;
   cached = vm.runInContext(wrapper, vm.createContext({ console }), { filename: "sld_sketchpad.html#engine" });
   return cached;
 }
 
 /** Same shape as pipeline.draw(). */
-export function drawWithBundle(info, rows, { dxf = false } = {}) {
+export function drawWithBundle(info, rows, { dxf = false, view = null } = {}) {
   const E = loadEngine();
+  E.applyView(E.normalizeView(view));
   const norm = rows.map(r => Object.fromEntries(["id", "type", "desc", "rating", "voltage", "prot", "from", "notes"].map(f => [f, r[f] == null ? "" : String(r[f])])));
   const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
   const { items, order, errors, warnings } = E.buildModel(norm);

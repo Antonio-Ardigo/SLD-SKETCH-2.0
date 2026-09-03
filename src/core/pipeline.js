@@ -16,6 +16,8 @@ import { buildFacts } from "./facts.js";
 import { diagFromMessage, makeDiag } from "./diagnostics.js";
 import { SceneCanvas } from "./scene.js";
 import { checkScene } from "./check.js";
+import { applyView } from "./geometry.js";
+import { normalizeView } from "./views.js";
 
 export const ROW_FIELDS = ["id", "type", "desc", "rating", "voltage", "prot", "from", "notes"];
 
@@ -28,8 +30,9 @@ export function normalizeRows(rows) {
   });
 }
 
-export function draw(info, rows, { dxf = false, check = false } = {}) {
+export function draw(info, rows, { dxf = false, check = false, view = null } = {}) {
   const norm = normalizeRows(rows);
+  applyView(normalizeView(view));       /* the view in force for this drawing (default: the historical geometry) */
   const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
   const { items, order, errors, warnings, diagnostics } = buildModel(norm);
   const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, facts: null, svg: null, dxf: null };

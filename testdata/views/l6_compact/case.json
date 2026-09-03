@@ -1,0 +1,28 @@
+{
+  "name": "l6_compact",
+  "group": "views",
+  "description": "The L6 loop (11 kV A → LV → 11 kV B with a tie) drawn with compact spacing: same graph, tighter picture",
+  "info": {
+    "site": "View: L6 compact",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "view": {
+    "spacing": "compact"
+  },
+  "expect": {
+    "golden": true,
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    },
+    "legacy": {
+      "items": 9,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

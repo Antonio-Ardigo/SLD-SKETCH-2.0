@@ -3,8 +3,10 @@ import { childrenOf } from "./model.js";
 import { mccLoads, subBoardsOf, isSubBoard, boardTx, txBoard, lvBoardWidth, placeLvBoard, subLevels } from "./layout.js";
 
 /* ------------------------------------------------ geometry constants */
-const MARGIN=90, FEEDER_SPACING=95, BUS_GAP=110, MIN_BUS_WIDTH=170,
-      SLOT_GAP=30, PUMP_SLOT=115, TX_LABEL_W=150, RMU_TEE=40,
+/* horizontal spacing follows the view's spacing scale (applyView); the
+   default scale is 1, which is exactly the historical geometry */
+let FEEDER_SPACING=95, BUS_GAP=110, MIN_BUS_WIDTH=170, SLOT_GAP=30, PUMP_SLOT=115;
+const MARGIN=90, TX_LABEL_W=150, RMU_TEE=40,
       Y_LABEL=34, Y_MV_TOP=62, Y_RMU_TOP=150, Y_RMU_BOT=268, Y_MVBUS=208,
       PUMP_R=20, TX_R=19, TIER_H=150, TIER_LINK_H=200, STEPUP_H=170,
       GEN_H=110, LV_SUB_H=200, SUB_PAD=20,
@@ -15,6 +17,19 @@ let STEPUP_SHIFT=0;
 let Y_PUMP=352, Y_TX_C1=342, Y_TX_C2=Y_TX_C1+27, Y_BUS=486,
     Y_FEED_BRK=516, Y_ARROW=574, Y_FEED_LBL=592, DIAG_H=780;
 const LABEL_CHAR=6.6;      /* width of one character of an 11 px rotated label */
+/* the view in force for the drawing being made: constitution §4 — a view
+   changes the drawing, never the data or the graph */
+const VIEW={spacing:"normal", legend:true, titleBlock:true};
+const SPACING_SCALE={compact:0.8, normal:1, wide:1.25};
+function applyView(view){
+  const v=Object.assign({spacing:"normal", legend:true, titleBlock:true}, view||{});
+  if(!(v.spacing in SPACING_SCALE)) v.spacing="normal";
+  VIEW.spacing=v.spacing; VIEW.legend=v.legend!==false; VIEW.titleBlock=v.titleBlock!==false;
+  const k=SPACING_SCALE[v.spacing];
+  FEEDER_SPACING=Math.round(95*k); BUS_GAP=Math.round(110*k); MIN_BUS_WIDTH=Math.round(170*k);
+  SLOT_GAP=Math.round(30*k); PUMP_SLOT=Math.round(115*k);
+  return VIEW;
+}
 function extendSheet(extra){ DIAG_H+=extra; }  /* title and bottom move, rows stay */
 function labelClearance(items, order, lvY){
   /* how much the sheet must grow so no rotated way label reaches the
@@ -398,4 +413,4 @@ function tierOffsets(depth, links, hung){
   return off;
 }
 
-export { MARGIN, FEEDER_SPACING, BUS_GAP, MIN_BUS_WIDTH, SLOT_GAP, PUMP_SLOT, TX_LABEL_W, RMU_TEE, Y_LABEL, Y_MV_TOP, Y_RMU_TOP, Y_RMU_BOT, Y_MVBUS, PUMP_R, TX_R, TIER_H, TIER_LINK_H, STEPUP_H, GEN_H, LV_SUB_H, SUB_PAD, Y_GEN, Y_SU_C1, Y_SU_C2, STEPUP_SHIFT, Y_PUMP, Y_TX_C1, Y_TX_C2, Y_BUS, Y_FEED_BRK, Y_ARROW, Y_FEED_LBL, DIAG_H, LABEL_CHAR, extendSheet, labelClearance, allocLanes, setTiers, genFeeds, mvGens, rmuHang, hangHas, suMid, placeSuMid, lvSubs, stepUps, suppliesOf, spreadSupplies, genBelow, placeSuSources, rightEdge, placeBoardRow, placeLooseBoards, placeLvSubs, placeTxMotors, placeStepUps, mvDepth, levelLinks, tierOffsets };
+export { MARGIN, FEEDER_SPACING, BUS_GAP, MIN_BUS_WIDTH, SLOT_GAP, PUMP_SLOT, TX_LABEL_W, RMU_TEE, Y_LABEL, Y_MV_TOP, Y_RMU_TOP, Y_RMU_BOT, Y_MVBUS, PUMP_R, TX_R, TIER_H, TIER_LINK_H, STEPUP_H, GEN_H, LV_SUB_H, SUB_PAD, Y_GEN, Y_SU_C1, Y_SU_C2, STEPUP_SHIFT, Y_PUMP, Y_TX_C1, Y_TX_C2, Y_BUS, Y_FEED_BRK, Y_ARROW, Y_FEED_LBL, DIAG_H, LABEL_CHAR, extendSheet, labelClearance, allocLanes, setTiers, genFeeds, mvGens, rmuHang, hangHas, suMid, placeSuMid, lvSubs, stepUps, suppliesOf, spreadSupplies, genBelow, placeSuSources, rightEdge, placeBoardRow, placeLooseBoards, placeLvSubs, placeTxMotors, placeStepUps, mvDepth, levelLinks, tierOffsets, VIEW, SPACING_SCALE, applyView };

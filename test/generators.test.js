@@ -38,7 +38,7 @@ test("PRESETS draw identically to their testdata cases", () => {
 
 test("the page's bundled engine draws what the modules draw", () => {
   for (const c of cases) {
-    const a = drawCase(c, { dxf: true }), b = drawWithBundle(c.data.info, c.rows, { dxf: true });
+    const a = drawCase(c, { dxf: true }), b = drawWithBundle(c.data.info, c.rows, { dxf: true, view: c.data.view || null });
     assert.equal(b.svg, a.svg, `${c.data.name} svg`);
     assert.equal(b.dxf, a.dxf, `${c.data.name} dxf`);
     assert.deepEqual([...b.warnings], a.warnings, `${c.data.name} warnings`);   /* the bundle's arrays come from another realm */

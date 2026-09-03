@@ -9,7 +9,7 @@
 | 3 — structured diagnostics, graph, `<g data-id>`, click-select, drag & drop v1 | done | `src/core/diagnostics.js`, `src/core/graph.js`, palette in `src/ui/app.js`, `testdata/warnings/*` |
 | 4 — rules, rank solver, scene, scene checker, new topology fixtures | done | `src/core/rules/*`, `rank.js`, `facts.js`, `scene.js`, `check.js`, `sld check`, `testdata/topics/*` (10 cases; the MCC-under-MCC gap fixed). The solver reproduces today's tiers on every case and is not yet driving the layout — content-sized bands are the remaining piece, folded into phase 5/6 |
 | 5 — symbol registry, legend from registry, DXF text check, Python retired | done | `src/core/symbols/registry.js` (legend and palette draw from it, goldens identical), `src/core/dxf-check.js` + `sld dxf --check`; `sld_sketch.py`, `sld_dxf.py`, `sld_check.py`, `make_examples.py` removed. Not done: `device()`/`deviceH()` are still two hand-written orientation variants |
-| 6 — view options, larger sketch area, constitution enforcement | | |
+| 6 — view options, larger sketch area, constitution enforcement | done | `src/core/views.js` (spacing, legend, title block) applied through `geometry.applyView`; view bar and Focus mode in the page; `testdata/views/*`; `test/views.test.js` (graph, ranks and verdict fixed under every view), `test/boundaries.test.js` (module import rules); `docs/EXTENDING.md`. Not done: a "flow down" step-up policy — the legacy layout has no such mode, it would be a new placement, not an option |
 | 7 — UPS / Inverter / Battery / DC Busbar types (optional) | | |
 
 ## Context

@@ -166,6 +166,14 @@
     text-transform: uppercase; color: var(--muted);
   }
   .sheet-bar .copystate { font-size: 12.5px; color: var(--muted); }
+  .viewopts { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .viewopts label { display: inline-flex; align-items: center; gap: 4px; }
+  .viewopts select { padding: 3px 6px; font-size: 12px; }
+  /* focus mode: the drawing takes the window; the table and the panels step aside */
+  body.focus .wrap { max-width: none; padding: 8px 12px; }
+  body.focus header.top, body.focus .panel, body.focus .problems, body.focus .palette, body.focus footer.note { display: none; }
+  body.focus .viewport { height: calc(100vh - 64px); }
+  body.focus #focus { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .viewtools { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .viewtools button { padding: 4px 9px; min-width: 30px; }
   .readout {
@@ -406,6 +414,14 @@
       <button id="dxf" title="Download a DXF of the sketch with the equipment table under it">Download DXF</button>
       <button id="copydxf" title="Copy the DXF text, to paste into a .dxf file where downloads are blocked">Copy DXF</button>
       <span class="copystate" id="copystate"></span>
+      <span class="viewopts" aria-label="View options: they change the drawing, never the table">
+        <label title="Horizontal spacing of ways and boards">Spacing
+          <select id="v-spacing"><option value="compact">compact</option><option value="normal" selected>normal</option><option value="wide">wide</option></select>
+        </label>
+        <label title="Show the legend under the sheet"><input type="checkbox" id="v-legend" checked> legend</label>
+        <label title="Show the title block"><input type="checkbox" id="v-title" checked> title block</label>
+        <button id="focus" title="Give the drawing the whole window (Esc to leave)">Focus drawing</button>
+      </span>
       <span class="viewtools">
         <button id="v-fit" title="Fit the whole drawing (0)">Fit</button>
         <button id="v-100" title="Actual size (1)">100%</button>

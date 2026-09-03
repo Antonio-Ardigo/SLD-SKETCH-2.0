@@ -43,7 +43,15 @@ the row, and drag a chip from the **symbol palette** above the drawing onto a
 busbar, RMU or transformer to add a row of that type fed from it (the ID is
 numbered for you, the usual Protection filled in). Clicking a chip adds the
 row under the selected item. The table stays the only source of truth: a
-drop writes a row, nothing else. Reading `.xlsx` in the page uses `vendor/xlsx.full.min.js`, so keep
+drop writes a row, nothing else.
+
+**View options** sit in the drawing's toolbar: spacing (compact / normal /
+wide), the legend and the title block on or off, and **Focus drawing**, which
+gives the drawing the whole window (Esc to leave). A view changes the picture
+and never the table: the same rows draw the same network under every view
+(`test/views.test.js` proves it on every case), the view is kept beside the
+table in the browser and is never exported with it. The CLI takes none yet;
+a case can carry one in `case.json` (`"view": {"spacing": "compact"}`). Reading `.xlsx` in the page uses `vendor/xlsx.full.min.js`, so keep
 the `vendor/` folder beside the page.
 
 ## The spreadsheet
