@@ -1,0 +1,20 @@
+{
+  "name": "f2_spur",
+  "group": "features",
+  "description": "Ring with a spur RMU, links written on both rows, spare feeder",
+  "source": "tests/features/f2_spur.xlsx",
+  "info": {
+    "site": "F2 Ring with spur",
+    "date": "",
+    "by": "",
+    "notes": "one RMU hung off the ring; links written both ways"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 18,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

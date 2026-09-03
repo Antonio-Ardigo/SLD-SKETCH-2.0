@@ -1,0 +1,20 @@
+{
+  "name": "c1_wtw",
+  "group": "sites",
+  "description": "Water treatment works: 33/11/3.3/0.4 kV, dual utility, A/B boards with ties at two levels, 3-RMU ring with N.O. point, 3.3 kV pump board, genset on an ATS, 3 MCCs",
+  "source": "tests/sites/c1_wtw.xlsx",
+  "info": {
+    "site": "C1 Water treatment works",
+    "date": "",
+    "by": "",
+    "notes": "33/11/3.3/0.4 kV, dual utility, ring, gen"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 33,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

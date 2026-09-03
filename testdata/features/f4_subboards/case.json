@@ -1,0 +1,20 @@
+{
+  "name": "f4_subboards",
+  "group": "features",
+  "description": "3 levels of sub-boards, two DBs on one feeder, tie between sub-boards, genset on a DB via ATS, VSD motor",
+  "source": "tests/features/f4_subboards.xlsx",
+  "info": {
+    "site": "F4 Sub-boards",
+    "date": "",
+    "by": "",
+    "notes": "three levels, two DBs on one feeder, tie, genset on a DB"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 19,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

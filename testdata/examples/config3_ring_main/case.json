@@ -1,0 +1,21 @@
+{
+  "name": "config3_ring_main",
+  "group": "examples",
+  "description": "Ring main: 2 MV incomers → RMU → 800 kVA transformer → LV busbar, 3 feeders",
+  "source": "examples/config3_ring_main.xlsx",
+  "info": {
+    "site": "Example Site C",
+    "date": "2026-08-31",
+    "by": "A. Ardigo",
+    "notes": "Config 3 - ring main, two MV incomers"
+  },
+  "preset": "3",
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 8,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

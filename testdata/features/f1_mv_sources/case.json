@@ -1,0 +1,20 @@
+{
+  "name": "f1_mv_sources",
+  "group": "features",
+  "description": "Gensets beside a utility incomer, on an RMU, and through two MV changeovers",
+  "source": "tests/features/f1_mv_sources.xlsx",
+  "info": {
+    "site": "F1 MV sources",
+    "date": "",
+    "by": "",
+    "notes": "gensets on boards, RMU and via changeover"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 16,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

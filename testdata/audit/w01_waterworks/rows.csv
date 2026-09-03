@@ -1,0 +1,49 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility incomer A,,11 kV,,,Overhead line from GSS
+U2,MV Incomer,Utility incomer B,,11 kV,,,Cable from GSS
+MVB1,MV Busbar,11 kV switchboard sec A,1250 A,11 kV,CB,U1,
+MVB2,MV Busbar,11 kV switchboard sec B,1250 A,11 kV,CB,U2,
+TIE,Bus Coupler,11 kV bus section,1250 A,11 kV,CB,"MVB1, MVB2",Normally open
+CAP,Capacitor Bank,PFC bank sec A,1.5 Mvar,11 kV,CB,MVB1,
+NER,Earthing/NER,Neutral earthing resistor,300 A 10 s,11 kV,,MVB2,
+TX1,Transformer,"Intake tx, Dyn11",1600 kVA,11/0.4 kV,CB,MVB1,
+TX2,Transformer,"Filter tx, Dyn11",1600 kVA,11/0.4 kV,CB,MVB1,
+TX3,Transformer,"Chemical tx, Dyn11",1000 kVA,11/0.4 kV,CB,MVB1,
+TX4,Transformer,"HL pump tx, Dyn11",2000 kVA,11/0.4 kV,CB,MVB2,
+TX5,Transformer,"Sludge tx, Dyn11",1000 kVA,11/0.4 kV,CB,MVB2,
+TX6,Transformer,"Admin tx, Dyn11",630 kVA,11/0.4 kV,CB,MVB2,
+LVB1,LV Busbar,Intake MSB,2500 A,400 V,CB,TX1,
+LVB2,LV Busbar,Filter MSB,2500 A,400 V,CB,TX2,
+LVB3,LV Busbar,Chemical MSB,1600 A,400 V,CB,TX3,
+LVB4,LV Busbar,HL pump MSB,3200 A,400 V,CB,TX4,
+LVB5,LV Busbar,Sludge MSB,1600 A,400 V,CB,TX5,
+LVB6,LV Busbar,Admin MSB,1000 A,400 V,CB,TX6,
+LT12,Bus Coupler,Intake-Filter tie,2500 A,400 V,CB,"LVB1, LVB2",Normally open
+MCC1,MCC,Intake pump MCC,800 A,400 V,CB,LVB1,
+P1,Pump,Raw water pump 1,132 kW,400 V,,MCC1,VSD
+P2,Pump,Raw water pump 2,132 kW,400 V,,MCC1,
+P3,Pump,Raw water pump 3,132 kW,400 V,,MCC1,Spare - motor removed
+F1,Feeder,Intake lighting,100 A,400 V,MCCB,LVB1,
+F2,Feeder,Filter gallery DB,250 A,400 V,MCCB,LVB2,
+DB2,LV Busbar,Filter gallery DB,250 A,400 V,MCCB,F2,
+F21,Feeder,Backwash valves,63 A,400 V,MCB,DB2,
+F22,Feeder,Gallery lighting,32 A,400 V,MCB,DB2,
+MCC2,MCC,Backwash MCC,630 A,400 V,CB,LVB2,
+P4,Pump,Backwash pump 1,90 kW,400 V,,MCC2,
+P5,Pump,Backwash pump 2,90 kW,400 V,,MCC2,VFD
+MCC3,MCC,Dosing MCC,250 A,400 V,CB,LVB3,Small dosing motors
+P6,Pump,Lime slurry pump,7.5 kW,400 V,Fused contactor,MCC3,
+F3,Feeder,Chemical building DB,160 A,400 V,MCCB,LVB3,
+MCC4,MCC,HL pump MCC,1600 A,400 V,CB,LVB4,
+P7,Pump,High lift pump 1,355 kW,400 V,,MCC4,VSD
+P8,Pump,High lift pump 2,355 kW,400 V,,MCC4,VSD
+P9,Pump,High lift pump 3,355 kW,400 V,,MCC4,Spare
+F4,Feeder,HL station services,160 A,400 V,MCCB,LVB4,
+MCC5,MCC,Sludge MCC,400 A,400 V,CB,LVB5,
+P10,Pump,Sludge pump 1,45 kW,400 V,,MCC5,
+P11,Pump,Sludge pump 2,45 kW,400 V,,MCC5,Spare
+F5,Feeder,Thickener building,250 A,400 V,MCCB,LVB5,
+F6,Feeder,Admin lighting and power,250 A,400 V,MCCB,LVB6,
+DB6,LV Busbar,Laboratory DB,160 A,400 V,MCCB,LVB6,
+F61,Feeder,Lab benches,63 A,400 V,MCB,DB6,
+F62,Feeder,Fume cupboards,32 A,400 V,MCB,DB6,

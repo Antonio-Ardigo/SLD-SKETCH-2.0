@@ -25,6 +25,18 @@ sits in a window of its own with scrollbars on both axes: drag it to pan,
 Fit / 100 % / − / + (or ctrl+wheel, the keys 0, 1, −, +) to zoom, so a
 2500 px site stays reachable end to end.
 
+Filling the table in the page: **Feeds from** offers the IDs already on the
+sheet (type `BB1, ` and it offers the second supply); **Voltage** and
+**Rating** offer standard values for the row's type (11 kV, 400 V, 11/0.4 kV,
+1000 kVA, 250 A, 55 kW, …); choosing a **Type** fills the usual Protection if
+the cell is empty. `Enter` moves down a row (a new one after the last),
+`Alt`+`↑`/`↓` moves the row, `Ctrl`+`Z` / `Ctrl`+`Y` undo and redo. A message
+in the problems box marks the row it is about and clicking it jumps there.
+**Import…** (or dropping a file on the table) loads a survey workbook, a CSV
+of the equipment table, or a saved `.json`; **Download CSV** writes the table
+back out. Reading `.xlsx` in the page uses `vendor/xlsx.full.min.js`, so keep
+the `vendor/` folder beside the page.
+
 ## The spreadsheet
 
 One workbook per site, two sheets (plus a "How to fill" sheet with these same
@@ -227,9 +239,30 @@ rule (none on any workbook in the repository).
 renders the sheet, reads the SVG back as raw geometry and verifies that every
 item is drawn once and every `Feeds From` edge is a continuous conductor
 between the two symbols; it also reports conductors drawn on top of each
-other and joints the table does not contain. `tests/` holds five demanding
-sites, ten multi-level arrangements, five feature sheets and the baseline
-scores.
+other and joints the table does not contain.
+
+## Test data and tests
+
+`testdata/` is the pool of survey tables the engine is tested against — 48
+cases in five groups (`examples`, `sites`, `levels`, `features`, `audit`),
+each a folder with `rows.csv` (the equipment table, exactly the columns of
+the workbook), `case.json` (site info, a one-line description, what the case
+expects) and `golden.svg` (the drawing the page produces today). The
+workbooks and the page's built-in examples are generated from it:
+
+```bash
+npm test                          # node --test: every case draws its golden, generators in step
+node tools/golden.mjs             # redraw every case, list changes (--report out.html for a side-by-side)
+UPDATE_GOLDEN=1 node tools/golden.mjs   # accept the current drawing as the new golden
+node tools/gen-fixtures.mjs       # build/xlsx/<group>/<case>.xlsx + the page's presets block
+node tools/import-xlsx.mjs sites survey.xlsx   # add a workbook as a new case
+node tools/smoke-page.mjs         # drive the page in headless Chromium (needs Chrome)
+```
+
+Needs Node 20+ and nothing from npm: `.xlsx` is read and written with the
+vendored SheetJS build. `testdata/README.md` describes the case format and
+the history of scores; `docs/CONSTITUTION.md` states the rules the data and
+the drawing obey; `docs/PLAN.md` is the roadmap.
 
 ## What the symbols mean
 

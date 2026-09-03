@@ -1,0 +1,20 @@
+{
+  "name": "w08_wrongloads",
+  "group": "audit",
+  "description": "ADVERSARIAL: a pump on an MV incomer, a feeder on a motor, an MCC on a feeder and on an RMU, motor/MCC named on a transformer. Five edges must stay disconnected and every bad row must draw a message",
+  "source": "tests/audit/w08_wrongloads.xlsx",
+  "info": {
+    "site": "Tester2 W8 - Loads on the wrong thing",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "adversarial"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 16,
+      "errors": 0,
+      "warnings": 6
+    }
+  }
+}

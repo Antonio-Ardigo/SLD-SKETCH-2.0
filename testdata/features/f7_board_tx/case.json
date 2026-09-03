@@ -1,0 +1,20 @@
+{
+  "name": "f7_board_tx",
+  "group": "features",
+  "description": "Transformers off an LV board: motor supply, no-load one, LV/LV with a sub-board",
+  "source": "tests/features/f7_board_tx.xlsx",
+  "info": {
+    "site": "F7 transformers off an LV board",
+    "date": "",
+    "by": "",
+    "notes": "transformers off an LV board: a motor supply under it, one with no load, an LV/LV one with a sub-board and a motor"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 14,
+      "errors": 0,
+      "warnings": 2
+    }
+  }
+}

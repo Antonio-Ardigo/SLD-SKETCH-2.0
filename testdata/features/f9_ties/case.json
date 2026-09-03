@@ -1,0 +1,20 @@
+{
+  "name": "f9_ties",
+  "group": "features",
+  "description": "Couplers between boards on different levels and past an intervening board, 3 voltage tiers, parallel transformers",
+  "source": "tests/features/f9_ties.xlsx",
+  "info": {
+    "site": "F9 ties between boards",
+    "date": "",
+    "by": "",
+    "notes": "a coupler between boards on different levels, one past an intervening board, three voltage tiers"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 23,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

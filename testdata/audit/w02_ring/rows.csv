@@ -1,0 +1,35 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+INC,MV Incomer,Primary substation,,11 kV,,,
+PB,MV Busbar,Primary 11 kV board,1250 A,11 kV,CB,INC,
+RMU1,RMU,RMU 1 (works),630 A,11 kV,CB,PB,
+RMU2,RMU,RMU 2 (village),630 A,11 kV,LBS,RMU1,
+RMU3,RMU,RMU 3 (school),630 A,11 kV,LBS,RMU2,N.O. towards RMU4
+RMU4,RMU,RMU 4 (depot),630 A,11 kV,"LBS, LBS","RMU1, RMU3",closes the ring
+RS,RMU,Spur RMU (farm),400 A,11 kV,LBS,RMU2,
+R3A,RMU,Sub-ring RMU A,400 A,11 kV,"LBS, LBS","RMU3, R3B",
+R3B,RMU,Sub-ring RMU B,400 A,11 kV,"LBS, LBS","R3A, RMU3",
+T1,Transformer,"Works tx, Dyn11",1000 kVA,11/0.4 kV,Fuse-switch,RMU1,
+T2,Transformer,Village tx,500 kVA,11/0.4 kV,Fuse-switch,RMU2,
+T3,Transformer,School tx,315 kVA,11/0.4 kV,Fuse-switch,RMU3,
+T4,Transformer,Depot tx,800 kVA,11/0.4 kV,Fuse-switch,RMU4,
+TS,Transformer,Farm tx,200 kVA,11/0.4 kV,Fuse-switch,RS,
+T3A,Transformer,Sub-ring tx A,315 kVA,11/0.4 kV,Fuse-switch,R3A,
+T3B,Transformer,Sub-ring tx B,315 kVA,11/0.4 kV,Fuse-switch,R3B,
+L1,LV Busbar,Works MSB,1600 A,400 V,CB,T1,
+L2,LV Busbar,Village LV,800 A,400 V,CB,T2,
+L3,LV Busbar,School LV,500 A,400 V,CB,T3,
+L4,LV Busbar,Depot MSB,1250 A,400 V,CB,T4,
+LS,LV Busbar,Farm LV,315 A,400 V,CB,TS,
+L3A,LV Busbar,Sub-ring LV A,500 A,400 V,CB,T3A,
+L3B,LV Busbar,Sub-ring LV B,500 A,400 V,CB,T3B,
+G1,Generator,Depot standby set,500 kVA,400 V,CB,,feeds L4 via ATS
+ATS,Bus Coupler,ATS mains/gen,,400 V,CB,"L4, G1",ATS
+F1,Feeder,Works process,400 A,400 V,CB,L1,
+F1B,Feeder,Works lighting,100 A,400 V,MCCB,L1,
+F2,Feeder,Village LV network,400 A,400 V,Fuse,L2,
+F3,Feeder,School main DB,250 A,400 V,MCCB,L3,
+F4,Feeder,Depot workshop,250 A,400 V,MCCB,L4,
+F4B,Feeder,Depot yard lighting,63 A,400 V,MCB,L4,Spare
+FS,Feeder,Farm sheds,100 A,400 V,Fuse,LS,
+F3A,Feeder,Houses A,200 A,400 V,Fuse,L3A,
+F3B,Feeder,Houses B,200 A,400 V,Fuse,L3B,

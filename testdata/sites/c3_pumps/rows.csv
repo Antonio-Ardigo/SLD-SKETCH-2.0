@@ -1,0 +1,29 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+I1,MV Incomer,Utility feeder 1,,11 kV,,,
+I2,MV Incomer,Utility feeder 2,,11 kV,,,
+B1,MV Busbar,11 kV sec 1,2000 A,11 kV,CB,I1,
+B2,MV Busbar,11 kV sec 2,2000 A,11 kV,CB,I2,
+BT,Bus Coupler,Bus section,,11 kV,CB,"B1, B2",Normally open
+P1,Pump,Main pump 1,1.5 MW,11 kV,CB,B1,
+P2,Pump,Main pump 2,1.5 MW,11 kV,CB,B1,
+P3,Pump,Main pump 3,1.5 MW,11 kV,CB,B2,
+VT4,Transformer,VSD tx pump 4,2 MVA,11/0.69 kV,CB,B1,12-pulse
+P4,Pump,Main pump 4 (VSD),1.5 MW,690 V,Contactor,VT4,
+VT5,Transformer,VSD tx pump 5,2 MVA,11/0.69 kV,CB,B2,12-pulse
+P5,Pump,Main pump 5 (VSD),1.5 MW,690 V,Contactor,VT5,
+P6,Pump,Main pump 6,1.5 MW,11 kV,CB,B2,
+CAP,Feeder,MV capacitor bank,2 Mvar,11 kV,CB,B1,capacitor bank
+ET,Transformer,Earthing tx + NER,,11 kV,CB,B1,"zig-zag, NER 400 A"
+ST1,Transformer,Station tx 1,1000 kVA,11/0.4 kV,CB,B1,
+ST2,Transformer,Station tx 2,1000 kVA,11/0.4 kV,CB,B2,
+LV1,LV Busbar,Station LV sec 1,1600 A,400 V,CB,ST1,
+LV2,LV Busbar,Station LV sec 2,1600 A,400 V,CB,ST2,
+LT,Bus Coupler,LV bus section,,400 V,CB,"LV1, LV2",Normally open
+AUX,Transformer,Aux tx (lighting),100 kVA,400/230 V,CB,LV1,
+DBA,LV Busbar,Lighting DB,200 A,230 V,CB,AUX,
+FA1,Feeder,Lighting,63 A,230 V,MCB,DBA,
+MCC1,MCC,Aux MCC 1,,400 V,CB,LV1,
+MCC2,MCC,Aux MCC 2,,400 V,CB,LV2,
+F1,Feeder,Cranes,250 A,400 V,CB,LV1,
+F2,Feeder,Screens,160 A,400 V,CB,LV2,
+BC,Feeder,Battery charger 110 V DC,,400 V,CB,LV2,DC system

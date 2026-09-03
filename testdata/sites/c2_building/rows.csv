@@ -1,0 +1,32 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+INC,MV Incomer,Utility 11 kV,,11 kV,,,
+RMU,RMU,Intake RMU,630 A,11 kV,LBS,INC,
+TA,Transformer,Tx A,2000 kVA,11/0.4 kV,Fuse-switch,RMU,
+TB,Transformer,Tx B,2000 kVA,11/0.4 kV,Fuse-switch,RMU,
+MSBA,LV Busbar,MSB section A,3200 A,400 V,CB,TA,
+MSBB,LV Busbar,MSB section B,3200 A,400 V,CB,TB,
+TIE,Bus Coupler,MSB tie,,400 V,CB,"MSBA, MSBB",Normally open
+PFC,Feeder,PFC capacitor bank,400 kvar,400 V,CB,MSBA,capacitor bank
+G1,Generator,Standby genset,1000 kVA,400 V,CB,,onto MSB-B via changeover
+CO,Bus Coupler,Gen changeover,,400 V,CB,"MSBB, G1",
+F1,Feeder,DB-L1 feeder,400 A,400 V,MCCB,MSBA,
+DBL1,LV Busbar,DB level 1,400 A,400 V,MCCB,F1,
+F11,Feeder,Lighting L1,63 A,400 V,MCB,DBL1,
+F12,Feeder,Small power L1,100 A,400 V,MCB,DBL1,
+F13,Feeder,DB-L1-East feeder,160 A,400 V,MCCB,DBL1,
+DBE,LV Busbar,DB L1 East,160 A,400 V,MCCB,F13,
+F131,Feeder,Lights east,32 A,400 V,MCB,DBE,
+F132,Feeder,Sockets east,32 A,400 V,RCBO,DBE,
+DBL2,LV Busbar,DB level 2,400 A,400 V,MCCB,MSBB,
+F21,Feeder,Lighting L2,63 A,400 V,MCB,DBL2,
+F22,Feeder,HVAC L2,160 A,400 V,MCCB,DBL2,
+UPS,Transformer,UPS 200 kVA,200 kVA,400/400 V,CB,MSBB,UPS - drawn as tx
+DBC,LV Busbar,Critical DB (UPS),300 A,400 V,MCCB,UPS,
+FC1,Feeder,Server room,125 A,400 V,MCB,DBC,
+FC2,Feeder,Control room,63 A,400 V,MCB,DBC,
+TD,Transformer,Drives tx,800 kVA,0.4/0.69 kV,CB,MSBA,
+DBD,LV Busbar,690 V drives board,1000 A,690 V,CB,TD,
+MCD,MCC,Drives MCC,,690 V,CB,DBD,
+PD1,Pump,Process pump 1,250 kW,690 V,CB,DBD,VSD
+MC1,MCC,Process MCC A,,400 V,CB,MSBA,
+MC2,MCC,Process MCC B,,400 V,CB,MSBB,

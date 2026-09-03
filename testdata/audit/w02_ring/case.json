@@ -1,0 +1,20 @@
+{
+  "name": "w02_ring",
+  "group": "audit",
+  "description": "Four RMUs closed in a ring, a spur RMU, a sub-ring, a genset through a changeover",
+  "source": "tests/audit/w02_ring.xlsx",
+  "info": {
+    "site": "Tester2 W2 - 4-RMU ring",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "closed ring, spur, sub-ring, ATS genset"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 34,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

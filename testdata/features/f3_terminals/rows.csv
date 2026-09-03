@@ -1,0 +1,16 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U,MV Incomer,Utility,,11 kV,,,
+MB,MV Busbar,Main board,1250 A,11 kV,CB,U,
+CB1,Capacitor Bank,PFC bank,2 Mvar,11 kV,CB,MB,
+NER,NER,Neutral earthing resistor,400 A,11 kV,,MB,
+SA,Surge Arrester,Arrester,,11 kV,,MB,
+OUT,Feeder,Cable to site B,400 A,11 kV,CB,MB,
+R1,RMU,RMU,630 A,11 kV,CB,MB,
+OUT2,Feeder,Cable to site C,,11 kV,,R1,
+CAP2,Feeder,Capacitor bank on RMU,500 kvar,11 kV,,R1,
+T1,Transformer,Tx 1,1000 kVA,11/0.4 kV,Fuse-switch,R1,
+L1,LV Busbar,LV 1,1600 A,400 V,CB,T1,
+F1,Feeder,Feeder,250 A,400 V,CB,L1,
+PFC,Capacitor,LV PFC,200 kvar,400 V,CB,L1,
+SA2,Arrester,LV arrester,,400 V,,L1,
+ET,Transformer,Earthing tx,,11 kV,CB,MB,"zig-zag, NER"

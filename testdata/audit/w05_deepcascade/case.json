@@ -1,0 +1,20 @@
+{
+  "name": "w05_deepcascade",
+  "group": "audit",
+  "description": "Four board levels with 40-character descriptions",
+  "source": "tests/audit/w05_deepcascade.xlsx",
+  "info": {
+    "site": "Tester2 W5 - Deep cascade",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "4-level LV cascade with long descriptions"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 18,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

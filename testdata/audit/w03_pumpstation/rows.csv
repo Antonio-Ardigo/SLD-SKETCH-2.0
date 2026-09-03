@@ -1,0 +1,30 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+INC,MV Incomer,Utility 11 kV,,11 kV,,,
+RMU,RMU,4-way RMU,630 A,11 kV,LBS,INC,
+TXA,Transformer,"Pump MCC tx, Dyn11",1250 kVA,11/0.4 kV,Fuse-switch,RMU,dedicated to MCC
+MCCA,MCC,Main pump MCC,2000 A,400 V,CB,TXA,
+P1,Pump,Sewage pump 1,160 kW,400 V,,MCCA,VSD
+P2,Pump,Sewage pump 2,160 kW,400 V,,MCCA,VSD
+P3,Pump,Sewage pump 3,160 kW,400 V,,MCCA,
+P4,Pump,Sewage pump 4,160 kW,400 V,,MCCA,Spare
+P5,Pump,Storm pump 1,75 kW,400 V,Fused contactor,MCCA,
+P6,Pump,Storm pump 2,75 kW,400 V,Fused contactor,MCCA,
+FA,Feeder,MCC auxiliaries,63 A,400 V,MCB,MCCA,
+TXB,Transformer,"Station tx, Dyn11",800 kVA,11/0.4 kV,Fuse-switch,RMU,
+MSB,LV Busbar,Station MSB,1250 A,400 V,CB,TXB,
+MCCP,MCC,Pump MCC (wash water),400 A,400 V,CB,MSB,
+P7,Pump,Wash water pump 1,30 kW,400 V,,MCCP,
+P8,Pump,Wash water pump 2,30 kW,400 V,,MCCP,VSD
+MCCB,MCC,Blower MCC,630 A,400 V,CB,MSB,
+B1,Pump,Aeration blower 1,110 kW,400 V,,MCCB,VSD
+B2,Pump,Aeration blower 2,110 kW,400 V,,MCCB,VSD
+B3,Pump,Aeration blower 3,110 kW,400 V,,MCCB,Spare
+TXM,Transformer,Screen motor supply,75 kVA,0.4/0.3 kV,CB,MSB,
+PM,Pump,Inlet screen motor,37 kW,300 V,,TXM,
+TXL,Transformer,Lighting tx,100 kVA,0.4/0.23 kV,CB,MSB,
+SB230,LV Busbar,230 V lighting board,250 A,230 V,CB,TXL,
+FL1,Feeder,Station lighting,63 A,230 V,MCB,SB230,
+FL2,Feeder,Sockets and heaters,63 A,230 V,MCB,SB230,
+FL3,Feeder,Spare,32 A,230 V,MCB,SB230,Spare
+F1,Feeder,Control room UPS,63 A,400 V,MCCB,MSB,
+F2,Feeder,Odour control unit,160 A,400 V,MCCB,MSB,

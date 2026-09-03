@@ -1,0 +1,17 @@
+{
+  "name": "sld-sketch",
+  "version": "2.0.0",
+  "description": "Turn a site-survey equipment table into a single-line diagram sketch (SVG / DXF).",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test",
+    "import": "node tools/import-xlsx.mjs",
+    "golden": "node tools/golden.mjs",
+    "golden:update": "UPDATE_GOLDEN=1 node tools/golden.mjs",
+    "gen": "node tools/gen-fixtures.mjs",
+    "build": "node tools/build-page.mjs"
+  },
+  "license": "UNLICENSED"
+}

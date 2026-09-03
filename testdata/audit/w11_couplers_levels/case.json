@@ -1,0 +1,20 @@
+{
+  "name": "w11_couplers_levels",
+  "group": "audit",
+  "description": "Couplers between levels and past an intervening board, 33/11/0.4 kV, live step-up",
+  "source": "tests/audit/w11_couplers_levels.xlsx",
+  "info": {
+    "site": "Tester2 W11 - Couplers, levels, live step-up",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "extra README patterns"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 23,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

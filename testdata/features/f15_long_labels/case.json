@@ -1,0 +1,20 @@
+{
+  "name": "f15_long_labels",
+  "group": "features",
+  "description": "RMU with 4 substations and long descriptions at the right sheet edge",
+  "source": "tests/features/f15_long_labels.xlsx",
+  "info": {
+    "site": "F15 long descriptions at the sheet edge",
+    "date": "",
+    "by": "",
+    "notes": "an RMU with four substations and a long description; its label must stay on the paper"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 16,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

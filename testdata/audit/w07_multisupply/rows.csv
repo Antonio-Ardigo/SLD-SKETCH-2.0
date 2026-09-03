@@ -1,0 +1,18 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility A,,11 kV,,,
+U2,MV Incomer,Utility B,,11 kV,,,
+MVB1,MV Busbar,11 kV board A,1250 A,11 kV,CB,U1,
+MVB2,MV Busbar,11 kV board B,1250 A,11 kV,CB,U2,
+TX1,Transformer,Tx A,1600 kVA,11/0.4 kV,CB,MVB1,
+TX2,Transformer,Tx B,1600 kVA,11/0.4 kV,CB,MVB2,
+LVB,LV Busbar,Dual-fed MSB,2500 A,400 V,"CB, CB","TX1, TX2",both incomers closed
+F1,Feeder,Chillers,400 A,400 V,CB,LVB,
+FA,Feeder,DB feed A,250 A,400 V,MCCB,LVB,
+FB,Feeder,DB feed B,250 A,400 V,MCCB,LVB,
+SDB,LV Busbar,Dual-fed DB,400 A,400 V,"MCCB, MCCB","FA, FB",
+FS1,Feeder,Lighting,63 A,400 V,MCB,SDB,
+FS2,Feeder,Sockets,63 A,400 V,MCB,SDB,
+TX3,Transformer,Tx C,1000 kVA,11/0.4 kV,CB,MVB2,
+LVB2,LV Busbar,MSB 2,1600 A,400 V,CB,TX3,
+F2,Feeder,Process,400 A,400 V,CB,LVB2,
+TIE,Bus Coupler,LV tie,,400 V,CB,"LVB, LVB2",Normally open

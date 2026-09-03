@@ -1,0 +1,20 @@
+{
+  "name": "c5_hybrid",
+  "group": "sites",
+  "description": "Hybrid plant: PV blocks + BESS + 2 gensets, 3 step-ups, 33/11 kV grid transformer; generation board fed from 6 supplies",
+  "source": "tests/sites/c5_hybrid.xlsx",
+  "info": {
+    "site": "C5 Hybrid PV / BESS / gensets",
+    "date": "",
+    "by": "",
+    "notes": "multi-source, several step-ups"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 22,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

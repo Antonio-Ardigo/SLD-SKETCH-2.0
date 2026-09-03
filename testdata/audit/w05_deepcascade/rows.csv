@@ -1,0 +1,19 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+INC,MV Incomer,Utility 11 kV incoming underground cable from the north,,11 kV,,,
+RMU,RMU,3-way ring main unit in the intake substation building,630 A,11 kV,LBS,INC,
+TX,Transformer,Oil-immersed transformer Dyn11 with off-load tap changer,1600 kVA,11/0.4 kV,Fuse-switch,RMU,
+MSB,LV Busbar,"Main LV switchboard, Form 4 type 2, 2500 A copper busbars",2500 A,400 V,CB,TX,
+F1,Feeder,Feeder to the process building distribution board,630 A,400 V,MCCB,MSB,
+F2,Feeder,External lighting and gatehouse small power supplies,100 A,400 V,MCCB,MSB,
+F3,Feeder,Spare way reserved for the future workshop extension,250 A,400 V,MCCB,MSB,Spare - future workshop
+DB1,LV Busbar,"Process building distribution board, 630 A busbars",630 A,400 V,MCCB,F1,
+F11,Feeder,Feeder to the first floor plant room sub-distribution board,250 A,400 V,MCCB,DB1,
+F12,Feeder,Process building lighting and general purpose sockets,63 A,400 V,MCB,DB1,
+F13,Feeder,"Heating, ventilation and air conditioning plant supplies",125 A,400 V,MCCB,DB1,
+DB2,LV Busbar,"First floor plant room sub-distribution board, 250 A",250 A,400 V,MCCB,F11,
+F21,Feeder,"Plant room lighting, sockets and trace heating circuits",32 A,400 V,MCB,DB2,
+MCC,MCC,Plant room motor control centre for the circulation pumps,160 A,400 V,MCCB,DB2,
+P1,Pump,"Primary circulation pump 1, duty, inverter driven",15 kW,400 V,,MCC,VSD
+P2,Pump,"Primary circulation pump 2, standby, direct on line",15 kW,400 V,,MCC,
+P3,Pump,"Secondary circulation pump, inverter driven",7.5 kW,400 V,,MCC,VSD
+FM,Feeder,Motor control centre auxiliary and control supplies,16 A,400 V,MCB,MCC,

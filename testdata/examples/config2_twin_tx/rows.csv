@@ -1,0 +1,14 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility supply,,11 kV,,,
+RMU1,RMU,4-way ring main unit,630 A,11 kV,LBS,MV1,
+TX1,Transformer,"Cast resin, Dyn11",1600 kVA,11/0.4 kV,Fuse-switch,RMU1,
+TX2,Transformer,"Cast resin, Dyn11",1600 kVA,11/0.4 kV,Fuse-switch,RMU1,
+BB1,LV Busbar,LV board A,2500 A,400 V,CB,TX1,
+BB2,LV Busbar,LV board B,2500 A,400 V,CB,TX2,
+BC1,Bus Coupler,Bus section coupler,2500 A,400 V,CB,"BB1, BB2",Normally open
+F1,Feeder,Chillers,630 A,400 V,CB,BB1,
+F2,Feeder,Riser 1,400 A,400 V,CB,BB1,
+F3,Feeder,Lighting,160 A,400 V,CB,BB1,
+F4,Feeder,Pumps,400 A,400 V,CB,BB2,
+F5,Feeder,Riser 2,400 A,400 V,CB,BB2,
+F6,Feeder,Spare,250 A,400 V,CB,BB2,

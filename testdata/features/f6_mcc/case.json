@@ -1,0 +1,20 @@
+{
+  "name": "f6_mcc",
+  "group": "features",
+  "description": "Motors and a feeder under an MCC (MCC gets its own bus and dashed enclosure)",
+  "source": "tests/features/f6_mcc.xlsx",
+  "info": {
+    "site": "F6 MCC with motors",
+    "date": "",
+    "by": "",
+    "notes": "motors and a feeder under an MCC"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 12,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "l8_mixed_cascade",
+  "group": "levels",
+  "description": "11 kV main → same-voltage 11 kV sub-board and → 11/3.3 board",
+  "source": "tests/levels/l8_mixed_cascade.xlsx",
+  "info": {
+    "site": "L8 mixed cascade",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 12,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

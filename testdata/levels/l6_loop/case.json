@@ -1,0 +1,20 @@
+{
+  "name": "l6_loop",
+  "group": "levels",
+  "description": "11 kV A → 11/0.4 → LV → 0.4/11 → 11 kV B, A–B tie: a cycle through transformers",
+  "source": "tests/levels/l6_loop.xlsx",
+  "info": {
+    "site": "L6 down-then-up loop",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 9,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

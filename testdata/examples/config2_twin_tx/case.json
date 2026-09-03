@@ -1,0 +1,21 @@
+{
+  "name": "config2_twin_tx",
+  "group": "examples",
+  "description": "MV incomer → RMU → 2× 1600 kVA transformers → two LV busbars + bus coupler, 6 feeders",
+  "source": "examples/config2_twin_tx.xlsx",
+  "info": {
+    "site": "Example Site B",
+    "date": "2026-08-31",
+    "by": "A. Ardigo",
+    "notes": "Config 2 - twin transformers with bus coupler"
+  },
+  "preset": "2",
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 13,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

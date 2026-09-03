@@ -1,0 +1,13 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+INC,MV Incomer,Utility,,11 kV,,,
+RMU,RMU,RMU,630 A,11 kV,LBS,INC,
+T1,Transformer,Tx,1000 kVA,11/0.4 kV,Fuse-switch,RMU,
+MSB,LV Busbar,Main board,1600 A,400 V,CB,T1,
+MCC1,MCC,Pump MCC,400 A,400 V,CB,MSB,
+P1,Pump,Pump 1,30 kW,400 V,,MCC1,
+P2,Pump,Pump 2 (VSD),30 kW,400 V,,MCC1,VSD
+P3,Pump,Fan,7.5 kW,400 V,Contactor,MCC1,
+FM,Feeder,Local lighting,32 A,400 V,MCB,MCC1,
+MCC2,MCC,Aux MCC,,400 V,CB,MSB,
+M4,Pump,Board pump,15 kW,400 V,CB,MSB,
+F1,Feeder,Sockets,63 A,400 V,MCB,MSB,

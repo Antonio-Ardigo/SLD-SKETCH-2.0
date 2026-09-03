@@ -1,0 +1,24 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U,MV Incomer,Utility 33 kV,,33 kV,,,
+HV,MV Busbar,33 kV board,1250 A,33 kV,CB,U,
+GT,Transformer,Grid tx,10 MVA,33/11 kV,CB,HV,
+MV,MV Busbar,11 kV board,1250 A,11 kV,"CB, CB","GT, SUX",
+RB,RMU,Board-fed RMU,630 A,11 kV,CB,MV,
+MP,Pump,MV borehole pump,500 kW,11 kV,Fuse-contactor,RB,
+OUT,Feeder,Cable to farm,200 A,11 kV,,RB,
+TX1,Transformer,Tx 1,1000 kVA,11/0.4 kV,CB,MV,
+TX2,Transformer,Tx 2,1000 kVA,11/0.4 kV,CB,MV,
+TX3,Transformer,Tx 3,1000 kVA,11/0.4 kV,CB,MV,
+L1,LV Busbar,LV 1,1600 A,400 V,CB,TX1,
+L2,LV Busbar,LV 2,1600 A,400 V,CB,TX2,
+L3,LV Busbar,LV 3,1600 A,400 V,CB,TX3,
+C13,Bus Coupler,Tie L1-L3 past L2,,400 V,CB,"L1, L3",Normally open
+F1,Feeder,DB feeder,250 A,400 V,MCCB,L1,
+DB1,LV Busbar,Sub DB,250 A,400 V,MCCB,F1,
+F11,Feeder,Lights,63 A,400 V,MCB,DB1,
+CL,Bus Coupler,Tie DB1-L2 (levels),,400 V,CB,"DB1, L2",Normally open
+F2,Feeder,Process,400 A,400 V,CB,L2,
+SUX,Transformer,Live-board step-up (CHP),1600 kVA,0.4/11 kV,CB,L3,export
+F3,Feeder,Site services,250 A,400 V,CB,L3,
+SAR,Surge Arrester,33 kV arrester,,33 kV,,HV,
+MVF,Feeder,33 kV outgoing to site B,400 A,33 kV,CB,HV,

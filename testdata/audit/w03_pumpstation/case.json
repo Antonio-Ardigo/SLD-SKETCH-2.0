@@ -1,0 +1,20 @@
+{
+  "name": "w03_pumpstation",
+  "group": "audit",
+  "description": "Dedicated transformer whose MCC is the board, two MCCs on an MSB, a 400/300 V motor transformer, an LV/LV transformer to a 230 V board",
+  "source": "tests/audit/w03_pumpstation.xlsx",
+  "info": {
+    "site": "Tester2 W3 - Pump station",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "dedicated tx->MCC, MSB with MCCs, board tx, LV/LV tx"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 29,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

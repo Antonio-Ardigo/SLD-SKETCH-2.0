@@ -1,0 +1,20 @@
+{
+  "name": "c4_ring",
+  "group": "sites",
+  "description": "5-RMU closed ring off a primary board, N.O. at RMU3, 2-RMU closed sub-ring off RMU4, 7 transformers / 7 LV boards, LV cross-tie",
+  "source": "tests/sites/c4_ring.xlsx",
+  "info": {
+    "site": "C4 Distribution ring",
+    "date": "",
+    "by": "",
+    "notes": "5-RMU ring, N.O. at RMU3, sub-ring, LV cross-tie"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 31,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

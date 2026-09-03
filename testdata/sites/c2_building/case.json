@@ -1,0 +1,20 @@
+{
+  "name": "c2_building",
+  "group": "sites",
+  "description": "Building: LV cascade 3 deep, UPS modelled as a 400/400 V transformer, PFC, 690 V drive board, genset through a changeover, 2 couplers",
+  "source": "tests/sites/c2_building.xlsx",
+  "info": {
+    "site": "C2 Industrial building",
+    "date": "",
+    "by": "",
+    "notes": "LV cascade 3 deep, UPS, PFC, 690 V drives"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 31,
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+}

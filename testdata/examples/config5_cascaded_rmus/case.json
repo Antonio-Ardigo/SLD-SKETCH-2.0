@@ -1,0 +1,21 @@
+{
+  "name": "config5_cascaded_rmus",
+  "group": "examples",
+  "description": "Utility incomer → RMU1 feeding RMU2 and RMU3 by interconnecting cables; each feeds a 1000 kVA transformer and two LV panels",
+  "source": "examples/config5_cascaded_rmus.xlsx",
+  "info": {
+    "site": "Example Site E",
+    "date": "2026-08-31",
+    "by": "A. Ardigo",
+    "notes": "Config 5 - three 3-way RMUs, RMU1 feeds RMU2 and RMU3"
+  },
+  "preset": "5",
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 18,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

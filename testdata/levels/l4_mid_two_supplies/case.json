@@ -1,0 +1,20 @@
+{
+  "name": "l4_mid_two_supplies",
+  "group": "levels",
+  "description": "11 kV board fed from 33 kV above and a genset step-up below",
+  "source": "tests/levels/l4_mid_two_supplies.xlsx",
+  "info": {
+    "site": "L4 middle board, two supplies",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 10,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}
