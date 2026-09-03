@@ -23,8 +23,7 @@ the others must: every item drawn once, every edge connected, no superimposed
 conductors, no false nets.
 
 ```bash
-node tools/gen-fixtures.mjs               # writes build/xlsx/audit/*.xlsx from the rows.csv files
-python sld_check.py build/xlsx/audit/*.xlsx
+node src/cli/sld.js check testdata/audit/*/
 ```
 
 The findings that came out of this set, and the fixes, are the last four rows

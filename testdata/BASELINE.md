@@ -1,6 +1,7 @@
 # Baseline — topology checker scores
 
-Generated with `python sld_check.py tests/sites/*.xlsx`. Re-run after a
+Historical journal of the Python checker (`sld_check.py`, since retired; the same
+checks run as `node src/cli/sld.js check testdata/*/*/`). Generated with `python sld_check.py tests/sites/*.xlsx`. Re-run after a
 change and diff against this file; the History table records each step.
 
 ## What the columns mean

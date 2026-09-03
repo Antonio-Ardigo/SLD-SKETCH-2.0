@@ -5,7 +5,7 @@ levels joined by transformers. Built with the ordinary vocabulary (`MV Busbar`
 for every MV level, `Transformer` for both directions, `Generator` for
 PV and gensets), voltages filled in on every row.
 
-`node tools/gen-fixtures.mjs && python sld_check.py build/xlsx/levels/*.xlsx`
+`node src/cli/sld.js check testdata/levels/*/`
 (the tables live in `testdata/levels/*/rows.csv`; the workbooks are generated)
 
 ## Result by arrangement

@@ -3,22 +3,13 @@ import { Y_LABEL, Y_MV_TOP, Y_RMU_TOP, Y_RMU_BOT, Y_MVBUS, PUMP_R, TX_R, STEPUP_
 import { childrenOf } from "./model.js";
 import { mccLoads, subBoardsOf, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
 import { SVG } from "./svg.js";
+import { legendEntries, drawSymbol } from "./symbols/registry.js";
 
 /* ------------------------------------------------ render */
 const LEGEND_H=100;
-const LEGEND_ITEMS=[
-  ["cb","Circuit breaker"],["lbs","Load-break switch"],["fuse","Fuse"],
-  ["fuse-switch","Fuse-switch"],["contactor","Contactor"],
-  ["fuse-contactor","Fused contactor"],
-  ["tx","Transformer"],["gen","Generator"],["pump","Pump/motor"],["bus","Busbar"],["mcc","MCC"],
-  ["feeder","Feeder"],["rmu","RMU/MCC enclosure"]
-];
-const EXTRA_LEGEND=[[CAPACITOR,"Capacitor bank"],[EARTHING,"Earthing/NER"],
-                    [ARRESTER,"Surge arrester"]];
+/* the legend is drawn from the symbol registry: the fixed entries plus the
+   terminal items a sheet actually uses (src/core/symbols/registry.js) */
 const LEGEND_CELL=68, LEGEND_ROW_H=60;   /* a second row on a narrow sheet */
-function legendEntries(extra){
-  return LEGEND_ITEMS.concat(EXTRA_LEGEND.filter(e=>extra && extra.has(e[0])));
-}
 function legendRows(width, n){
   /* [cells per row, rows] so the legend fits the sheet width */
   const perRow=Math.max(1,Math.floor((width-48-16)/LEGEND_CELL));
@@ -33,25 +24,7 @@ function drawLegend(svg, extra, width){
   entries.forEach(([kind,label],i)=>{
     const ytop=y0+22+LEGEND_ROW_H*Math.floor(i/perRow), ybot=ytop+30, yc=(ytop+ybot)/2;
     const cx=x0+8+cell*(i%perRow)+cell/2;
-    if(["cb","fuse","contactor","fuse-contactor"].includes(kind)) svg.drop(cx,ytop,ybot,kind);
-    else if(kind==="lbs") svg.lbs(cx,ytop,ybot);
-    else if(kind==="fuse-switch") svg.fuseSwitch(cx,ytop,ybot);
-    else if(kind==="tx"){ svg.circle(cx,yc-5,8); svg.circle(cx,yc+5,8); }
-    else if(kind==="gen"){ svg.circle(cx,yc,9); svg.text(cx,yc+3.5,"G",{size:9,bold:true}); }
-    else if(kind==="pump"){ svg.circle(cx,yc,9); svg.text(cx,yc+3.5,"M",{size:9,bold:true}); }
-    else if(kind==="bus") svg.line(cx-14,yc,cx+14,yc,5);
-    else if(kind==="mcc"){ svg.rect(cx-11,yc-8,22,16,1.5); svg.text(cx,yc+3,"MCC",{size:6.5}); }
-    else if(kind==="feeder"){ svg.line(cx,ytop+2,cx,ybot-11); svg.arrowDown(cx,ybot); }
-    else if(kind==="rmu") svg.rect(cx-13,yc-10,26,20,1.2,"4 3");
-    else if(kind===CAPACITOR){ svg.line(cx,ytop,cx,ytop+4); svg.capacitor(cx,ytop+4); }
-    else if(kind===EARTHING){
-      svg.rect(cx-5,ytop,10,18); svg.line(cx,ytop+18,cx,ytop+22); svg.earth(cx,ytop+22);
-    }
-    else if(kind===ARRESTER){
-      svg.rect(cx-6,ytop,12,18); svg.line(cx,ytop+3,cx,ytop+14);
-      svg.line(cx-3,ytop+11,cx,ytop+15); svg.line(cx+3,ytop+11,cx,ytop+15);
-      svg.line(cx,ytop+18,cx,ytop+22); svg.earth(cx,ytop+22);
-    }
+    drawSymbol(svg,kind,cx,ytop,ybot);
     let ty=ybot+12;
     for(const s of (label.length>11?label.split(/ (.+)/).filter(Boolean):[label])){
       svg.text(cx,ty,s,{size:9}); ty+=10;
@@ -1068,4 +1041,4 @@ function render(info, items, order, width, warnings, canvas){
   return svg.document(width,DIAG_H+LEGEND_H+LEGEND_ROW_H*(rows-1));
 }
 
-export { LEGEND_H, LEGEND_ITEMS, EXTRA_LEGEND, LEGEND_CELL, LEGEND_ROW_H, legendEntries, legendRows, drawLegend, render };
+export { LEGEND_H, LEGEND_CELL, LEGEND_ROW_H, legendRows, drawLegend, render };

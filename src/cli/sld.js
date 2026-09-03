@@ -13,11 +13,12 @@ import { readWorkbook } from "../io/xlsx.js";
 import { csvToRows } from "../io/csv.js";
 import { draw } from "../core/pipeline.js";
 import { formatCheck } from "../core/check.js";
+import { checkDxf } from "../core/dxf-check.js";
 
 function usage(code = 2) {
   console.error(`usage:
   sld draw  <table.xlsx|table.csv|casedir> [-o out.svg] [--dxf [out.dxf]]
-  sld dxf   <table.xlsx|table.csv|casedir> [-o out.dxf]
+  sld dxf   <table.xlsx|table.csv|casedir> [-o out.dxf] [--check]   (--check: report text that collides in the DXF)
   sld check <table|casedir>…  [--json]      drawing checked against its table; exit 1 unless clean`);
   process.exit(code);
 }
@@ -67,10 +68,11 @@ function main(argv) {
   if (!cmd || cmd === "-h" || cmd === "--help") usage(cmd ? 0 : 2);
   if (cmd === "check") { const files = rest.filter(a => !a.startsWith("-")); if (!files.length) usage(); return checkMany(files, rest.includes("--json")); }
   if (cmd !== "draw" && cmd !== "dxf") usage();
-  let file = null, out = null, dxf = cmd === "dxf", dxfOut = null;
+  let file = null, out = null, dxf = cmd === "dxf", dxfOut = null, checkText = false;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === "-o" || a === "--output") out = rest[++i];
+    else if (a === "--check") checkText = true;
     else if (a === "--dxf") { dxf = true; if (rest[i + 1] && !rest[i + 1].startsWith("-")) dxfOut = rest[++i]; }
     else if (a.startsWith("-")) usage();
     else file = a;
@@ -93,6 +95,13 @@ function main(argv) {
     const d = out || `${stem}.dxf`;
     fs.writeFileSync(d, res.dxf);
     console.error(`wrote ${d}`);
+  }
+  if (dxf && checkText) {
+    const k = checkDxf(res.dxf);
+    console.error(`dxf text: ${k.texts} entities, ${k.overlaps.length} overlapping pair(s), ${k.crossings.length} crossing a table rule`);
+    for (const [a, b] of k.overlaps) console.error(`  overlap   "${a}" / "${b}"`);
+    for (const [a, b] of k.crossings) console.error(`  crossing  "${a}" / ${b}`);
+    if (!k.clean) process.exit(1);
   }
 }
 

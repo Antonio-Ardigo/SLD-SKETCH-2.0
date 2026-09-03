@@ -3,6 +3,8 @@ import { esc, buildModel } from "../core/model.js";
 import { layout } from "../core/layout.js";
 import { render } from "../core/render.js";
 import { renderDxf } from "../core/dxf.js";
+import { SVG } from "../core/svg.js";
+import { symbolForType } from "../core/symbols/registry.js";
 import { R, PRESETS } from "./presets.generated.js";
 
 /* ------------------------------------------------ UI wiring */
@@ -165,29 +167,19 @@ function addRowFor(type, targetId){
   selectId(row.id); focusCell(at,"desc");
   return row;
 }
-/* one chip per type; a tiny glyph in the engine's style */
-const CHIP_GLYPHS={
-  "MV Incomer":'<line x1="5" y1="5" x2="17" y2="5" stroke-width="2.5"/><line x1="11" y1="5" x2="11" y2="20"/>',
-  "Generator":'<circle cx="11" cy="11" r="7"/><text x="11" y="14" font-size="8" text-anchor="middle" font-weight="bold" stroke="none" fill="currentColor">G</text>',
-  "MV Busbar":'<line x1="2" y1="7" x2="20" y2="7" stroke-width="3.5"/><line x1="11" y1="7" x2="11" y2="20"/>',
-  "RMU":'<rect x="3" y="4" width="16" height="14" stroke-dasharray="3 2" fill="none"/><line x1="6" y1="11" x2="16" y2="11" stroke-width="2.5"/>',
-  "Transformer":'<circle cx="11" cy="8" r="5.5"/><circle cx="11" cy="14" r="5.5"/>',
-  "Pump":'<circle cx="11" cy="12" r="7"/><text x="11" y="15" font-size="8" text-anchor="middle" font-weight="bold" stroke="none" fill="currentColor">M</text>',
-  "LV Busbar":'<line x1="2" y1="7" x2="20" y2="7" stroke-width="3.5"/><line x1="7" y1="7" x2="7" y2="18"/><line x1="15" y1="7" x2="15" y2="18"/>',
-  "Feeder":'<line x1="11" y1="2" x2="11" y2="14"/><polygon points="7,13 15,13 11,20" fill="#111" stroke="none"/>',
-  "MCC":'<rect x="3" y="6" width="16" height="11" fill="none"/><text x="11" y="14.5" font-size="6" text-anchor="middle" stroke="none" fill="currentColor">MCC</text>',
-  "Bus Coupler":'<line x1="1" y1="11" x2="7" y2="11" stroke-width="3"/><line x1="15" y1="11" x2="21" y2="11" stroke-width="3"/><line x1="7" y1="11" x2="14" y2="8"/><line x1="9" y1="13" x2="13" y2="9"/>',
-  "Capacitor Bank":'<line x1="11" y1="2" x2="11" y2="8"/><line x1="5" y1="8" x2="17" y2="8" stroke-width="2"/><line x1="5" y1="12" x2="17" y2="12" stroke-width="2"/><line x1="11" y1="12" x2="11" y2="17"/><line x1="6" y1="17" x2="16" y2="17"/><line x1="8" y1="20" x2="14" y2="20"/>',
-  "Earthing/NER":'<line x1="11" y1="1" x2="11" y2="5"/><rect x="7" y="5" width="8" height="9" fill="none"/><line x1="11" y1="14" x2="11" y2="17"/><line x1="6" y1="17" x2="16" y2="17"/><line x1="8" y1="20" x2="14" y2="20"/>',
-  "Surge Arrester":'<line x1="11" y1="1" x2="11" y2="4"/><rect x="7" y="4" width="8" height="11" fill="none"/><line x1="11" y1="6" x2="11" y2="13"/><polygon points="9,11 13,11 11,14" fill="#111" stroke="none"/><line x1="11" y1="15" x2="11" y2="17"/><line x1="6" y1="17" x2="16" y2="17"/>',
-};
+/* one chip per type; the glyph is the legend's, drawn by the symbol registry */
+function chipSvg(type){
+  const e=symbolForType(type); if(!e) return "";
+  const s=new SVG(); e.draw(s,24,4,34);
+  return `<svg viewBox="0 0 48 44" aria-hidden="true">${s.parts.join("")}</svg>`;
+}
 function buildPalette(){
   const pal=$("#palette"); if(!pal) return;
-  for(const [lbl] of TYPE_LABELS){
+  for(const [lbl,type] of TYPE_LABELS){
     const b=document.createElement("button");
     b.className="chip"; b.type="button"; b.draggable=true; b.dataset.type=lbl;
     b.title=`Drag onto a busbar, RMU or transformer to add a ${lbl} fed from it; click to add one under the selected row`;
-    b.innerHTML=`<svg viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="#111" stroke-width="1.6" stroke-linecap="round">${CHIP_GLYPHS[lbl]||""}</svg>${esc(lbl)}`;
+    b.innerHTML=chipSvg(type)+esc(lbl);
     b.addEventListener("dragstart",e=>{
       e.dataTransfer.setData("text/sld-type",lbl); e.dataTransfer.setData("text/plain",lbl);
       e.dataTransfer.effectAllowed="copy";
@@ -687,7 +679,7 @@ $("#dxf").addEventListener("click",async ()=>{
       const code=e && e.code;
       if(code==="declined") say("Save cancelled.");
       else if(code==="rate_limited") say("A save prompt is already open — answer it first.");
-      else say("This viewer cannot save .dxf files — use Copy DXF and paste into a file named .dxf, or run sld_sketch.py --dxf.",true);
+      else say("This viewer cannot save .dxf files — use Copy DXF and paste into a file named .dxf, or run: node src/cli/sld.js dxf <table>.",true);
     }
     return;
   }

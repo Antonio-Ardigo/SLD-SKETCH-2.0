@@ -17,10 +17,9 @@ node src/cli/sld.js draw testdata/sites/c1_wtw    # a testdata case works too
 Node 20 or newer, nothing to install. Open the SVG in any browser. To start a
 new survey, copy `examples/template.xlsx` and fill in the yellow cells.
 
-The Python command line (`python sld_sketch.py`, needs `pip install -r
-requirements.txt`) still works and draws the same picture; the JavaScript
-engine under `src/` is the reference implementation and the Python files are
-kept until its checker is ported (see `docs/PLAN.md`).
+(The original Python command line, `sld_sketch.py` and friends, has been
+retired: the JavaScript engine under `src/` draws the same picture, checks
+it the same way, and is the only implementation. See `docs/PLAN.md`.)
 
 **No Python at hand?** Open `sld_sketchpad.html` in a browser — the same layout
 engine ported to JavaScript, with an editable equipment table instead of Excel
@@ -223,12 +222,14 @@ warns instead of drawing, and a duplicate coupler on a pair warns too.
 | `examples/config6_closed_ring.xlsx` | Same as config 5 but with the RMU2–RMU3 cable in place, closing the ring RMU1–RMU2–RMU3–RMU1 (RMU3 feeds from `RMU1, RMU2`) | `output/config6.svg` |
 | `examples/config7_mcc_motors.xlsx` | Pump station: utility incomer → RMU → 1000 kVA transformer → LV board with three MCCs; the pump MCC feeds four motors (one on a VSD) and an auxiliaries feeder, the blower MCC two VSD motors, each MCC in its own dashed enclosure | `output/config7.svg` |
 
-Regenerate the workbooks with `python make_examples.py`, and the sketches with
-`python sld_sketch.py <workbook> -o <out.svg>`.
+The example tables live in `testdata/examples/*/rows.csv`; `node
+tools/gen-fixtures.mjs` regenerates the workbooks (into `build/xlsx/`) and
+the page's built-in examples from them, and `node src/cli/sld.js draw
+<workbook> -o <out.svg>` draws a sketch.
 
-**DXF export.** `python sld_sketch.py <workbook> --dxf` writes the SVG and
-a `.dxf` beside it (or `python sld_dxf.py <workbook> -o out.dxf` for the DXF
-alone). The file is R12 DXF, the dialect every CAD package and viewer opens:
+**DXF export.** `node src/cli/sld.js draw <workbook> --dxf` writes the SVG
+and a `.dxf` beside it (or `node src/cli/sld.js dxf <workbook> -o out.dxf` for
+the DXF alone). The file is R12 DXF, the dialect every CAD package and viewer opens:
 the sketch exactly as the SVG draws it, built from the same symbol
 primitives, with the equipment table that produced it laid out beside the
 sheet, to its right. The drawing is centred on the origin and the file's
@@ -241,15 +242,16 @@ and title block), `SLD_LEGEND` and `SLD_TABLE`. The Sketchpad page has the
 same exporter behind its **Download DXF** button, and **Copy DXF** puts the
 file text on the clipboard for places where downloads are blocked. CAD text
 is set with a width factor that keeps it no wider than the browser's, long
-table cells wrap, and `python sld_dxf.py <workbook> --check` reads the file
-back and reports any text that overlaps another text or crosses a table
-rule (none on any workbook in the repository).
+table cells wrap, and `node src/cli/sld.js dxf <workbook> --check` reads the
+file back and reports any text that overlaps another text or crosses a table
+rule.
 
-**Checking a drawing against its table.** `python sld_check.py <workbook>`
-renders the sheet, reads the SVG back as raw geometry and verifies that every
-item is drawn once and every `Feeds From` edge is a continuous conductor
+**Checking a drawing against its table.** `node src/cli/sld.js check
+<workbook>` draws the sheet and verifies, from the scene the renderer records,
+that every item is drawn and every `Feeds From` edge is a continuous conductor
 between the two symbols; it also reports conductors drawn on top of each
-other and joints the table does not contain.
+other and drawn nets the table does not contain. It exits 1 unless every
+table given is clean.
 
 ## Test data and tests
 
@@ -277,8 +279,11 @@ the drawing obey; `docs/PLAN.md` is the roadmap.
 ## Code layout
 
 ```
-src/core/     the engine, as ES modules: types, geometry, model (the reader),
-              layout, svg (primitives and symbols), render, dxf, pipeline (draw())
+src/core/     the engine, as ES modules: types, diagnostics, geometry, model (the
+              reader), graph, rules/ + rank + facts (what the engine infers),
+              layout, svg (primitives and symbols), symbols/registry (one entry
+              per symbol: legend and palette), render, dxf, scene + check (the
+              drawing verified against the table), pipeline (draw())
 src/io/       csv and xlsx (SheetJS) ⇄ table rows
 src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js
 src/cli/      sld.js — draw | dxf
