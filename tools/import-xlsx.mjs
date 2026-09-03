@@ -11,8 +11,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readWorkbook } from "./lib/xlsx.mjs";
-import { rowsToCsv } from "./lib/csv.mjs";
+import { readWorkbook } from "../src/io/xlsx.js";
+import { rowsToCsv } from "../src/io/csv.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TESTDATA = path.join(ROOT, "testdata");

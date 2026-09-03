@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { tableToRows, HEADERS, FIELDS } from "./csv.mjs";
+import { tableToRows, HEADERS, FIELDS } from "./csv.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 /* The vendored file is a UMD script; package.json says "type": "module", so

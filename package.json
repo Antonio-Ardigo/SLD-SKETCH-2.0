@@ -11,7 +11,11 @@
     "golden": "node tools/golden.mjs",
     "golden:update": "UPDATE_GOLDEN=1 node tools/golden.mjs",
     "gen": "node tools/gen-fixtures.mjs",
-    "build": "node tools/build-page.mjs"
+    "build": "node tools/gen-fixtures.mjs && node tools/build-page.mjs",
+    "check": "node tools/gen-fixtures.mjs --check && node tools/build-page.mjs --check && node tools/golden.mjs",
+    "smoke": "node tools/smoke-page.mjs",
+    "draw": "node src/cli/sld.js draw"
   },
+  "bin": { "sld": "src/cli/sld.js" },
   "license": "UNLICENSED"
 }

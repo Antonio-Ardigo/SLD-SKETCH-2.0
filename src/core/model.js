@@ -1,0 +1,124 @@
+import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, PROT_ALIASES } from "./types.js";
+import { genFeeds } from "./geometry.js";
+import { txBoard } from "./layout.js";
+
+/* ------------------------------------------------ model helpers */
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function childrenOf(items, order, pid, types){
+  const out=[];
+  for(const oid of order){
+    const it=items[oid];
+    if(it.parents.includes(pid) && (!types || types.includes(it.type))) out.push(it);
+  }
+  return out;
+}
+
+/* build items from table rows; returns {items, order, errors, warnings} */
+function buildModel(rows){
+  const items={}, order=[], errors=[], warnings=[];
+  rows.forEach((r,i)=>{
+    const id=r.id.trim();
+    if(!id){
+      const any=[r.type,r.desc,r.rating,r.voltage,r.from,r.notes].some(v=>v.trim());
+      if(any) warnings.push(`Row ${i+1} has data but no ID — it is ignored.`);
+      return;
+    }
+    if(items[id]){ errors.push(`Duplicate ID "${id}" (row ${i+1}).`); return; }
+    const type = ALIASES[r.type.trim().toLowerCase()] || null;
+    if(!type) warnings.push(`Row "${id}": unknown type "${r.type}" — drawn as a feeder.`);
+    items[id]={ id, type: type||FEEDER, desc:r.desc.trim(), rating:r.rating.trim(),
+      voltage:r.voltage.trim(), notes:r.notes.trim(),
+      parents:r.from.split(",").map(s=>s.trim()).filter(Boolean),
+      prots:(r.prot||"").split(",").map(s=>s.trim()).filter(Boolean),
+      x:null, xLeft:null, xRight:null, land:{}, tee:{} };
+    order.push(id);
+  });
+  for(const id of order){           /* a feeder row whose words say capacitor
+                                       bank / NER / arrester is that item */
+    const it=items[id];
+    if(it.type===FEEDER){
+      const w=words(it);
+      if(hasWord(w,CAP_WORDS)) it.type=CAPACITOR;
+      else if(hasWord(w,ARRESTER_WORDS)) it.type=ARRESTER;
+      else if(hasWord(w,EARTH_WORDS)) it.type=EARTHING;
+    }
+  }
+  /* rows that feed from each other round a loop that no supply reaches
+     (a ring of RMUs is a loop too, but an incomer feeds it) */
+  const anc={};
+  for(const id of order){
+    const seen=new Set(), stack=[...items[id].parents];
+    while(stack.length){
+      const q=stack.pop();
+      if(seen.has(q) || !items[q]) continue;
+      seen.add(q); stack.push(...items[q].parents);
+    }
+    anc[id]=seen;
+  }
+  const seenLoops=new Set();
+  for(const id of order){
+    if(!anc[id].has(id)) continue;                       /* not on a loop */
+    if([...anc[id]].some(a=>!items[a].parents.length)) continue;  /* a root feeds it */
+    const loop=[...anc[id]].filter(x=>anc[x].has(id)).sort();
+    const key=loop.join("|");
+    if(!seenLoops.has(key)){
+      seenLoops.add(key);
+      warnings.push(loop.map(n=>`"${n}"`).join(", ")+` feed from each other — the loop has no supply; drawn floating.`);
+    }
+  }
+  for(const id of order){
+    const it=items[id];
+    for(const p of it.parents)
+      if(!items[p]) errors.push(`"${id}" feeds from unknown ID "${p}" — check the Feeds from column.`);
+    if(it.type===TRANSFORMER){
+      const up=order.map(q=>items[q]).filter(c=>c.parents.includes(it.id)
+                                            && [MV_BUSBAR,RMU].includes(c.type));
+      const dn=order.map(q=>items[q]).filter(c=>c.parents.includes(it.id)
+                                            && c.type===LV_BUSBAR);
+      if(up.length && dn.length)
+        warnings.push(`"${id}" feeds both an MV and an LV board — drawn as a step-up.`);
+    }
+    if([TRANSFORMER].includes(it.type) && !it.parents.length)
+      warnings.push(`"${id}" has no Feeds From — drawn with an open supply terminal.`);
+    else if(!it.parents.length && ![MV_INCOMER,GENERATOR].includes(it.type))
+      warnings.push(`"${id}" has no Feeds From — drawn without a supply.`);
+    /* a supply that cannot feed this row: the row draws floating */
+    for(const p of it.parents){
+      if(!items[p]) continue;
+      const pt=items[p].type;
+      if([PUMP,BUS_COUPLER].concat(TERMINALS).includes(pt)
+         || (pt===FEEDER && ![LV_BUSBAR,MCC].includes(it.type))
+         || (pt===MV_INCOMER && [PUMP,FEEDER,MCC,LV_BUSBAR].concat(TERMINALS).includes(it.type)))
+        warnings.push(`"${id}" feeds from "${p}" (${pt}) — a ${pt} cannot supply a ${it.type}; drawn floating.`);
+    }
+    if(it.type===MCC || it.type===PUMP)
+      for(const p of it.parents)
+        if(items[p] && items[p].type===TRANSFORMER && txBoard(items,items[p]))
+          warnings.push(`"${id}" feeds from transformer "${p}", which feeds board "${txBoard(items,items[p]).id}" — drawn as a way of that board (put the board in Feeds From).`);
+    if(it.type===MCC)
+      for(const p of it.parents)
+        if(items[p] && [MV_BUSBAR,RMU].includes(items[p].type))
+          warnings.push(`MCC "${id}" feeds from MV gear "${p}" — an MCC is an LV assembly; add a transformer and an LV board in between.`);
+        else if(items[p] && ![LV_BUSBAR,MCC,TRANSFORMER].includes(items[p].type))
+          warnings.push(`MCC "${id}" feeds from "${p}" (${items[p].type}) — an MCC takes its supply from an LV board, an MCC or a transformer.`);
+    if(it.type===TRANSFORMER && it.parents.length
+       && !order.some(q=>items[q].parents.includes(it.id))
+       && !earthBelow(items,it))
+      warnings.push(`"${id}" has nothing on its output — drawn with an open outgoing terminal; put "${id}" in the Feeds From of whatever it supplies.`);
+    if(it.type===GENERATOR && !order.some(q=>items[q].parents.includes(it.id))
+       && !it.parents.some(p=>items[p] && items[p].type===TRANSFORMER)
+       && !genFeeds(items,order,it).length)
+      warnings.push(`Generator "${id}" feeds nothing.`);
+    if(it.prots.length && it.type===MV_INCOMER)
+      warnings.push(`"${id}": protection on an MV incomer is on the utility side — not drawn.`);
+    else if(![LV_BUSBAR,MV_BUSBAR,BUS_COUPLER].includes(it.type))
+      for(const raw of it.prots)
+        if(!PROT_ALIASES[raw.toLowerCase().split(/\s+/).join(" ")])
+          warnings.push(`"${id}": unknown protection "${raw}" — the default symbol is drawn.`);
+  }
+  return {items, order, errors, warnings};
+}
+
+export { esc, childrenOf, buildModel };

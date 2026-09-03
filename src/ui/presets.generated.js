@@ -149,3 +149,4 @@ const PRESETS={
     ]},
 };
 
+export { R, PRESETS };

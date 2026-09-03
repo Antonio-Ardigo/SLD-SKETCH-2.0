@@ -9,13 +9,18 @@ get an SVG single-line diagram for future reference.
 ## Quick start
 
 ```bash
-pip install -r requirements.txt          # just openpyxl
-
-python sld_sketch.py examples/config1_single_tx.xlsx -o output/config1.svg
+node src/cli/sld.js draw examples/config1_single_tx.xlsx -o output/config1.svg
+node src/cli/sld.js draw survey.xlsx --dxf        # SVG + R12 DXF beside it
+node src/cli/sld.js draw testdata/sites/c1_wtw    # a testdata case works too
 ```
 
-Open the SVG in any browser. To start a new survey, copy
-`examples/template.xlsx` and fill in the yellow cells.
+Node 20 or newer, nothing to install. Open the SVG in any browser. To start a
+new survey, copy `examples/template.xlsx` and fill in the yellow cells.
+
+The Python command line (`python sld_sketch.py`, needs `pip install -r
+requirements.txt`) still works and draws the same picture; the JavaScript
+engine under `src/` is the reference implementation and the Python files are
+kept until its checker is ported (see `docs/PLAN.md`).
 
 **No Python at hand?** Open `sld_sketchpad.html` in a browser — the same layout
 engine ported to JavaScript, with an editable equipment table instead of Excel
@@ -263,6 +268,23 @@ Needs Node 20+ and nothing from npm: `.xlsx` is read and written with the
 vendored SheetJS build. `testdata/README.md` describes the case format and
 the history of scores; `docs/CONSTITUTION.md` states the rules the data and
 the drawing obey; `docs/PLAN.md` is the roadmap.
+
+## Code layout
+
+```
+src/core/     the engine, as ES modules: types, geometry, model (the reader),
+              layout, svg (primitives and symbols), render, dxf, pipeline (draw())
+src/io/       csv and xlsx (SheetJS) ⇄ table rows
+src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js
+src/cli/      sld.js — draw | dxf
+tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page
+testdata/     the cases; test/ the node --test suites
+```
+
+`sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
+the modules into the page's single `<script>` (browsers refuse `import` from
+`file://`, and the page must open from a plain file). Edit `src/`, rebuild,
+and `npm test` fails if the page or the presets are out of step.
 
 ## What the symbols mean
 
