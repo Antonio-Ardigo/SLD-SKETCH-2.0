@@ -33,12 +33,20 @@ workbooks are generated from it (`node tools/gen-fixtures.mjs` →
 }
 ```
 
-Only the keys present under `expect` are asserted. `diagnostics` is the sorted
-list of `CODE:firstId` keys (`["DUP_ID:F1"]`) the reader must report — see
-`src/core/diagnostics.js` for the catalogue; `golden: false` says the case
-must *not* draw (an error stops the drawing). As the engine grows ranks and
-facts (see `docs/PLAN.md`), `expect` gains `ranks`, `facts` and `check`
-blocks; `legacy` goes away.
+Only the keys present under `expect` are asserted:
+
+- `diagnostics` — the sorted `CODE:firstId` keys (`["DUP_ID:F1"]`) the reader
+  must report; `src/core/diagnostics.js` is the catalogue.
+- `golden: false` — the case must *not* draw (an error stops the drawing).
+- `ranks` — the row every board sits on, from the rank solver (`{"HV":0,"MV":1,"LV":2}`).
+- `facts` — a subset of the named facts: `rings` (members, closed), `spurs`,
+  `txDir` (class per transformer), `couplers`, `sources`, `subBoards`,
+  `waysOfBoard`, `floating`.
+- `check` — the drawing checker's verdict: `items: "all"`, `edges: "all"` (or
+  `disconnected`/`via` counts), `overlaps`, `falseNets`. Every case that must
+  draw cleanly says so here; `audit/w08_wrongloads` says `disconnected: 5`.
+- `legacy` — item/error/warning counts from the reader (kept while the
+  message-based reader exists).
 
 ## Groups
 
@@ -49,6 +57,7 @@ blocks; `legacy` goes away.
 | `levels` | 10 | every arrangement of boards at different voltages joined by transformers (`levels/LEVELS.md`) |
 | `features` | 15 | regression fixtures, each added after a bug |
 | `audit` | 10 | sites written by an independent tester from the README alone (`audit/README.md`); `w08_wrongloads` is wrong on purpose |
+| `topics` | 10 | topologies the original corpus lacked: three bus sections, three parallel transformers, three-supply boards, meshed MV boards, a double-ended substation, a UPS with bypass, a seven-row cascade, a forty-way board, a board-fed ring, an MCC cascade |
 | `warnings` | 15 | one case per diagnostic code: duplicate ID, unknown supply, unknown type, a row with no ID, a loop no supply reaches, impossible supplies, open transformer ends, couplers that cannot be drawn, … Each `case.json` lists the `CODE:firstId` keys the reader must report |
 
 ## Commands
@@ -72,10 +81,11 @@ node tools/smoke-page.mjs               # drive the page in headless Chromium
 ## Scores
 
 `BASELINE.md` is the journal of the checker scores at each engine change
-(items drawn, edges connected, overlaps, false nets) as measured by
-`sld_check.py`, the Python drawing-versus-table checker. The JS scene checker
-that replaces it is plan phase 4; until then the byte-exact goldens are the
-regression gate.
+(items drawn, edges connected, overlaps, false nets) as first measured by
+`sld_check.py`. The same questions are now asked by `src/core/check.js` from
+the scene the renderer records (`node src/cli/sld.js check testdata/*/*/`),
+and every case carries its verdict in `expect.check`; the byte-exact goldens
+remain the regression gate for the picture itself.
 
 Both engines round a half-way coordinate the same way (`n1` / `n0`): Python's
 `format` rounds half to even and JavaScript's `toFixed` does not, so 501.25

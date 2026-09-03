@@ -1,0 +1,46 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility,,11 kV,,,
+T1,Transformer,Main,2500 kVA,11/0.4 kV,,U1,
+MSB,LV Busbar,Main switchboard with forty ways,4000 A,400 V,ACB,T1,
+P1,Pump,Pump 1,45 kW,400 V,Contactor,MSB,
+M2,MCC,MCC 2,400 A,400 V,MCCB,MSB,
+F3,Feeder,Lighting 3,63 A,400 V,MCB,MSB,Spare
+P4,Pump,Fan 4 (VSD),22 kW,400 V,Contactor,MSB,VSD
+F5,Feeder,Power 5,160 A,400 V,MCCB,MSB,
+F6,Feeder,HVAC 6,250 A,400 V,MCCB,MSB,
+F7,Feeder,Sockets 7,100 A,400 V,MCB,MSB,
+F8,Feeder,Distribution board 8 — long description to test the label band,250 A,400 V,MCCB,MSB,
+P9,Pump,Pump 9,45 kW,400 V,Contactor,MSB,
+M10,MCC,MCC 10,400 A,400 V,MCCB,MSB,
+F11,Feeder,Lighting 11,63 A,400 V,MCB,MSB,Spare
+P12,Pump,Fan 12 (VSD),22 kW,400 V,Contactor,MSB,VSD
+F13,Feeder,Power 13,160 A,400 V,MCCB,MSB,
+F14,Feeder,HVAC 14,250 A,400 V,MCCB,MSB,
+F15,Feeder,Sockets 15,100 A,400 V,MCB,MSB,
+F16,Feeder,Distribution board 16 — long description to test the label band,250 A,400 V,MCCB,MSB,
+P17,Pump,Pump 17,45 kW,400 V,Contactor,MSB,
+M18,MCC,MCC 18,400 A,400 V,MCCB,MSB,
+F19,Feeder,Lighting 19,63 A,400 V,MCB,MSB,Spare
+P20,Pump,Fan 20 (VSD),22 kW,400 V,Contactor,MSB,VSD
+F21,Feeder,Power 21,160 A,400 V,MCCB,MSB,
+F22,Feeder,HVAC 22,250 A,400 V,MCCB,MSB,
+F23,Feeder,Sockets 23,100 A,400 V,MCB,MSB,
+F24,Feeder,Distribution board 24 — long description to test the label band,250 A,400 V,MCCB,MSB,
+P25,Pump,Pump 25,45 kW,400 V,Contactor,MSB,
+M26,MCC,MCC 26,400 A,400 V,MCCB,MSB,
+F27,Feeder,Lighting 27,63 A,400 V,MCB,MSB,Spare
+P28,Pump,Fan 28 (VSD),22 kW,400 V,Contactor,MSB,VSD
+F29,Feeder,Power 29,160 A,400 V,MCCB,MSB,
+F30,Feeder,HVAC 30,250 A,400 V,MCCB,MSB,
+F31,Feeder,Sockets 31,100 A,400 V,MCB,MSB,
+F32,Feeder,Distribution board 32 — long description to test the label band,250 A,400 V,MCCB,MSB,
+P33,Pump,Pump 33,45 kW,400 V,Contactor,MSB,
+M34,MCC,MCC 34,400 A,400 V,MCCB,MSB,
+F35,Feeder,Lighting 35,63 A,400 V,MCB,MSB,Spare
+P36,Pump,Fan 36 (VSD),22 kW,400 V,Contactor,MSB,VSD
+F37,Feeder,Power 37,160 A,400 V,MCCB,MSB,
+F38,Feeder,HVAC 38,250 A,400 V,MCCB,MSB,
+F39,Feeder,Sockets 39,100 A,400 V,MCB,MSB,
+F40,Feeder,Distribution board 40 — long description to test the label band,250 A,400 V,MCCB,MSB,
+CAP1,Capacitor Bank,PFC 400 kvar,400 kvar,400 V,CB,MSB,
+SA1,Surge Arrester,Type 2 SPD,,400 V,,MSB,

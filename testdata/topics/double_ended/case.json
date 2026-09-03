@@ -1,0 +1,32 @@
+{
+  "name": "double_ended",
+  "group": "topics",
+  "description": "Double-ended substation: MV A/B with N.O. tie, unit transformers, LV A/B with N.O. tie",
+  "info": {
+    "site": "Topology: double ended",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "MA": 0,
+      "MB": 0,
+      "LA": 1,
+      "LB": 1
+    },
+    "legacy": {
+      "items": 14,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

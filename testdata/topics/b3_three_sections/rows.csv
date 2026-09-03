@@ -1,0 +1,18 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility A,,11 kV,,,
+U2,MV Incomer,Utility B,,11 kV,,,
+MVB,MV Busbar,11 kV switchboard,1250 A,11 kV,CB,"U1, U2",
+TA,Transformer,Section A,1600 kVA,11/0.4 kV,CB,MVB,
+TB,Transformer,Section B,1600 kVA,11/0.4 kV,CB,MVB,
+TC,Transformer,Section C,1600 kVA,11/0.4 kV,CB,MVB,
+BA,LV Busbar,Section A,2500 A,400 V,CB,TA,
+BB,LV Busbar,Section B,2500 A,400 V,CB,TB,
+BC,LV Busbar,Section C,2500 A,400 V,CB,TC,
+TIE1,Bus Coupler,Tie A-B,2500 A,400 V,CB,"BA, BB",Normally open
+TIE2,Bus Coupler,Tie B-C,2500 A,400 V,CB,"BB, BC",Normally open
+FA1,Feeder,Lighting A,250 A,400 V,CB,BA,
+FA2,Feeder,Power A,400 A,400 V,CB,BA,
+FB1,Feeder,Chillers,630 A,400 V,CB,BB,
+FB2,Feeder,Power B,400 A,400 V,CB,BB,
+FC1,Feeder,Lifts,250 A,400 V,CB,BC,
+FC2,Feeder,Power C,400 A,400 V,CB,BC,

@@ -1,0 +1,11 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility,,11 kV,,,
+T1,Transformer,Main,1000 kVA,11/0.4 kV,,U1,
+MSB,LV Busbar,Main board,1600 A,400 V,CB,T1,
+MCC1,MCC,Process MCC,630 A,400 V,CB,MSB,
+P1,Pump,Feed pump 1,55 kW,400 V,,MCC1,
+P2,Pump,Feed pump 2 (VSD),55 kW,400 V,,MCC1,VSD
+MCC2,MCC,Remote MCC fed from MCC1,250 A,400 V,MCCB,MCC1,
+P3,Pump,Dosing pump,7.5 kW,400 V,,MCC2,
+P4,Pump,Sump pump,11 kW,400 V,,MCC2,
+F1,Feeder,Local lighting,32 A,400 V,MCB,MCC2,

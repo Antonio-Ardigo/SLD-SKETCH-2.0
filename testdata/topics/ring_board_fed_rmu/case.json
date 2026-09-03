@@ -1,0 +1,35 @@
+{
+  "name": "ring_board_fed_rmu",
+  "group": "topics",
+  "description": "A ring of three RMUs fed at both ends from a primary board (rmu-entry), N.O. at R3",
+  "info": {
+    "site": "Topology: ring board fed rmu",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "PB": 0,
+      "R1": 1,
+      "R2": 1,
+      "R3": 1,
+      "L1": 2,
+      "L2": 2,
+      "L3": 2
+    },
+    "legacy": {
+      "items": 14,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

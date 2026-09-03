@@ -1,0 +1,15 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility,,11 kV,,,
+PB,MV Busbar,Primary board,1250 A,11 kV,CB,U1,
+R1,RMU,Ring unit 1,630 A,11 kV,LBS,"PB, R2",
+R2,RMU,Ring unit 2,630 A,11 kV,"LBS, LBS","R1, R3",
+R3,RMU,Ring unit 3,630 A,11 kV,"LBS, LBS","R2, PB",N.O. towards R2
+T1,Transformer,Sub 1,800 kVA,11/0.4 kV,Fuse-switch,R1,
+T2,Transformer,Sub 2,800 kVA,11/0.4 kV,Fuse-switch,R2,
+T3,Transformer,Sub 3,800 kVA,11/0.4 kV,Fuse-switch,R3,
+L1,LV Busbar,LV 1,1250 A,400 V,CB,T1,
+L2,LV Busbar,LV 2,1250 A,400 V,CB,T2,
+L3,LV Busbar,LV 3,1250 A,400 V,CB,T3,
+F1,Feeder,Load 1,400 A,400 V,CB,L1,
+F2,Feeder,Load 2,400 A,400 V,CB,L2,
+F3,Feeder,Load 3,400 A,400 V,CB,L3,

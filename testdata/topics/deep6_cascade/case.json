@@ -1,0 +1,35 @@
+{
+  "name": "deep6_cascade",
+  "group": "topics",
+  "description": "Six ranks: 132 kV → 33 kV → 11 kV → 3.3 kV pump board, and 11/0.4 → LV → DB1 → DB2 (7 rows)",
+  "info": {
+    "site": "Topology: deep6 cascade",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "EHV": 0,
+      "HV": 1,
+      "MV": 2,
+      "PB": 3,
+      "MSB": 4,
+      "DB1": 5,
+      "DB2": 6
+    },
+    "legacy": {
+      "items": 17,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

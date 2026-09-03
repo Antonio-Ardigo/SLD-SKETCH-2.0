@@ -1,0 +1,29 @@
+{
+  "name": "wide40_board",
+  "group": "topics",
+  "description": "One LV bar with forty ways of every load type, long labels, a capacitor bank and an arrester",
+  "info": {
+    "site": "Topology: wide40 board",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "MSB": 0
+    },
+    "legacy": {
+      "items": 45,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

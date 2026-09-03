@@ -1,0 +1,11 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility A,,11 kV,,,
+U2,MV Incomer,Utility B,,11 kV,,,
+G0,Generator,MV standby set,2500 kVA,11 kV,,,
+MVB,MV Busbar,11 kV board with three supplies,1250 A,11 kV,"CB, CB, CB","U1, U2, G0",
+T1,Transformer,A,1600 kVA,11/0.4 kV,CB,MVB,
+T2,Transformer,B,1600 kVA,11/0.4 kV,CB,MVB,
+G1,Generator,LV standby set,800 kVA,400 V,,,
+MSB,LV Busbar,LV board fed from two transformers and a genset,3200 A,400 V,"CB, CB, CB","T1, T2, G1",
+F1,Feeder,Essential,630 A,400 V,CB,MSB,
+F2,Feeder,Non-essential,800 A,400 V,CB,MSB,

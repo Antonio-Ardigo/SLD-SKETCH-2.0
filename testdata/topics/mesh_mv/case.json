@@ -1,0 +1,33 @@
+{
+  "name": "mesh_mv",
+  "group": "topics",
+  "description": "Meshed MV: 33 kV board, two grid transformers to 11 kV boards A and B with a tie, board C fed from both A and B",
+  "info": {
+    "site": "Topology: mesh mv",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "HV": 0,
+      "MA": 1,
+      "MB": 1,
+      "MC": 2,
+      "LC1": 3
+    },
+    "legacy": {
+      "items": 11,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

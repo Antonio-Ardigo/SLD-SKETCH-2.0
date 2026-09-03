@@ -7,7 +7,7 @@
 | 1 — scaffold, constitution, test pool, data-entry quick wins | done | PR #2 |
 | 2 — engine as ES modules, Node CLI, page built from modules | done | `src/core/*`, `src/cli/sld.js`, `tools/build-page.mjs` |
 | 3 — structured diagnostics, graph, `<g data-id>`, click-select, drag & drop v1 | done | `src/core/diagnostics.js`, `src/core/graph.js`, palette in `src/ui/app.js`, `testdata/warnings/*` |
-| 4 — rules, rank solver, content-sized bands, scene, scene checker | next | |
+| 4 — rules, rank solver, scene, scene checker, new topology fixtures | done | `src/core/rules/*`, `rank.js`, `facts.js`, `scene.js`, `check.js`, `sld check`, `testdata/topics/*` (10 cases; the MCC-under-MCC gap fixed). The solver reproduces today's tiers on every case and is not yet driving the layout — content-sized bands are the remaining piece, folded into phase 5/6 |
 | 5 — symbol registry, legend from registry, DXF from scene, delete Python | | |
 | 6 — view options, larger sketch area, constitution enforcement | | |
 | 7 — UPS / Inverter / Battery / DC Busbar types (optional) | | |

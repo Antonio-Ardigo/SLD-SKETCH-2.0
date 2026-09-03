@@ -1,0 +1,32 @@
+{
+  "name": "b3_three_sections",
+  "group": "topics",
+  "description": "LV board in three sections A/B/C from three transformers, two N.O. ties (more than two bus sections)",
+  "info": {
+    "site": "Topology: b3 three sections",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "MVB": 0,
+      "BA": 1,
+      "BB": 1,
+      "BC": 1
+    },
+    "legacy": {
+      "items": 17,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

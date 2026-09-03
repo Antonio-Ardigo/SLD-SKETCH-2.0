@@ -3,8 +3,8 @@ import { MARGIN, FEEDER_SPACING, BUS_GAP, MIN_BUS_WIDTH, SLOT_GAP, PUMP_SLOT, TX
 import { childrenOf } from "./model.js";
 
 /* ------------------------------------------------ layout */
-function mccLoads(items, order, m){   /* an MCC's motor ways and feeders */
-  return childrenOf(items,order,m.id,[PUMP,FEEDER].concat(TERMINALS));
+function mccLoads(items, order, m){   /* an MCC's ways: motors, feeders, terminal items, and an MCC fed from it */
+  return childrenOf(items,order,m.id,[PUMP,FEEDER,MCC].concat(TERMINALS));
 }
 function lvKids(items, order, bb){
   /* the ways of an LV board: feeders, MCCs, motors, terminal items and

@@ -1,0 +1,10 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility,,11 kV,,,
+T1,Transformer,Main,1600 kVA,11/0.4 kV,,U1,
+MSB,LV Busbar,Main board,2500 A,400 V,CB,T1,
+UPS,Transformer,UPS 500 kVA (double conversion),500 kVA,400/400 V,CB,MSB,UPS
+UPSO,LV Busbar,UPS output board,800 A,400 V,CB,UPS,
+BYP,Bus Coupler,Static / maintenance bypass,800 A,400 V,Contactor,"MSB, UPSO",Normally open
+F1,Feeder,Critical load A,250 A,400 V,CB,UPSO,
+F2,Feeder,Critical load B,250 A,400 V,CB,UPSO,
+F3,Feeder,General,400 A,400 V,CB,MSB,
