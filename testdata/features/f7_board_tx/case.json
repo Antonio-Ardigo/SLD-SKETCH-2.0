@@ -15,6 +15,25 @@
       "items": 14,
       "errors": 0,
       "warnings": 2
+    },
+    "ranks": {
+      "RMU": 0,
+      "MSB": 1,
+      "SB3": 1
+    },
+    "facts": {
+      "txDir": {
+        "TX1": "down",
+        "T1": "underBoard",
+        "T2": "underBoard",
+        "T3": "lvLink"
+      }
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

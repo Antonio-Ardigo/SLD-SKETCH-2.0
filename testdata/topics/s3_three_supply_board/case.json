@@ -1,0 +1,30 @@
+{
+  "name": "s3_three_supply_board",
+  "group": "topics",
+  "description": "An MV board fed from two utilities and an MV genset; an LV board fed from two transformers and an LV genset (three supplies each)",
+  "info": {
+    "site": "Topology: s3 three supply board",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "MVB": 0,
+      "MSB": 1
+    },
+    "legacy": {
+      "items": 10,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

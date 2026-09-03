@@ -15,6 +15,27 @@
       "items": 14,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "HV": 0,
+      "MV": 1,
+      "PB": 2,
+      "LV1": 3,
+      "LV2": 3
+    },
+    "facts": {
+      "txDir": {
+        "GT": "levelLink",
+        "PT": "levelLink",
+        "T1": "down",
+        "T2": "down"
+      }
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

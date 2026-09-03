@@ -15,6 +15,34 @@
       "items": 16,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "MB": 0,
+      "R1": 1,
+      "SB": 1,
+      "L1": 2,
+      "L2": 2
+    },
+    "facts": {
+      "sources": [],
+      "couplers": [
+        {
+          "id": "CO",
+          "kind": "changeover",
+          "valid": true
+        },
+        {
+          "id": "CO2",
+          "kind": "changeover",
+          "valid": true
+        }
+      ]
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

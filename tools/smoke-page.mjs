@@ -121,8 +121,49 @@ try {
   check("xlsx import loads 16 rows", await evaluate(`document.querySelectorAll('#eqbody tr').length`) === 16, await evaluate(`document.querySelector('#copystate').textContent`));
   check("xlsx import reads Info", await evaluate(`document.querySelector('#i-site').value`) === "Example Site G");
 
+  /* symbols carry their row id; clicking one selects the row */
+  check("symbols carry data-id", await evaluate(`document.querySelectorAll('#sheet svg g[data-id]').length`) >= 10);
+  check("hit areas added", await evaluate(`document.querySelectorAll('#sheet svg g[data-id] rect.hit').length`) >= 10);
+  await evaluate(`(function(){ const g=document.querySelector('#sheet svg g[data-id="TX1"]'); g.scrollIntoView({block:'center'}); const r=g.getBoundingClientRect();
+     const vp=document.querySelector('#viewport'); const x=r.left+r.width/2, y=r.top+r.height/2;
+     vp.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,button:0,pointerId:7,bubbles:true}));
+     vp.dispatchEvent(new PointerEvent('pointerup',{clientX:x,clientY:y,button:0,pointerId:7,bubbles:true})); })()`);
+  check("click on TX1 selects its row", await evaluate(`document.activeElement.closest('tr') && state.rows[+document.activeElement.closest('tr').dataset.i].id`) === "TX1");
+  check("selected symbol highlighted", await evaluate(`document.querySelector('#sheet svg g[data-id="TX1"]').classList.contains('sel')`));
+
+  /* the palette: dropping a Feeder on the LV board adds a row fed from it */
+  check("palette has a chip per type", await evaluate(`document.querySelectorAll('#palette .chip').length`) === 17);
+  const rowsBefore = await evaluate(`state.rows.length`);
+  await evaluate(`(function(){ const g=document.querySelector('#sheet svg g[data-id="MSB"]'); g.scrollIntoView({block:'center'}); const r=g.getBoundingClientRect();
+     const vp=document.querySelector('#viewport'); const dt=new DataTransfer(); dt.setData('text/sld-type','Feeder');
+     const ev=new DragEvent('drop',{clientX:r.left+r.width/2,clientY:r.top+r.height/2,dataTransfer:dt,bubbles:true,cancelable:true});
+     vp.dispatchEvent(ev); })()`);
+  await sleep(400);
+  check("drop adds a row", await evaluate(`state.rows.length`) === rowsBefore + 1);
+  const dropped = await evaluate(`JSON.stringify(state.rows.find(r=>r.type==='Feeder'&&!r.desc&&!r.rating)||null)`);
+  check("new row is a Feeder fed from MSB with an auto ID and CB", /"id":"F\d+".*"from":"MSB".*"prot":"CB"/.test(dropped), dropped);
+  check("new row is drawn", await evaluate(`(function(){ const r=state.rows.find(r=>r.type==='Feeder'&&!r.desc&&!r.rating); return !!r && !!document.querySelector('#sheet svg g[data-id="'+r.id+'"]'); })()`));
+  await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))`);
+  check("undo removes the dropped row", await evaluate(`state.rows.length`) === rowsBefore);
+
+  /* view options change the picture, not the table */
+  const w0 = await evaluate(`+document.querySelector('#sheet svg').getAttribute('width')`);
+  const rowsJson = await evaluate(`JSON.stringify(state.rows)`);
+  await evaluate(`(function(){ const s=document.querySelector('#v-spacing'); s.value='wide'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  check("wide spacing widens the sheet", await evaluate(`+document.querySelector('#sheet svg').getAttribute('width')`) > w0,
+    await evaluate(`'w0='+${w0}+' now='+document.querySelector('#sheet svg').getAttribute('width')+' FEEDER_SPACING='+FEEDER_SPACING+' view_='+JSON.stringify(view_)+' rows='+state.rows.length+' problems='+document.querySelector('#problems').textContent.slice(0,120)`));
+  check("the table is untouched by the view", await evaluate(`JSON.stringify(state.rows)`) === rowsJson);
+  await evaluate(`(function(){ const c=document.querySelector('#v-legend'); c.checked=false; c.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  check("legend off removes the legend", await evaluate(`!document.querySelector('#sheet svg').innerHTML.includes('>LEGEND<')`));
+  check("view is saved beside the table", await evaluate(`JSON.parse(localStorage.getItem('sld-sketchpad')).view.spacing`) === "wide");
+  await evaluate(`document.querySelector('#focus').click()`);
+  check("focus mode hides the table", await evaluate(`document.body.classList.contains('focus') && getComputedStyle(document.querySelector('.panel')).display==='none'`));
+  await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+  check("Escape leaves focus mode", await evaluate(`!document.body.classList.contains('focus')`));
+  await evaluate(`(function(){ const s=document.querySelector('#v-spacing'); s.value='normal'; s.dispatchEvent(new Event('change',{bubbles:true})); const c=document.querySelector('#v-legend'); c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+
   /* saved state is versioned */
-  check("saved state has a version", await evaluate(`JSON.parse(localStorage.getItem('sld-sketchpad')).v`) === 2);
+  check("saved state has a version", await evaluate(`JSON.parse(localStorage.getItem('sld-sketchpad')).v`) === 3);
 
   check("no page errors", errors.length === 0, errors.join(" || "));
 } catch (e) {

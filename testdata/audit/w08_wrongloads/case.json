@@ -15,6 +15,27 @@
       "items": 16,
       "errors": 0,
       "warnings": 6
+    },
+    "ranks": {
+      "RMU": 0,
+      "MSB": 1,
+      "MCCX": 2,
+      "MCCF": 2,
+      "MCCR": 1
+    },
+    "facts": {
+      "floating": [],
+      "waysOfBoard": {
+        "PX": "MSB",
+        "MCCX": "MSB"
+      }
+    },
+    "check": {
+      "items": "all",
+      "disconnected": 5,
+      "via": 0,
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

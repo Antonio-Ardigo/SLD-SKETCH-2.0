@@ -15,6 +15,35 @@
       "items": 23,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "HV": 0,
+      "MV": 1,
+      "RB": 2,
+      "L1": 3,
+      "L2": 3,
+      "L3": 3,
+      "DB1": 4
+    },
+    "facts": {
+      "couplers": [
+        {
+          "id": "C13",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "CL",
+          "kind": "tie",
+          "valid": true
+        }
+      ]
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

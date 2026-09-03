@@ -15,6 +15,28 @@
       "items": 19,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "RMU": 0,
+      "MSB": 1,
+      "DB1": 2,
+      "DB2": 2,
+      "DB3": 2,
+      "DB11": 3
+    },
+    "facts": {
+      "subBoards": {
+        "DB1": "F1",
+        "DB2": "F1",
+        "DB3": "MSB",
+        "DB11": "F12"
+      }
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

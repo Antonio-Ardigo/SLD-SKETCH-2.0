@@ -1,0 +1,36 @@
+{
+  "name": "impossible_supply",
+  "group": "warnings",
+  "description": "A feeder on a motor and a motor on an MV incomer; drawn floating",
+  "info": {
+    "site": "Warning path: impossible supply",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "IMPOSSIBLE_SUPPLY:F1",
+      "IMPOSSIBLE_SUPPLY:P2"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 6,
+      "errors": 0,
+      "warnings": 2
+    },
+    "ranks": {
+      "BB1": 0
+    },
+    "facts": {
+      "floating": []
+    },
+    "check": {
+      "items": "all",
+      "disconnected": 2,
+      "via": 0,
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

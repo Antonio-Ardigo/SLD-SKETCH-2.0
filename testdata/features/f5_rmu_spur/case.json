@@ -15,6 +15,39 @@
       "items": 17,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "R1": 0,
+      "R2": 0,
+      "R3": 0,
+      "RS": 1,
+      "L1": 2,
+      "L2": 2,
+      "L3": 2,
+      "LS": 2
+    },
+    "facts": {
+      "rings": [
+        {
+          "members": [
+            "R1",
+            "R2",
+            "R3"
+          ],
+          "closed": true
+        }
+      ],
+      "spurs": {
+        "R2": [
+          "RS"
+        ]
+      }
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

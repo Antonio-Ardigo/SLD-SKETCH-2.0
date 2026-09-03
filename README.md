@@ -9,13 +9,17 @@ get an SVG single-line diagram for future reference.
 ## Quick start
 
 ```bash
-pip install -r requirements.txt          # just openpyxl
-
-python sld_sketch.py examples/config1_single_tx.xlsx -o output/config1.svg
+node src/cli/sld.js draw examples/config1_single_tx.xlsx -o output/config1.svg
+node src/cli/sld.js draw survey.xlsx --dxf        # SVG + R12 DXF beside it
+node src/cli/sld.js draw testdata/sites/c1_wtw    # a testdata case works too
 ```
 
-Open the SVG in any browser. To start a new survey, copy
-`examples/template.xlsx` and fill in the yellow cells.
+Node 20 or newer, nothing to install. Open the SVG in any browser. To start a
+new survey, copy `examples/template.xlsx` and fill in the yellow cells.
+
+(The original Python command line, `sld_sketch.py` and friends, has been
+retired: the JavaScript engine under `src/` draws the same picture, checks
+it the same way, and is the only implementation. See `docs/PLAN.md`.)
 
 **No Python at hand?** Open `sld_sketchpad.html` in a browser — the same layout
 engine ported to JavaScript, with an editable equipment table instead of Excel
@@ -34,7 +38,20 @@ the cell is empty. `Enter` moves down a row (a new one after the last),
 in the problems box marks the row it is about and clicking it jumps there.
 **Import…** (or dropping a file on the table) loads a survey workbook, a CSV
 of the equipment table, or a saved `.json`; **Download CSV** writes the table
-back out. Reading `.xlsx` in the page uses `vendor/xlsx.full.min.js`, so keep
+back out. Every symbol on the drawing knows its row: click one to select
+the row, and drag a chip from the **symbol palette** above the drawing onto a
+busbar, RMU or transformer to add a row of that type fed from it (the ID is
+numbered for you, the usual Protection filled in). Clicking a chip adds the
+row under the selected item. The table stays the only source of truth: a
+drop writes a row, nothing else.
+
+**View options** sit in the drawing's toolbar: spacing (compact / normal /
+wide), the legend and the title block on or off, and **Focus drawing**, which
+gives the drawing the whole window (Esc to leave). A view changes the picture
+and never the table: the same rows draw the same network under every view
+(`test/views.test.js` proves it on every case), the view is kept beside the
+table in the browser and is never exported with it. The CLI takes none yet;
+a case can carry one in `case.json` (`"view": {"spacing": "compact"}`). Reading `.xlsx` in the page uses `vendor/xlsx.full.min.js`, so keep
 the `vendor/` folder beside the page.
 
 ## The spreadsheet
@@ -50,7 +67,7 @@ diagram's title block.
 | Column | Meaning | Example |
 |---|---|---|
 | ID | Short unique tag you invent | `MV1`, `RMU1`, `TX1`, `BB1`, `F1` |
-| Type | Dropdown: MV Incomer, Generator, MV Busbar, RMU, Transformer, Pump, LV Busbar, Feeder, MCC, Bus Coupler, Capacitor Bank, Earthing/NER, Surge Arrester | `Transformer` |
+| Type | Dropdown: MV Incomer, Generator, MV Busbar, RMU, Transformer, Pump, LV Busbar, Feeder, MCC, Bus Coupler, Capacitor Bank, Earthing/NER, Surge Arrester — and four symbol variants: UPS (a transformer that draws as the UPS box), Inverter and Battery (generation sources with their own marks), DC Busbar (a dashed bar) | `Transformer` |
 | Description | Free text | `Oil-immersed, Dyn11` |
 | Rating | From the nameplate | `1000 kVA`, `630 A` |
 | Voltage | From the nameplate | `11/0.4 kV`, `400 V` |
@@ -213,12 +230,14 @@ warns instead of drawing, and a duplicate coupler on a pair warns too.
 | `examples/config6_closed_ring.xlsx` | Same as config 5 but with the RMU2–RMU3 cable in place, closing the ring RMU1–RMU2–RMU3–RMU1 (RMU3 feeds from `RMU1, RMU2`) | `output/config6.svg` |
 | `examples/config7_mcc_motors.xlsx` | Pump station: utility incomer → RMU → 1000 kVA transformer → LV board with three MCCs; the pump MCC feeds four motors (one on a VSD) and an auxiliaries feeder, the blower MCC two VSD motors, each MCC in its own dashed enclosure | `output/config7.svg` |
 
-Regenerate the workbooks with `python make_examples.py`, and the sketches with
-`python sld_sketch.py <workbook> -o <out.svg>`.
+The example tables live in `testdata/examples/*/rows.csv`; `node
+tools/gen-fixtures.mjs` regenerates the workbooks (into `build/xlsx/`) and
+the page's built-in examples from them, and `node src/cli/sld.js draw
+<workbook> -o <out.svg>` draws a sketch.
 
-**DXF export.** `python sld_sketch.py <workbook> --dxf` writes the SVG and
-a `.dxf` beside it (or `python sld_dxf.py <workbook> -o out.dxf` for the DXF
-alone). The file is R12 DXF, the dialect every CAD package and viewer opens:
+**DXF export.** `node src/cli/sld.js draw <workbook> --dxf` writes the SVG
+and a `.dxf` beside it (or `node src/cli/sld.js dxf <workbook> -o out.dxf` for
+the DXF alone). The file is R12 DXF, the dialect every CAD package and viewer opens:
 the sketch exactly as the SVG draws it, built from the same symbol
 primitives, with the equipment table that produced it laid out beside the
 sheet, to its right. The drawing is centred on the origin and the file's
@@ -231,15 +250,16 @@ and title block), `SLD_LEGEND` and `SLD_TABLE`. The Sketchpad page has the
 same exporter behind its **Download DXF** button, and **Copy DXF** puts the
 file text on the clipboard for places where downloads are blocked. CAD text
 is set with a width factor that keeps it no wider than the browser's, long
-table cells wrap, and `python sld_dxf.py <workbook> --check` reads the file
-back and reports any text that overlaps another text or crosses a table
-rule (none on any workbook in the repository).
+table cells wrap, and `node src/cli/sld.js dxf <workbook> --check` reads the
+file back and reports any text that overlaps another text or crosses a table
+rule.
 
-**Checking a drawing against its table.** `python sld_check.py <workbook>`
-renders the sheet, reads the SVG back as raw geometry and verifies that every
-item is drawn once and every `Feeds From` edge is a continuous conductor
+**Checking a drawing against its table.** `node src/cli/sld.js check
+<workbook>` draws the sheet and verifies, from the scene the renderer records,
+that every item is drawn and every `Feeds From` edge is a continuous conductor
 between the two symbols; it also reports conductors drawn on top of each
-other and joints the table does not contain.
+other and drawn nets the table does not contain. It exits 1 unless every
+table given is clean.
 
 ## Test data and tests
 
@@ -263,6 +283,26 @@ Needs Node 20+ and nothing from npm: `.xlsx` is read and written with the
 vendored SheetJS build. `testdata/README.md` describes the case format and
 the history of scores; `docs/CONSTITUTION.md` states the rules the data and
 the drawing obey; `docs/PLAN.md` is the roadmap.
+
+## Code layout
+
+```
+src/core/     the engine, as ES modules: types, diagnostics, geometry, model (the
+              reader), graph, rules/ + rank + facts (what the engine infers),
+              layout, svg (primitives and symbols), symbols/registry (one entry
+              per symbol: legend and palette), render, dxf, scene + check (the
+              drawing verified against the table), pipeline (draw())
+src/io/       csv and xlsx (SheetJS) ⇄ table rows
+src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js
+src/cli/      sld.js — draw | dxf
+tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page
+testdata/     the cases; test/ the node --test suites
+```
+
+`sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
+the modules into the page's single `<script>` (browsers refuse `import` from
+`file://`, and the page must open from a plain file). Edit `src/`, rebuild,
+and `npm test` fails if the page or the presets are out of step.
 
 ## What the symbols mean
 

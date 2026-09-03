@@ -15,6 +15,30 @@
       "items": 9,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "MVA": 0,
+      "MVB": 0,
+      "LV": 1
+    },
+    "facts": {
+      "txDir": {
+        "T1": "down",
+        "SU": "inRow"
+      },
+      "couplers": [
+        {
+          "id": "TIE",
+          "kind": "tie",
+          "valid": true
+        }
+      ]
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

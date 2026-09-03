@@ -1,0 +1,59 @@
+{
+  "name": "coupler_invalid",
+  "group": "warnings",
+  "description": "A good tie, a duplicate tie, a one-ended coupler and a board-to-transformer coupler",
+  "info": {
+    "site": "Warning path: coupler invalid",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "COUPLER_DUP:BC2",
+      "COUPLER_INVALID:BC3",
+      "COUPLER_INVALID:BC4"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 9,
+      "errors": 0,
+      "warnings": 3
+    },
+    "ranks": {
+      "BB1": 0,
+      "BB2": 0
+    },
+    "facts": {
+      "couplers": [
+        {
+          "id": "BC1",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "BC2",
+          "kind": "tie",
+          "valid": true,
+          "duplicate": true
+        },
+        {
+          "id": "BC3",
+          "kind": "tie",
+          "valid": false
+        },
+        {
+          "id": "BC4",
+          "kind": "tie",
+          "valid": false
+        }
+      ]
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 2,
+      "falseNets": 0
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "ups_bypass",
+  "group": "topics",
+  "description": "UPS modelled as a 400/400 V transformer with a maintenance bypass coupler between input and output boards (a parallel path)",
+  "info": {
+    "site": "Topology: ups bypass",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "MSB": 0,
+      "UPSO": 0
+    },
+    "legacy": {
+      "items": 9,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

@@ -1,0 +1,15 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility A,,11 kV,,,
+U2,MV Incomer,Utility B,,11 kV,,,
+MA,MV Busbar,11 kV A,630 A,11 kV,CB,U1,
+MB,MV Busbar,11 kV B,630 A,11 kV,CB,U2,
+MT,Bus Coupler,MV tie,630 A,11 kV,CB,"MA, MB",Normally open
+TA,Transformer,Unit A,2000 kVA,11/0.4 kV,CB,MA,
+TB,Transformer,Unit B,2000 kVA,11/0.4 kV,CB,MB,
+LA,LV Busbar,LV A,3200 A,400 V,ACB,TA,
+LB,LV Busbar,LV B,3200 A,400 V,ACB,TB,
+LT,Bus Coupler,LV tie,3200 A,400 V,ACB,"LA, LB",Normally open
+FA1,Feeder,Data hall A,1600 A,400 V,CB,LA,
+FA2,Feeder,Mechanical A,800 A,400 V,CB,LA,
+FB1,Feeder,Data hall B,1600 A,400 V,CB,LB,
+FB2,Feeder,Mechanical B,800 A,400 V,CB,LB,

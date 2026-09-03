@@ -1,0 +1,22 @@
+{
+  "name": "empty_sheet",
+  "group": "warnings",
+  "description": "A header row and nothing else",
+  "info": {
+    "site": "Warning path: empty sheet",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "EMPTY_SHEET"
+    ],
+    "golden": false,
+    "legacy": {
+      "items": 0,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

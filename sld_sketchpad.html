@@ -136,6 +136,27 @@
     border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 3px;
   }
   #undo, #redo { min-width: 32px; padding: 6px 8px; }
+
+  /* the symbol palette: one chip per type, dragged onto the drawing */
+  .palette { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .palette-hint { font-size: 12px; color: var(--muted); margin-right: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 5px;
+    font: 600 12px "Archivo", sans-serif; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px; cursor: grab; user-select: none;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip:active { cursor: grabbing; }
+  .chip svg { width: 26px; height: 24px; display: block; }
+  .chip svg * { stroke: currentColor; }
+  .chip svg [fill="#111"] { fill: currentColor; }
+  /* drop feedback and selection on the canvas */
+  #sheet svg [data-id] rect.hit { fill: transparent; stroke: none; pointer-events: all; }
+  #sheet svg [data-id]:hover rect.hit { fill: rgba(11, 94, 215, .06); }
+  #sheet svg [data-id].sel rect.hit { fill: rgba(11, 94, 215, .12); stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  #sheet svg [data-id].over rect.hit { fill: rgba(11, 94, 215, .2); stroke: var(--accent); stroke-width: 2; }
+  #sheet svg [data-id] { cursor: pointer; }
+  .viewport.dropping { outline: 2px dashed var(--accent); outline-offset: -2px; }
   button:disabled { opacity: .45; cursor: default; }
   button:disabled:hover { border-color: var(--border); color: var(--ink); }
 
@@ -145,6 +166,14 @@
     text-transform: uppercase; color: var(--muted);
   }
   .sheet-bar .copystate { font-size: 12.5px; color: var(--muted); }
+  .viewopts { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .viewopts label { display: inline-flex; align-items: center; gap: 4px; }
+  .viewopts select { padding: 3px 6px; font-size: 12px; }
+  /* focus mode: the drawing takes the window; the table and the panels step aside */
+  body.focus .wrap { max-width: none; padding: 8px 12px; }
+  body.focus header.top, body.focus .panel, body.focus .problems, body.focus .palette, body.focus footer.note { display: none; }
+  body.focus .viewport { height: calc(100vh - 64px); }
+  body.focus #focus { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .viewtools { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .viewtools button { padding: 4px 9px; min-width: 30px; }
   .readout {
@@ -376,12 +405,23 @@
   <div class="problems" id="problems" hidden></div>
 
   <section>
+    <div class="palette" id="palette" aria-label="Symbols: drag one onto a busbar, RMU or transformer in the drawing, or click to add a row under the selected item">
+      <span class="palette-hint">Drag onto the drawing</span>
+    </div>
     <div class="sheet-bar">
       <h2>Drawing</h2>
       <button id="copysvg">Copy SVG</button>
       <button id="dxf" title="Download a DXF of the sketch with the equipment table under it">Download DXF</button>
       <button id="copydxf" title="Copy the DXF text, to paste into a .dxf file where downloads are blocked">Copy DXF</button>
       <span class="copystate" id="copystate"></span>
+      <span class="viewopts" aria-label="View options: they change the drawing, never the table">
+        <label title="Horizontal spacing of ways and boards">Spacing
+          <select id="v-spacing"><option value="compact">compact</option><option value="normal" selected>normal</option><option value="wide">wide</option></select>
+        </label>
+        <label title="Show the legend under the sheet"><input type="checkbox" id="v-legend" checked> legend</label>
+        <label title="Show the title block"><input type="checkbox" id="v-title" checked> title block</label>
+        <button id="focus" title="Give the drawing the whole window (Esc to leave)">Focus drawing</button>
+      </span>
       <span class="viewtools">
         <button id="v-fit" title="Fit the whole drawing (0)">Fit</button>
         <button id="v-100" title="Actual size (1)">100%</button>
@@ -426,9 +466,23 @@ const TYPE_LABELS = [
   ["LV Busbar", LV_BUSBAR],
   ["Feeder", FEEDER], ["MCC", MCC], ["Bus Coupler", BUS_COUPLER],
   ["Capacitor Bank", CAPACITOR], ["Earthing/NER", EARTHING],
-  ["Surge Arrester", ARRESTER]
+  ["Surge Arrester", ARRESTER],
+  /* symbol variants of a family: the Type label chooses the glyph, the family the behaviour */
+  ["UPS", TRANSFORMER, "ups"], ["Inverter", GENERATOR, "inverter"], ["Battery", GENERATOR, "battery"],
+  ["DC Busbar", LV_BUSBAR, "dc"],
 ];
+/* a Type label that is a variant of a family: {normalised label: variant} */
+const TYPE_VARIANTS = {
+  "ups":"ups", "ups system":"ups", "static ups":"ups", "uninterruptible power supply":"ups",
+  "inverter":"inverter", "pv inverter":"inverter", "solar inverter":"inverter", "string inverter":"inverter", "central inverter":"inverter",
+  "battery":"battery", "bess":"battery", "battery storage":"battery", "energy storage":"battery", "battery bank":"battery",
+  "dc busbar":"dc", "dc board":"dc", "dc distribution":"dc", "dc distribution board":"dc", "dc bus":"dc",
+};
 const ALIASES = {
+  "ups":TRANSFORMER, "ups system":TRANSFORMER, "static ups":TRANSFORMER, "uninterruptible power supply":TRANSFORMER,
+  "inverter":GENERATOR, "pv inverter":GENERATOR, "solar inverter":GENERATOR, "string inverter":GENERATOR, "central inverter":GENERATOR,
+  "battery":GENERATOR, "bess":GENERATOR, "battery storage":GENERATOR, "energy storage":GENERATOR, "battery bank":GENERATOR,
+  "dc busbar":LV_BUSBAR, "dc board":LV_BUSBAR, "dc distribution":LV_BUSBAR, "dc distribution board":LV_BUSBAR, "dc bus":LV_BUSBAR,
   "mv incomer":MV_INCOMER, "incomer":MV_INCOMER, "mv":MV_INCOMER,
   "rmu":RMU, "ring main unit":RMU,
   "mv busbar":MV_BUSBAR, "mv board":MV_BUSBAR, "mv switchboard":MV_BUSBAR,
@@ -507,9 +561,106 @@ function protFor(item, parentId){
   return [raw, PROT_ALIASES[raw.toLowerCase().split(/\s+/).join(" ")]||null];
 }
 
+/* The catalogue of everything the reader and the drawing can say about a
+ * table. A diagnostic is
+ *
+ *   { code, level: "error" | "warning", ids: [rowId…], row?: n, message }
+ *
+ * `message` is the sentence shown to the surveyor (the page, the CLI). Tests
+ * assert on `code` and `ids`, never on the wording, so the wording can improve
+ * freely. An "error" stops the drawing (the table cannot be read as one
+ * network); a "warning" still draws, with the row floating, open or marked. */
+
+const DIAG = {
+  /* reader: the table itself */
+  DUP_ID:            { level: "error",   about: "two rows share an ID" },
+  UNKNOWN_SUPPLY:    { level: "error",   about: "Feeds From names an ID that is not on the sheet" },
+  ROW_NO_ID:         { level: "warning", about: "a row has data but no ID; it is ignored" },
+  UNKNOWN_TYPE:      { level: "warning", about: "Type is not one of the known types; drawn as a feeder" },
+  UNKNOWN_PROT:      { level: "warning", about: "Protection is not a known device; the default symbol is drawn" },
+  PROT_ON_INCOMER:   { level: "warning", about: "protection on an MV incomer is the utility's and is not drawn" },
+  /* reader: the network */
+  LOOP_NO_SUPPLY:    { level: "warning", about: "rows feed from each other round a loop no supply reaches; drawn floating" },
+  NO_SUPPLY:         { level: "warning", about: "a row that needs a supply has an empty Feeds From" },
+  TX_NO_SUPPLY:      { level: "warning", about: "a transformer with no Feeds From; drawn with an open supply terminal" },
+  TX_NO_LOAD:        { level: "warning", about: "a transformer nothing feeds from; drawn with an open outgoing terminal" },
+  TX_BOTH_LEVELS:    { level: "warning", about: "a transformer feeding both MV and LV gear; drawn as a step-up" },
+  IMPOSSIBLE_SUPPLY: { level: "warning", about: "the named supply cannot feed this kind of row; drawn floating" },
+  LOAD_ON_BOARD_TX:  { level: "warning", about: "a motor or MCC named on a transformer that feeds a board; drawn as a way of that board" },
+  MCC_ON_MV:         { level: "warning", about: "an MCC fed from MV gear" },
+  MCC_BAD_SUPPLY:    { level: "warning", about: "an MCC fed from something other than an LV board, an MCC or a transformer" },
+  GEN_NO_LOAD:       { level: "warning", about: "a generator that feeds nothing" },
+  /* drawing */
+  COUPLER_INVALID:   { level: "warning", about: "a bus coupler not between exactly two busbars of the same kind; skipped" },
+  COUPLER_DUP:       { level: "warning", about: "a second coupler between the same two busbars" },
+  /* engine */
+  EMPTY_SHEET:       { level: "warning", about: "the table has no rows with an ID" },
+  RANK_CYCLE:        { level: "warning", about: "two rows each demand to sit below the other; the rank solver dropped one demand" },
+};
+
+function makeDiag(code, ids, message, row) {
+  const def = DIAG[code];
+  if (!def) throw new Error(`unknown diagnostic code ${code}`);
+  const d = { code, level: def.level, ids: ids.filter(Boolean), message };
+  if (row !== undefined) d.row = row;
+  return d;
+}
+
+/* The drawing still reports its two coupler problems as sentences (render
+   appends them to the warnings list); this recognises them. */
+const RENDER_PATTERNS = [
+  [/^Bus coupler "([^"]+)" should feed from exactly two busbars/, "COUPLER_INVALID"],
+  [/^Bus coupler "([^"]+)" duplicates an earlier coupler between "([^"]+)" and "([^"]+)"/, "COUPLER_DUP"],
+];
+function diagFromMessage(message) {
+  for (const [re, code] of RENDER_PATTERNS) {
+    const m = re.exec(message);
+    if (m) return makeDiag(code, m.slice(1), message);
+  }
+  return null;
+}
+
+/** "CODE:firstId" — the compact form fixtures assert on. */
+function diagKey(d) { return d.ids.length ? `${d.code}:${d.ids[0]}` : d.code; }
+
+/* View options — constitution §4: a view changes the drawing, never the data
+ * or the graph. They are applied after the graph and its facts exist, are
+ * stored beside the table (never in it), and are never exported with it.
+ *
+ *   spacing     "compact" | "normal" | "wide"   horizontal pitch of ways and boards
+ *   legend      true | false                    the legend strip under the sheet
+ *   titleBlock  true | false                    the title block at the bottom right
+ *
+ * Adding an option: add it here with its default, read it where the drawing
+ * is made (geometry/layout/render), and extend test/views.test.js — the test
+ * proves the graph and the facts are the same under every value. */
+const VIEW_DEFAULTS = Object.freeze({ spacing: "normal", legend: true, titleBlock: true });
+const VIEW_OPTIONS = Object.freeze({
+  spacing: ["compact", "normal", "wide"],
+  legend: [true, false],
+  titleBlock: [true, false],
+});
+
+/** A complete, valid view from a partial one (unknown keys and values dropped). */
+function normalizeView(v) {
+  const out = { ...VIEW_DEFAULTS };
+  if (!v || typeof v !== "object") return out;
+  if (VIEW_OPTIONS.spacing.includes(v.spacing)) out.spacing = v.spacing;
+  if (typeof v.legend === "boolean") out.legend = v.legend;
+  if (typeof v.titleBlock === "boolean") out.titleBlock = v.titleBlock;
+  return out;
+}
+
+function isDefaultView(v) {
+  const n = normalizeView(v);
+  return Object.keys(VIEW_DEFAULTS).every(k => n[k] === VIEW_DEFAULTS[k]);
+}
+
 /* ------------------------------------------------ geometry constants */
-const MARGIN=90, FEEDER_SPACING=95, BUS_GAP=110, MIN_BUS_WIDTH=170,
-      SLOT_GAP=30, PUMP_SLOT=115, TX_LABEL_W=150, RMU_TEE=40,
+/* horizontal spacing follows the view's spacing scale (applyView); the
+   default scale is 1, which is exactly the historical geometry */
+let FEEDER_SPACING=95, BUS_GAP=110, MIN_BUS_WIDTH=170, SLOT_GAP=30, PUMP_SLOT=115;
+const MARGIN=90, TX_LABEL_W=150, RMU_TEE=40,
       Y_LABEL=34, Y_MV_TOP=62, Y_RMU_TOP=150, Y_RMU_BOT=268, Y_MVBUS=208,
       PUMP_R=20, TX_R=19, TIER_H=150, TIER_LINK_H=200, STEPUP_H=170,
       GEN_H=110, LV_SUB_H=200, SUB_PAD=20,
@@ -520,6 +671,19 @@ let STEPUP_SHIFT=0;
 let Y_PUMP=352, Y_TX_C1=342, Y_TX_C2=Y_TX_C1+27, Y_BUS=486,
     Y_FEED_BRK=516, Y_ARROW=574, Y_FEED_LBL=592, DIAG_H=780;
 const LABEL_CHAR=6.6;      /* width of one character of an 11 px rotated label */
+/* the view in force for the drawing being made: constitution §4 — a view
+   changes the drawing, never the data or the graph */
+const VIEW={spacing:"normal", legend:true, titleBlock:true};
+const SPACING_SCALE={compact:0.8, normal:1, wide:1.25};
+function applyView(view){
+  const v=Object.assign({spacing:"normal", legend:true, titleBlock:true}, view||{});
+  if(!(v.spacing in SPACING_SCALE)) v.spacing="normal";
+  VIEW.spacing=v.spacing; VIEW.legend=v.legend!==false; VIEW.titleBlock=v.titleBlock!==false;
+  const k=SPACING_SCALE[v.spacing];
+  FEEDER_SPACING=Math.round(95*k); BUS_GAP=Math.round(110*k); MIN_BUS_WIDTH=Math.round(170*k);
+  SLOT_GAP=Math.round(30*k); PUMP_SLOT=Math.round(115*k);
+  return VIEW;
+}
 function extendSheet(extra){ DIAG_H+=extra; }  /* title and bottom move, rows stay */
 function labelClearance(items, order, lvY){
   /* how much the sheet must grow so no rotated way label reaches the
@@ -918,21 +1082,26 @@ function childrenOf(items, order, pid, types){
 
 /* build items from table rows; returns {items, order, errors, warnings} */
 function buildModel(rows){
-  const items={}, order=[], errors=[], warnings=[];
+  const items={}, order=[], errors=[], warnings=[], diagnostics=[];
+  /* every message is also a structured diagnostic: code + the rows it names */
+  const warn=(code,ids,msg,row)=>{ warnings.push(msg); diagnostics.push(makeDiag(code,ids,msg,row)); };
+  const err=(code,ids,msg,row)=>{ errors.push(msg); diagnostics.push(makeDiag(code,ids,msg,row)); };
   rows.forEach((r,i)=>{
     const id=r.id.trim();
     if(!id){
       const any=[r.type,r.desc,r.rating,r.voltage,r.from,r.notes].some(v=>v.trim());
-      if(any) warnings.push(`Row ${i+1} has data but no ID — it is ignored.`);
+      if(any) warn("ROW_NO_ID",[],`Row ${i+1} has data but no ID — it is ignored.`,i+1);
       return;
     }
-    if(items[id]){ errors.push(`Duplicate ID "${id}" (row ${i+1}).`); return; }
-    const type = ALIASES[r.type.trim().toLowerCase()] || null;
-    if(!type) warnings.push(`Row "${id}": unknown type "${r.type}" — drawn as a feeder.`);
+    if(items[id]){ err("DUP_ID",[id],`Duplicate ID "${id}" (row ${i+1}).`,i+1); return; }
+    const rawType=r.type.trim().toLowerCase().replace(/\s+/g," ");
+    const type = ALIASES[rawType] || null;
+    if(!type) warn("UNKNOWN_TYPE",[id],`Row "${id}": unknown type "${r.type}" — drawn as a feeder.`);
     items[id]={ id, type: type||FEEDER, desc:r.desc.trim(), rating:r.rating.trim(),
       voltage:r.voltage.trim(), notes:r.notes.trim(),
       parents:r.from.split(",").map(s=>s.trim()).filter(Boolean),
       prots:(r.prot||"").split(",").map(s=>s.trim()).filter(Boolean),
+      variant:TYPE_VARIANTS[rawType]||null, label:r.type.trim(),   /* the symbol variant and the label the surveyor wrote */
       x:null, xLeft:null, xRight:null, land:{}, tee:{} };
     order.push(id);
   });
@@ -966,25 +1135,25 @@ function buildModel(rows){
     const key=loop.join("|");
     if(!seenLoops.has(key)){
       seenLoops.add(key);
-      warnings.push(loop.map(n=>`"${n}"`).join(", ")+` feed from each other — the loop has no supply; drawn floating.`);
+      warn("LOOP_NO_SUPPLY",loop,loop.map(n=>`"${n}"`).join(", ")+` feed from each other — the loop has no supply; drawn floating.`);
     }
   }
   for(const id of order){
     const it=items[id];
     for(const p of it.parents)
-      if(!items[p]) errors.push(`"${id}" feeds from unknown ID "${p}" — check the Feeds from column.`);
+      if(!items[p]) err("UNKNOWN_SUPPLY",[id,p],`"${id}" feeds from unknown ID "${p}" — check the Feeds from column.`);
     if(it.type===TRANSFORMER){
       const up=order.map(q=>items[q]).filter(c=>c.parents.includes(it.id)
                                             && [MV_BUSBAR,RMU].includes(c.type));
       const dn=order.map(q=>items[q]).filter(c=>c.parents.includes(it.id)
                                             && c.type===LV_BUSBAR);
       if(up.length && dn.length)
-        warnings.push(`"${id}" feeds both an MV and an LV board — drawn as a step-up.`);
+        warn("TX_BOTH_LEVELS",[id],`"${id}" feeds both an MV and an LV board — drawn as a step-up.`);
     }
     if([TRANSFORMER].includes(it.type) && !it.parents.length)
-      warnings.push(`"${id}" has no Feeds From — drawn with an open supply terminal.`);
+      warn("TX_NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn with an open supply terminal.`);
     else if(!it.parents.length && ![MV_INCOMER,GENERATOR].includes(it.type))
-      warnings.push(`"${id}" has no Feeds From — drawn without a supply.`);
+      warn("NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn without a supply.`);
     /* a supply that cannot feed this row: the row draws floating */
     for(const p of it.parents){
       if(!items[p]) continue;
@@ -992,39 +1161,39 @@ function buildModel(rows){
       if([PUMP,BUS_COUPLER].concat(TERMINALS).includes(pt)
          || (pt===FEEDER && ![LV_BUSBAR,MCC].includes(it.type))
          || (pt===MV_INCOMER && [PUMP,FEEDER,MCC,LV_BUSBAR].concat(TERMINALS).includes(it.type)))
-        warnings.push(`"${id}" feeds from "${p}" (${pt}) — a ${pt} cannot supply a ${it.type}; drawn floating.`);
+        warn("IMPOSSIBLE_SUPPLY",[id,p],`"${id}" feeds from "${p}" (${pt}) — a ${pt} cannot supply a ${it.type}; drawn floating.`);
     }
     if(it.type===MCC || it.type===PUMP)
       for(const p of it.parents)
         if(items[p] && items[p].type===TRANSFORMER && txBoard(items,items[p]))
-          warnings.push(`"${id}" feeds from transformer "${p}", which feeds board "${txBoard(items,items[p]).id}" — drawn as a way of that board (put the board in Feeds From).`);
+          warn("LOAD_ON_BOARD_TX",[id,p],`"${id}" feeds from transformer "${p}", which feeds board "${txBoard(items,items[p]).id}" — drawn as a way of that board (put the board in Feeds From).`);
     if(it.type===MCC)
       for(const p of it.parents)
         if(items[p] && [MV_BUSBAR,RMU].includes(items[p].type))
-          warnings.push(`MCC "${id}" feeds from MV gear "${p}" — an MCC is an LV assembly; add a transformer and an LV board in between.`);
+          warn("MCC_ON_MV",[id,p],`MCC "${id}" feeds from MV gear "${p}" — an MCC is an LV assembly; add a transformer and an LV board in between.`);
         else if(items[p] && ![LV_BUSBAR,MCC,TRANSFORMER].includes(items[p].type))
-          warnings.push(`MCC "${id}" feeds from "${p}" (${items[p].type}) — an MCC takes its supply from an LV board, an MCC or a transformer.`);
+          warn("MCC_BAD_SUPPLY",[id,p],`MCC "${id}" feeds from "${p}" (${items[p].type}) — an MCC takes its supply from an LV board, an MCC or a transformer.`);
     if(it.type===TRANSFORMER && it.parents.length
        && !order.some(q=>items[q].parents.includes(it.id))
        && !earthBelow(items,it))
-      warnings.push(`"${id}" has nothing on its output — drawn with an open outgoing terminal; put "${id}" in the Feeds From of whatever it supplies.`);
+      warn("TX_NO_LOAD",[id],`"${id}" has nothing on its output — drawn with an open outgoing terminal; put "${id}" in the Feeds From of whatever it supplies.`);
     if(it.type===GENERATOR && !order.some(q=>items[q].parents.includes(it.id))
        && !it.parents.some(p=>items[p] && items[p].type===TRANSFORMER)
        && !genFeeds(items,order,it).length)
-      warnings.push(`Generator "${id}" feeds nothing.`);
+      warn("GEN_NO_LOAD",[id],`Generator "${id}" feeds nothing.`);
     if(it.prots.length && it.type===MV_INCOMER)
-      warnings.push(`"${id}": protection on an MV incomer is on the utility side — not drawn.`);
+      warn("PROT_ON_INCOMER",[id],`"${id}": protection on an MV incomer is on the utility side — not drawn.`);
     else if(![LV_BUSBAR,MV_BUSBAR,BUS_COUPLER].includes(it.type))
       for(const raw of it.prots)
         if(!PROT_ALIASES[raw.toLowerCase().split(/\s+/).join(" ")])
-          warnings.push(`"${id}": unknown protection "${raw}" — the default symbol is drawn.`);
+          warn("UNKNOWN_PROT",[id],`"${id}": unknown protection "${raw}" — the default symbol is drawn.`);
   }
-  return {items, order, errors, warnings};
+  return {items, order, errors, warnings, diagnostics};
 }
 
 /* ------------------------------------------------ layout */
-function mccLoads(items, order, m){   /* an MCC's motor ways and feeders */
-  return childrenOf(items,order,m.id,[PUMP,FEEDER].concat(TERMINALS));
+function mccLoads(items, order, m){   /* an MCC's ways: motors, feeders, terminal items, and an MCC fed from it */
+  return childrenOf(items,order,m.id,[PUMP,FEEDER,MCC].concat(TERMINALS));
 }
 function lvKids(items, order, bb){
   /* the ways of an LV board: feeders, MCCs, motors, terminal items and
@@ -1520,6 +1689,10 @@ class SVG {
   document(width,height){
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${n0(width)}" height="${height}" viewBox="0 0 ${n0(width)} ${height}"><rect width="100%" height="100%" fill="white"/>${this.parts.join("")}</svg>`;
   }
+  /* everything drawn between begin(id) and end() belongs to that table row:
+     the page finds a symbol's row with closest('[data-id]') */
+  begin(id,kind){ this.parts.push(`<g data-id="${esc(id)}" data-kind="${kind}">`); }
+  end(){ this.parts.push("</g>"); }
   line(x1,y1,x2,y2,w=2,dash=null){
     this._track(x1,y1,x2,y2);
     this.parts.push(`<line x1="${n1(x1)}" y1="${n1(y1)}" x2="${n1(x2)}" y2="${n1(y2)}" stroke="#111" stroke-width="${w}"${dash?` stroke-dasharray="${dash}"`:""} stroke-linecap="round"/>`);
@@ -1667,9 +1840,26 @@ class SVG {
   vsd(x,y){              /* drive box over a motor's drop, conductor running through */
     this.rect(x-12,y-7,24,14,1.5,null,"white"); this.text(x,y+3,"VSD",{size:7.5});
   }
-  transformer(x,lines,side,y){
+  /* a generation source: the G circle, or its variants — an inverter (the
+     ~ / = box in the circle) and a battery (two plates) */
+  genMark(x,cy,r,variant){
+    this.circle(x,cy,r,2.2);
+    if(variant==="inverter"){
+      this.line(x-r*0.6,cy+r*0.6,x+r*0.6,cy-r*0.6,1.5);
+      this.text(x-r*0.4,cy-r*0.15,"~",{size:r*0.7,bold:true}); this.text(x+r*0.4,cy+r*0.62,"=",{size:r*0.7,bold:true});
+    } else if(variant==="battery"){
+      this.line(x-r*0.55,cy-r*0.25,x+r*0.55,cy-r*0.25,3); this.line(x-r*0.3,cy+r*0.2,x+r*0.3,cy+r*0.2,2);
+      this.line(x,cy-r,x,cy-r*0.25); this.line(x,cy+r*0.2,x,cy+r);
+    } else this.text(x,cy+4,"G",{size:13,bold:true});
+  }
+  transformer(x,lines,side,y,variant){
     const c1=(y===undefined)?Y_TX_C1:y;
-    this.circle(x,c1,TX_R,2.2); this.circle(x,c1+27,TX_R,2.2);
+    if(variant==="ups"){            /* a UPS: the box with its conversion marks */
+      this.rect(x-TX_R,c1-TX_R,2*TX_R,27+2*TX_R,2.2);
+      this.line(x-TX_R,c1+27+TX_R,x+TX_R,c1-TX_R,1.2);
+      this.text(x-7,c1+4,"~",{size:11,bold:true}); this.text(x+7,c1+27+2,"=",{size:11,bold:true});
+      this.text(x,c1+27+TX_R-5,"UPS",{size:7});
+    } else { this.circle(x,c1,TX_R,2.2); this.circle(x,c1+27,TX_R,2.2); }
     let ty=c1-6;
     for(const s of lines){
       if(side==="left") this.text(x-TX_R-10,ty,s,{anchor:"end"});
@@ -1686,21 +1876,100 @@ class SVG {
   arrowDown(x,ytip){ this.poly([[x-6,ytip-11],[x+6,ytip-11],[x,ytip]]); }
 }
 
+/* The symbol registry: one entry per thing the drawing can show, with the
+ * glyph drawn the same way wherever it appears — in the legend, in the page's
+ * palette, and (through the SVG symbol methods it calls) on the sheet.
+ *
+ *   { key, label, types: [canonical row types it stands for] | devices: [kinds],
+ *     legend: "always" | "when-used" | "never",
+ *     draw(svg, cx, ytop, ybot) }          the 30 px tall legend glyph
+ *
+ * `draw` uses the canvas primitives and composite symbols, so a DXF or scene
+ * canvas gets the same marks. The legend lists the "always" entries and the
+ * "when-used" ones whose type is on the sheet. */
+
+const yc = (ytop, ybot) => (ytop + ybot) / 2;
+
+const SYMBOLS = [
+  { key: "cb", label: "Circuit breaker", devices: ["cb"], legend: "always",
+    draw: (s, cx, yt, yb) => s.drop(cx, yt, yb, "cb") },
+  { key: "lbs", label: "Load-break switch", devices: ["lbs"], legend: "always",
+    draw: (s, cx, yt, yb) => s.lbs(cx, yt, yb) },
+  { key: "fuse", label: "Fuse", devices: ["fuse"], legend: "always",
+    draw: (s, cx, yt, yb) => s.drop(cx, yt, yb, "fuse") },
+  { key: "fuse-switch", label: "Fuse-switch", devices: ["fuse-switch"], legend: "always",
+    draw: (s, cx, yt, yb) => s.fuseSwitch(cx, yt, yb) },
+  { key: "contactor", label: "Contactor", devices: ["contactor"], legend: "always",
+    draw: (s, cx, yt, yb) => s.drop(cx, yt, yb, "contactor") },
+  { key: "fuse-contactor", label: "Fused contactor", devices: ["fuse-contactor"], legend: "always",
+    draw: (s, cx, yt, yb) => s.drop(cx, yt, yb, "fuse-contactor") },
+  { key: "tx", label: "Transformer", types: [TRANSFORMER], legend: "always",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y - 5, 8); s.circle(cx, y + 5, 8); } },
+  { key: "gen", label: "Generator", types: [GENERATOR], legend: "always",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y, 9); s.text(cx, y + 3.5, "G", { size: 9, bold: true }); } },
+  { key: "pump", label: "Pump/motor", types: [PUMP], legend: "always",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y, 9); s.text(cx, y + 3.5, "M", { size: 9, bold: true }); } },
+  { key: "bus", label: "Busbar", types: [LV_BUSBAR, MV_BUSBAR], legend: "always",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.line(cx - 14, y, cx + 14, y, 5); } },
+  { key: "mcc", label: "MCC", types: [MCC], legend: "always",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.rect(cx - 11, y - 8, 22, 16, 1.5); s.text(cx, y + 3, "MCC", { size: 6.5 }); } },
+  { key: "feeder", label: "Feeder", types: [FEEDER], legend: "always",
+    draw: (s, cx, yt, yb) => { s.line(cx, yt + 2, cx, yb - 11); s.arrowDown(cx, yb); } },
+  { key: "rmu", label: "RMU/MCC enclosure", types: [RMU], legend: "always",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.rect(cx - 13, y - 10, 26, 20, 1.2, "4 3"); } },
+  { key: CAPACITOR, label: "Capacitor bank", types: [CAPACITOR], legend: "when-used",
+    draw: (s, cx, yt) => { s.line(cx, yt, cx, yt + 4); s.capacitor(cx, yt + 4); } },
+  { key: EARTHING, label: "Earthing/NER", types: [EARTHING], legend: "when-used",
+    draw: (s, cx, yt) => { s.rect(cx - 5, yt, 10, 18); s.line(cx, yt + 18, cx, yt + 22); s.earth(cx, yt + 22); } },
+  { key: ARRESTER, label: "Surge arrester", types: [ARRESTER], legend: "when-used",
+    draw: (s, cx, yt) => {
+      s.rect(cx - 6, yt, 12, 18); s.line(cx, yt + 3, cx, yt + 14);
+      s.line(cx - 3, yt + 11, cx, yt + 15); s.line(cx + 3, yt + 11, cx, yt + 15);
+      s.line(cx, yt + 18, cx, yt + 22); s.earth(cx, yt + 22);
+    } },
+  /* symbol variants: the Type label picks the glyph, the family keeps the behaviour */
+  { key: "variant:ups", label: "UPS", types: [], variant: "ups", legend: "when-used",
+    draw: (s, cx, yt, yb) => { s.rect(cx - 9, yt + 2, 18, 26, 1.5); s.line(cx - 9, yb - 2, cx + 9, yt + 2, 1); s.text(cx - 4, yt + 12, "~", { size: 8, bold: true }); s.text(cx + 4, yb - 5, "=", { size: 8, bold: true }); } },
+  { key: "variant:inverter", label: "Inverter", types: [], variant: "inverter", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y, 9); s.line(cx - 5.5, y + 5.5, cx + 5.5, y - 5.5, 1.2); s.text(cx - 3.6, y - 1.4, "~", { size: 6.3, bold: true }); s.text(cx + 3.6, y + 5.6, "=", { size: 6.3, bold: true }); } },
+  { key: "variant:battery", label: "Battery", types: [], variant: "battery", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y, 9); s.line(cx - 5, y - 2.2, cx + 5, y - 2.2, 2.5); s.line(cx - 2.7, y + 1.8, cx + 2.7, y + 1.8, 1.5); s.line(cx, y - 9, cx, y - 2.2); s.line(cx, y + 1.8, cx, y + 9); } },
+  { key: "variant:dc", label: "DC busbar", types: [], variant: "dc", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.line(cx - 14, y, cx + 14, y, 5, "7 3"); } },
+  /* not in the legend, but the palette shows them */
+  { key: "incomer", label: "MV incomer", types: [MV_INCOMER], legend: "never",
+    draw: (s, cx, yt, yb) => { s.line(cx - 11, yt + 3, cx + 11, yt + 3, 3); s.line(cx, yt + 3, cx, yb); } },
+  { key: "coupler", label: "Bus coupler", types: [BUS_COUPLER], legend: "never",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.line(cx - 22, y, cx - 15, y, 4); const g = s.deviceH("cb", cx, y); s.line(cx - 15, y, cx - g, y); s.line(cx + g, y, cx + 15, y); s.line(cx + 15, y, cx + 22, y, 4); } },
+];
+
+const byKey = Object.fromEntries(SYMBOLS.map(e => [e.key, e]));
+
+/** The legend entries for a sheet: the fixed ones plus those whose type is used. */
+function legendEntries(usedTypes) {
+  /* usedTypes holds canonical types and "variant:<name>" keys */
+  return SYMBOLS.filter(e => e.legend === "always" || (e.legend === "when-used" && usedTypes
+      && (e.types.some(t => usedTypes.has(t)) || (e.variant && usedTypes.has("variant:" + e.variant)))))
+    .map(e => [e.key, e.label]);
+}
+
+/** The registry entry that draws a row type (busbars share one), or its variant. */
+function symbolForType(type, variant) {
+  if (variant) { const v = SYMBOLS.find(e => e.variant === variant); if (v) return v; }
+  return SYMBOLS.find(e => e.types && e.types.includes(type)) || null;
+}
+
+/** Draw one legend glyph — the same call the legend makes. */
+function drawSymbol(svg, key, cx, ytop, ybot) {
+  const e = byKey[key];
+  if (e) e.draw(svg, cx, ytop, ybot);
+}
+
 /* ------------------------------------------------ render */
 const LEGEND_H=100;
-const LEGEND_ITEMS=[
-  ["cb","Circuit breaker"],["lbs","Load-break switch"],["fuse","Fuse"],
-  ["fuse-switch","Fuse-switch"],["contactor","Contactor"],
-  ["fuse-contactor","Fused contactor"],
-  ["tx","Transformer"],["gen","Generator"],["pump","Pump/motor"],["bus","Busbar"],["mcc","MCC"],
-  ["feeder","Feeder"],["rmu","RMU/MCC enclosure"]
-];
-const EXTRA_LEGEND=[[CAPACITOR,"Capacitor bank"],[EARTHING,"Earthing/NER"],
-                    [ARRESTER,"Surge arrester"]];
+/* the legend is drawn from the symbol registry: the fixed entries plus the
+   terminal items a sheet actually uses (src/core/symbols/registry.js) */
 const LEGEND_CELL=68, LEGEND_ROW_H=60;   /* a second row on a narrow sheet */
-function legendEntries(extra){
-  return LEGEND_ITEMS.concat(EXTRA_LEGEND.filter(e=>extra && extra.has(e[0])));
-}
 function legendRows(width, n){
   /* [cells per row, rows] so the legend fits the sheet width */
   const perRow=Math.max(1,Math.floor((width-48-16)/LEGEND_CELL));
@@ -1715,25 +1984,7 @@ function drawLegend(svg, extra, width){
   entries.forEach(([kind,label],i)=>{
     const ytop=y0+22+LEGEND_ROW_H*Math.floor(i/perRow), ybot=ytop+30, yc=(ytop+ybot)/2;
     const cx=x0+8+cell*(i%perRow)+cell/2;
-    if(["cb","fuse","contactor","fuse-contactor"].includes(kind)) svg.drop(cx,ytop,ybot,kind);
-    else if(kind==="lbs") svg.lbs(cx,ytop,ybot);
-    else if(kind==="fuse-switch") svg.fuseSwitch(cx,ytop,ybot);
-    else if(kind==="tx"){ svg.circle(cx,yc-5,8); svg.circle(cx,yc+5,8); }
-    else if(kind==="gen"){ svg.circle(cx,yc,9); svg.text(cx,yc+3.5,"G",{size:9,bold:true}); }
-    else if(kind==="pump"){ svg.circle(cx,yc,9); svg.text(cx,yc+3.5,"M",{size:9,bold:true}); }
-    else if(kind==="bus") svg.line(cx-14,yc,cx+14,yc,5);
-    else if(kind==="mcc"){ svg.rect(cx-11,yc-8,22,16,1.5); svg.text(cx,yc+3,"MCC",{size:6.5}); }
-    else if(kind==="feeder"){ svg.line(cx,ytop+2,cx,ybot-11); svg.arrowDown(cx,ybot); }
-    else if(kind==="rmu") svg.rect(cx-13,yc-10,26,20,1.2,"4 3");
-    else if(kind===CAPACITOR){ svg.line(cx,ytop,cx,ytop+4); svg.capacitor(cx,ytop+4); }
-    else if(kind===EARTHING){
-      svg.rect(cx-5,ytop,10,18); svg.line(cx,ytop+18,cx,ytop+22); svg.earth(cx,ytop+22);
-    }
-    else if(kind===ARRESTER){
-      svg.rect(cx-6,ytop,12,18); svg.line(cx,ytop+3,cx,ytop+14);
-      svg.line(cx-3,ytop+11,cx,ytop+15); svg.line(cx+3,ytop+11,cx,ytop+15);
-      svg.line(cx,ytop+18,cx,ytop+22); svg.earth(cx,ytop+22);
-    }
+    drawSymbol(svg,kind,cx,ytop,ybot);
     let ty=ybot+12;
     for(const s of (label.length>11?label.split(/ (.+)/).filter(Boolean):[label])){
       svg.text(cx,ty,s,{size:9}); ty+=10;
@@ -1816,6 +2067,7 @@ function render(info, items, order, width, warnings, canvas){
   /* RMU enclosures */
   const rmuBox={};
   for(const rmu of rmus){
+    svg.begin(rmu.id,rmu.type);
     const waysIn=mvs.filter(m=>childrenOf(items,order,m.id).some(k=>k.id===rmu.id))
       .concat(Object.keys(sus).map(t=>items[t])
         .filter(t=>childrenOf(items,order,t.id).some(k=>k.id===rmu.id)));
@@ -1889,6 +2141,7 @@ function render(info, items, order, width, warnings, canvas){
       .concat(childrenOf(items,order,rmu.id,[RMU]));
     if(noUnnamed(rmu,linked))       /* the open point is here, way unnamed */
       svg.text(rmu.x+12,rb+14,"N.O.",{size:9,anchor:"start"});
+    svg.end();
   }
 
   /* RMU-to-RMU cables */
@@ -1946,6 +2199,7 @@ function render(info, items, order, width, warnings, canvas){
 
   /* MV incomers */
   for(const m of mvs){
+    svg.begin(m.id,m.type);
     const kids=childrenOf(items,order,m.id);
     const below=kids.filter(k=>k.id in depth).map(k=>dy(k));
     const yTop=Y_MV_TOP+(below.length?Math.min(...below):0);
@@ -1972,12 +2226,15 @@ function render(info, items, order, width, warnings, canvas){
       svg.line(Math.min(...xs),ySplit,Math.max(...xs),ySplit);
       for(const t of direct){ svg.dot(t.x,ySplit); svg.line(t.x,ySplit,t.x,Y_TX_C1-TX_R); }
     }
+    svg.end();
   }
 
   /* MV switchboards */
   for(const mvb of mvbs){
     const yb=yBus(mvb);
+    svg.begin(mvb.id,mvb.type);
     svg.line(mvb.xLeft,yb,mvb.xRight,yb,5.5);
+    svg.end();
     const [praw,pkind]=protFor(mvb);
     const zone=(praw && !pkind)?(" · "+praw):"";  /* e.g. 87B differential */
     barLabels.push([mvb.xLeft,mvb.xRight,yb-12,
@@ -2094,6 +2351,7 @@ function render(info, items, order, width, warnings, canvas){
   /* pumps */
   for(const p of pumps){
     if(p.x===null) continue;
+    svg.begin(p.id,p.type);
     /* an MV motor sits in the transformer row; a motor fed from an LV
        board or its own transformer hangs in the feeder band below it */
     const lvPar=p.parents.map(q=>items[q])
@@ -2147,6 +2405,7 @@ function render(info, items, order, width, warnings, canvas){
     } else {
       svg.text(p.x+4,yc+r+14,lines.join(" · "),{size:11,anchor:"start",rotate:90});
     }
+    svg.end();
   }
 
   /* generation sources feeding an LV board directly */
@@ -2155,11 +2414,11 @@ function render(info, items, order, width, warnings, canvas){
     const suKids=order.filter(i=>items[i].type===TRANSFORMER)
       .flatMap(i=>childrenOf(items,order,i,[GENERATOR]).map(k=>k.id));
     if(g.x===null || suSrcIds.includes(g.id) || suKids.includes(g.id) || (g.id in gens)) continue;
+    svg.begin(g.id,g.type);
     const fed=genFeeds(items,order,g).filter(([b])=>b.type===LV_BUSBAR && b.xLeft!==null);
     /* the circle stands over the (first) board it supplies */
     const yg=fed.length?lvY(fed[0][0])-(Y_BUS-Y_TX_C1):Y_TX_C1;
-    svg.circle(g.x,yg+13,20,2.2);
-    svg.text(g.x,yg+17,"G",{size:13,bold:true});
+    svg.genMark(g.x,yg+13,20,g.variant);
     let ty=yg-6;
     for(const t of [g.id,g.desc,[g.rating,g.voltage].filter(Boolean).join(" ")].filter(Boolean)){
       svg.text(g.x+30,ty,t,{anchor:"start"}); ty+=15;
@@ -2176,19 +2435,20 @@ function render(info, items, order, width, warnings, canvas){
         svg.text(g.x+16,ym+12,cpl.notes.trim().toLowerCase()===cpl.id.trim().toLowerCase()?"":cpl.notes,{size:10,anchor:"start"});
       }
     }
+    svg.end();
   }
 
   /* generators standing over MV gear as a supply */
   for(const gid of Object.keys(gens)){
     const g=items[gid], fed=gens[gid];
     if(g.x===null) continue;
+    svg.begin(g.id,g.type);
     const b0=fed[0][0];
     const yTo0=(b0.type===MV_BUSBAR)?yBus(b0):yRmu(b0)[0];
     /* on the top tier the column has headroom of its own; lower down it
        fits in the 200 px tier gap, under the bar above */
     const yGen=((depth[b0.id]||0)===0)?Y_GEN:yTo0-(b0.type===MV_BUSBAR?112:82);
-    svg.circle(g.x,yGen,20,2.2);
-    svg.text(g.x,yGen+4,"G",{size:13,bold:true});
+    svg.genMark(g.x,yGen,20,g.variant);
     const lbl=[g.id,g.desc,[g.rating,g.voltage].filter(Boolean).join(" ")].filter(Boolean);
     if(b0.type===MV_BUSBAR){        /* stacked above the circle, centred */
       let ty=yGen-28-14*(lbl.length-1);
@@ -2209,11 +2469,13 @@ function render(info, items, order, width, warnings, canvas){
         }
       } else svg.line(g.x,yGen+20,g.x,yRmu(b)[0]);   /* the RMU draws its way in */
     }
+    svg.end();
   }
 
   /* transformers between two MV tiers */
   for(const [u,tx,l] of links){
     if(tx.x===null) continue;
+    svg.begin(tx.id,tx.type);
     const yU=(u.type===MV_BUSBAR)?yBus(u):yRmu(u)[1];
     const yL=(l.type===MV_BUSBAR)?yBus(l):yRmu(l)[0];
     const c1=Math.floor((yU+yL)/2)-13;   /* integer: both engines round alike */
@@ -2232,19 +2494,21 @@ function render(info, items, order, width, warnings, canvas){
     const kindL=(l.parents.includes(tx.id)?protFor(l,tx.id)[1]:protFor(tx,l.id)[1])||"cb";
     if(l.type===MV_BUSBAR){ svg.drop(tx.x,c1+27+TX_R,yL,kindL); svg.dot(tx.x,yL); }
     else svg.line(tx.x,c1+27+TX_R,tx.x,yL);      /* the RMU draws its way in */
+    svg.end();
   }
 
   /* step-up columns: source -> transformer -> MV busbar / RMU */
   for(const txId of Object.keys(sus)){
     const tx=items[txId], src=sus[txId];
     if(tx.x===null) continue;
+    svg.begin(tx.id,tx.type);
     const fed0=childrenOf(items,order,txId,[MV_BUSBAR,RMU]);
     const off=fed0.length?Math.min(...fed0.map(f=>dy(f))):0;
     const yGen=Y_GEN+off, yC1=Y_SU_C1+off, yC2=Y_SU_C2+off;
     let ySrcBot=yGen;
+    if(src) svg.begin(src.id,src.type);
     if(src && src.type===GENERATOR){
-      svg.circle(tx.x,yGen,20,2.2);
-      svg.text(tx.x,yGen+4,"G",{size:13,bold:true});
+      svg.genMark(tx.x,yGen,20,src.variant);
       let ty=yGen-26;
       for(const t of [src.id,src.desc,[src.rating,src.voltage].filter(Boolean).join(" ")].filter(Boolean)){
         svg.text(tx.x+30,ty,t,{size:11,anchor:"start"}); ty+=14;
@@ -2262,6 +2526,7 @@ function render(info, items, order, width, warnings, canvas){
         svg.text(tx.x,ty,t,{size:11.5,bold:i===0}); ty+=14; i++;
       }
     }
+    if(src) svg.end();
     svg.line(tx.x,ySrcBot,tx.x,yC1-TX_R);
     svg.circle(tx.x,yC1,TX_R,2.2);
     svg.circle(tx.x,yC2,TX_R,2.2);
@@ -2274,6 +2539,7 @@ function render(info, items, order, width, warnings, canvas){
       svg.drop(tx.x,yC2+TX_R,yTo,protFor(fed,txId)[1]||"cb");
       if(fed.type===MV_BUSBAR) svg.dot(tx.x,yTo);
     }
+    svg.end();
   }
 
   /* step-ups from a real LV board: board below, MV gear above */
@@ -2281,6 +2547,7 @@ function render(info, items, order, width, warnings, canvas){
   for(const txId of Object.keys(midMap)){
     const tx=items[txId], src=midMap[txId][0], up=midMap[txId][1];
     if(tx.x===null) continue;
+    svg.begin(tx.id,tx.type);
     svg.circle(tx.x,Y_TX_C1,TX_R,2.2);
     svg.circle(tx.x,Y_TX_C2,TX_R,2.2);
     let ty=Y_TX_C1-6;
@@ -2304,12 +2571,14 @@ function render(info, items, order, width, warnings, canvas){
     } else {
       svg.line(tx.x,yRmu(up)[1],tx.x,Y_TX_C1-TX_R);
     }
+    svg.end();
   }
 
   /* reversed step-ups: board on top, source below */
   for(const tx of order.map(i=>items[i])
                        .filter(o=>genBelow(items,order,o))){
     if(tx.x===null) continue;
+    svg.begin(tx.id,tx.type);
     for(const f of tx.parents.map(p=>items[p])
                      .filter(p=>[MV_BUSBAR,RMU].includes(p.type))){
       const yFrom=f.type===MV_BUSBAR?yBus(f):yRmu(f)[1];
@@ -2324,12 +2593,12 @@ function render(info, items, order, width, warnings, canvas){
     }
     const kids=childrenOf(items,order,tx.id,[GENERATOR,LV_BUSBAR,MV_INCOMER]);
     const src=kids.length?kids[0]:null;
-    if(!src) continue;
+    if(!src){ svg.end(); continue; }
     const ySrc=Y_BUS;
+    svg.begin(src.id,src.type);
     if(src.type===GENERATOR){
       svg.line(tx.x,Y_TX_C2+TX_R,tx.x,ySrc-20);
-      svg.circle(tx.x,ySrc,20,2.2);
-      svg.text(tx.x,ySrc+4,"G",{size:13,bold:true});
+      svg.genMark(tx.x,ySrc,20,src.variant);
       let t2=ySrc-6;
       for(const t of [src.id,src.desc,[src.rating,src.voltage].filter(Boolean).join(" ")].filter(Boolean)){
         svg.text(tx.x+30,t2,t,{size:11,anchor:"start"}); t2+=14;
@@ -2344,19 +2613,21 @@ function render(info, items, order, width, warnings, canvas){
         svg.text(tx.x,t2,t,{size:11.5,bold:i===0}); t2+=14; i++;
       }
     }
+    svg.end(); svg.end();
   }
 
   /* transformers */
   for(const tx of txs){
     if(tx.x===null || (tx.id in sus) || (tx.id in lvsubMid) || ltx.has(tx.id)
        || genBelow(items,order,tx) || boardTx(items,tx)) continue;   /* drawn as its own column */
+    svg.begin(tx.id,tx.type);
     const fed=childrenOf(items,order,tx.id,[LV_BUSBAR]);
     /* transformers sharing a board label away from each other */
     let side=fed.some(bb=>bb.parents.length>1 && tx.x<bb.x)?"left":"right";
     if(order.some(i=>items[i].type===GENERATOR && items[i].x!==null
                      && items[i].x-tx.x>0 && items[i].x-tx.x<120))
       side="left";                  /* a generator stands to its right */
-    svg.transformer(tx.x,[tx.id,tx.desc,[tx.rating,tx.voltage].filter(Boolean).join(" ")].filter(Boolean),side);
+    svg.transformer(tx.x,[tx.id,tx.desc,[tx.rating,tx.voltage].filter(Boolean).join(" ")].filter(Boolean),side,undefined,tx.variant);
     for(const q of tx.parents){
       const par=items[q];
       if(par.type===RMU) svg.line(tx.x,yRmu(par)[1],tx.x,Y_TX_C1-TX_R);
@@ -2436,13 +2707,16 @@ function render(info, items, order, width, warnings, canvas){
       svg.line(Math.min(...xs),ysplit,Math.max(...xs),ysplit);
       for(const k of hung) svg.dot(k.x,ysplit);
     }
+    svg.end();
   }
 
   /* LV busbars */
   for(const bb of busbars){
     if(bb.xLeft===null) continue;
     const yb=lvY(bb);
-    svg.line(bb.xLeft,yb,bb.xRight,yb,5.5);
+    svg.begin(bb.id,bb.type);
+    svg.line(bb.xLeft,yb,bb.xRight,yb,5.5,bb.variant==="dc"?"14 6":null);   /* a DC bar is dashed */
+    svg.end();
     const [praw,pkind]=protFor(bb);
     const zone=(praw && !pkind)?(" · "+praw):"";  /* e.g. 87B differential */
     barLabels.push([bb.xLeft,bb.xRight,yb-12,barLabel(bb)+zone]);
@@ -2528,6 +2802,7 @@ function render(info, items, order, width, warnings, canvas){
     const dev=ckind||"cb";
     const extra=(craw && !ckind)?craw:"";
     const lbl=[bc.id,bc.rating,extra].filter(Boolean).join(" ");
+    svg.begin(bc.id,bc.type);
 
     if(Math.abs(ya-yb)>1){
       /* boards on different levels: the link runs in the gap beside them,
@@ -2554,6 +2829,7 @@ function render(info, items, order, width, warnings, canvas){
         svg.text(xLink-10,ym,lbl,{size:11,anchor:"end"});
         svg.text(xLink-10,ym+14,bc.notes,{size:10,anchor:"end"});
       }
+      svg.end();
       continue;
     }
     const blocking=busbars.concat(mvbs).filter(o=>o!==a&&o!==b&&o.xLeft!==null
@@ -2574,6 +2850,7 @@ function render(info, items, order, width, warnings, canvas){
       svg.dot(b.xLeft,yb);
       svg.text(xd,yLane-10,lbl,{size:11});
       svg.text(xd,yLane-24,bc.notes,{size:10});
+      svg.end();
       continue;
     }
     const cgap=svg.deviceH(dev,xm,ya);
@@ -2581,11 +2858,13 @@ function render(info, items, order, width, warnings, canvas){
     svg.line(xm+cgap,ya,b.xLeft,ya,2);
     svg.text(xm,ya+24,lbl,{size:11});
     svg.text(xm,ya+38,bc.notes,{size:10});
+    svg.end();
   }
 
   /* feeders and MCCs */
   for(const f of feeders){
     if(f.x===null) continue;
+    svg.begin(f.id,f.type);
     let par=f.parents.length?items[f.parents[0]]:null;
     const pid=par?par.id:null;
     if(par && par.type===TRANSFORMER && txBoard(items,par)) par=txBoard(items,par);  /* a way of the board it feeds */
@@ -2599,6 +2878,7 @@ function render(info, items, order, width, warnings, canvas){
       svg.drop(f.x,y0,y0+26,kind);
       const h=svg.terminal(f.type,f.x,y0+26);
       svg.text(f.x+4,y0+26+h+12,lbl,{size:11,anchor:"start",rotate:90});
+      svg.end();
       continue;
     }
     if(par && [MV_BUSBAR,RMU].includes(par.type)){
@@ -2621,6 +2901,7 @@ function render(info, items, order, width, warnings, canvas){
         const h=svg.terminal(f.type,f.x,yTip-24);
         svg.text(f.x+4,yTip-24+h+12,lbl,{size:11,anchor:"start",rotate:90});
       }
+      svg.end();
       continue;
     }
     const yb=(par && (par.type===LV_BUSBAR||par.type===MCC))?lvY(par):Y_BUS;
@@ -2643,6 +2924,7 @@ function render(info, items, order, width, warnings, canvas){
         svg.line(f.x,yArrow,f.x,yM);
         svg.line(f.xLeft,yM,f.xRight,yM,5.5);
         barLabels.push([f.xLeft,f.xRight,yM-12,barLabel(f)]);
+        svg.end();
         continue;
       }
     } else if(TERMINALS.includes(f.type)){
@@ -2652,12 +2934,14 @@ function render(info, items, order, width, warnings, canvas){
     } else if(subBoardsOf(items,order,f).length){
       /* the drop carries on to the sub-board below (drawn with it) */
       svg.text(f.x+8,yDev+30,lbl,{size:11,anchor:"start"});
+      svg.end();
       continue;
     } else {
       svg.drop(f.x,yb,yArrow-10,kind,yDev,dash);
       svg.arrowDown(f.x,yArrow);
     }
     svg.text(f.x+4,yLbl,lbl,{size:11,anchor:"start",rotate:90});
+    svg.end();
   }
 
   /* transformers hanging under an LV board (a way feeding a motor) */
@@ -2665,12 +2949,14 @@ function render(info, items, order, width, warnings, canvas){
     if(tx.x===null || !boardTx(items,tx)) continue;
     const par=items[tx.parents[0]];
     if(par.xLeft===null) continue;
+    svg.begin(tx.id,tx.type);
     const yb=lvY(par), yC1=yb+70;
     svg.dot(tx.x,yb);
     svg.drop(tx.x,yb,yC1-TX_R,protFor(tx,par.id)[1]||"cb",yb+30);
     svg.transformer(tx.x,txLines(tx),"right",yC1);
     if(!Object.values(items).some(c=>c.parents.includes(tx.id)))
       svg.openEnd(tx.x,yC1+27+TX_R,yC1+27+TX_R+36,"outgoing not defined");
+    svg.end();
   }
 
   /* bar labels: placed now that every conductor is drawn — a label starts
@@ -2683,26 +2969,31 @@ function render(info, items, order, width, warnings, canvas){
      it names: the sheet grows so no label leaves the paper */
   width=Math.max(width,svg.maxX+24);
 
-  /* title block */
+  /* title block (a view option) */
   svg.layer="frame";
-  const tbW=288,tbH=96,tbX=width-tbW-24,tbY=DIAG_H-tbH-20;
-  svg.rect(tbX,tbY,tbW,tbH,1.5);
-  svg.line(tbX,tbY+24,tbX+tbW,tbY+24,1.5);
-  svg.text(tbX+10,tbY+17,"SLD SKETCH — SITE SURVEY",{size:12,anchor:"start",bold:true});
-  /* the value field runs from the label column to the block's inner edge; a
-     longer entry is cut there rather than running off the sheet */
-  const fits=Math.floor((tbW-58-10)/LABEL_CHAR);
-  let ty=tbY+40;
-  for(const [k,v0] of [["Site",info.site],["Date",info.date],["By",info.by],["Notes",info.notes]]){
-    const v=v0||"";
-    svg.text(tbX+10,ty,k+":",{size:11,anchor:"start",bold:true});
-    svg.text(tbX+58,ty,v.length<=fits?v:v.slice(0,fits-1).replace(/\s+$/,"")+"…",
-             {size:11,anchor:"start"});
-    ty+=16;
+  if(VIEW.titleBlock){
+    const tbW=288,tbH=96,tbX=width-tbW-24,tbY=DIAG_H-tbH-20;
+    svg.rect(tbX,tbY,tbW,tbH,1.5);
+    svg.line(tbX,tbY+24,tbX+tbW,tbY+24,1.5);
+    svg.text(tbX+10,tbY+17,"SLD SKETCH — SITE SURVEY",{size:12,anchor:"start",bold:true});
+    /* the value field runs from the label column to the block's inner edge; a
+       longer entry is cut there rather than running off the sheet */
+    const fits=Math.floor((tbW-58-10)/LABEL_CHAR);
+    let ty=tbY+40;
+    for(const [k,v0] of [["Site",info.site],["Date",info.date],["By",info.by],["Notes",info.notes]]){
+      const v=v0||"";
+      svg.text(tbX+10,ty,k+":",{size:11,anchor:"start",bold:true});
+      svg.text(tbX+58,ty,v.length<=fits?v:v.slice(0,fits-1).replace(/\s+$/,"")+"…",
+               {size:11,anchor:"start"});
+      ty+=16;
+    }
   }
 
+  /* legend (a view option) */
   const used=new Set(order.map(i=>items[i].type));
   if(order.some(i=>earthBelow(items,items[i]))) used.add(EARTHING);
+  for(const i of order) if(items[i].variant) used.add("variant:"+items[i].variant);
+  if(!VIEW.legend){ svg.layer="drawing"; return svg.document(width,DIAG_H); }
   svg.layer="legend";
   drawLegend(svg,used,width);
   svg.layer="drawing";
@@ -2738,6 +3029,8 @@ function dwrap(s,n=DXF_WRAP_AT){
 }
 class DXF extends SVG {
   constructor(table){ super(); this.ents=[]; this.table=table||null; this.count=0; }
+  begin(){}  /* row grouping is an SVG affair; DXF has layers */
+  end(){}
   _layer(kind){
     if(this.layer==="frame") return "SLD_FRAME";
     if(this.layer==="legend") return "SLD_LEGEND";
@@ -2831,7 +3124,7 @@ class DXF extends SVG {
     const labels={[CAPACITOR]:"Capacitor Bank",[EARTHING]:"Earthing/NER",[ARRESTER]:"Surge Arrester"};
     const rows=order.map(i=>{ const it=items[i];
       const typ=labels[it.type]||it.type.replace(/\b\w/g,c=>c.toUpperCase()).replace("Mv ","MV ").replace("Lv ","LV ").replace("Rmu","RMU").replace("Mcc","MCC");
-      return [it.id,typ,it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>dwrap(v)); });
+      return [it.id,it.label||typ,it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>dwrap(v)); });
     const cols=heads.map((h,i)=>Math.max(dtextW(h,size),...rows.flatMap(r=>r[i].map(l=>dtextW(l,size))))*1.15+2*pad);
     const x1=x0+cols.reduce((a,b)=>a+b,0), yHead=y;
     this.line(x0,y,x1,y,1.2);
@@ -2890,6 +3183,103 @@ class DXF extends SVG {
 }
 function renderDxf(info, items, order, width){
   return render(info,items,order,width,[],new DXF([info,items,order]));
+}
+
+/* The network as a graph — constitution §3: a pure function of (ID, Feeds From).
+ *
+ *   Graph = { nodes: Map<id, Node>, edges: [Edge], out: Map<id,[Edge]>, in: Map<id,[Edge]>,
+ *             primaryParent: Map<id, id|null>, roots: [id] }
+ *   Node  = { id, type }                 type is carried along for the rules, never read here
+ *   Edge  = { id: "A->B", from, to, index, prot, tags: Set }
+ *
+ * Direction is supply → load: `from` is the item named in `to`'s Feeds From.
+ * `index` is the position in that Feeds From list, `prot` the protection
+ * entry that matches it. A supply that is not on the sheet still gets a
+ * node-less edge (`from` unknown), so the reader's UNKNOWN_SUPPLY error and
+ * the graph agree. Nothing here reads Type, Voltage, Description or Notes to
+ * decide connectivity. */
+
+function buildGraph(items, order) {
+  const nodes = new Map(), edges = [], out = new Map(), inn = new Map(), primaryParent = new Map();
+  for (const id of order) {
+    nodes.set(id, { id, type: items[id].type });
+    out.set(id, []); inn.set(id, []);
+  }
+  for (const id of order) {
+    const it = items[id];
+    primaryParent.set(id, it.parents.length ? it.parents[0] : null);
+    it.parents.forEach((p, index) => {
+      const e = { id: `${p}->${id}`, from: p, to: id, index, prot: protFor(it, p), tags: new Set() };
+      edges.push(e);
+      inn.get(id).push(e);
+      if (out.has(p)) out.get(p).push(e);
+    });
+  }
+  const roots = order.filter(id => !items[id].parents.length);
+  return { nodes, edges, out, in: inn, primaryParent, roots };
+}
+
+/** A stable, comparable picture of a graph's connectivity (for tests). */
+function graphSignature(g) {
+  return {
+    nodes: [...g.nodes.keys()],
+    edges: g.edges.map(e => `${e.from}->${e.to}#${e.index}`),
+    primaryParent: [...g.primaryParent.entries()],
+    roots: g.roots.slice(),
+  };
+}
+
+/* The engine as one call: table rows → drawing.
+ *
+ *   const out = draw(info, rows, { dxf: true });
+ *   out.errors / out.warnings   messages from the reader (buildModel)
+ *   out.items / out.order       the model
+ *   out.svg                     the SVG document, or null when errors stop the drawing
+ *   out.dxf                     the R12 DXF text when asked for
+ *
+ * This is the only entry point the page, the CLI and the tests use. */
+
+const ROW_FIELDS = ["id", "type", "desc", "rating", "voltage", "prot", "from", "notes"];
+
+/** Every field present as a string (the reader trims and splits them itself). */
+function normalizeRows(rows) {
+  return rows.map(r => {
+    const o = {};
+    for (const f of ROW_FIELDS) o[f] = r[f] == null ? "" : String(r[f]);
+    return o;
+  });
+}
+
+function draw(info, rows, { dxf = false, check = false, view = null } = {}) {
+  const norm = normalizeRows(rows);
+  applyView(normalizeView(view));       /* the view in force for this drawing (default: the historical geometry) */
+  const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
+  const { items, order, errors, warnings, diagnostics } = buildModel(norm);
+  const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, facts: null, svg: null, dxf: null };
+  if (!order.length) { out.diagnostics.push(makeDiag("EMPTY_SHEET", [], "The table has no rows with an ID.")); return out; }
+  out.graph = buildGraph(items, order);
+  if (errors.length) return out;
+  out.facts = buildFacts(items, order, out.graph);
+  for (const d of out.facts.dropped)
+    out.diagnostics.push(makeDiag("RANK_CYCLE", [d.a, d.b], `"${d.a}" and "${d.b}" cannot both be below each other — one of them is drawn on the row above the other.`));
+  const width = layout(items, order);
+  const drawn = warnings.slice();
+  const canvas = new SceneCanvas();
+  out.svg = render(site, items, order, width, drawn, canvas);
+  out.scene = canvas.scene();
+  if (check) out.check = checkScene(out.scene, items, order);
+  /* the drawing may add its own warnings (couplers); keep them structured too */
+  for (const msg of drawn.slice(warnings.length)) {
+    warnings.push(msg);
+    out.diagnostics.push(diagFromMessage(msg) || makeDiag("COUPLER_INVALID", [], msg));
+  }
+  if (dxf) {
+    /* the page re-reads the model for the DXF; do the same so the two never share state */
+    const m2 = buildModel(norm);
+    const w2 = layout(m2.items, m2.order);
+    out.dxf = renderDxf(site, m2.items, m2.order, w2);
+  }
+  return out;
 }
 
 /* ------------------------------------------------ presets — GENERATED by tools/gen-fixtures.mjs from testdata/, do not edit */
@@ -3046,6 +3436,7 @@ const PRESETS={
 /* ------------------------------------------------ UI wiring */
 const FIELDS=["id","type","desc","rating","voltage","prot","from","notes"];
 let state={info:{site:"",date:"",by:"",notes:""},rows:[]};
+let view_={...VIEW_DEFAULTS};      /* the view options: stored beside the table, never in it */
 
 const $=s=>document.querySelector(s);
 const eqbody=$("#eqbody");
@@ -3116,11 +3507,135 @@ function redraw(){
   }
   showProblems(errors, warnings);
   if(errors.length) return; /* keep the last good drawing on screen */
+  applyView(view_);
   const width=layout(items,order);
   const svgStr=render(state.info,items,order,width,warnings);
   $("#sheet").innerHTML=svgStr;
+  decorateSheet();
   syncView();
 }
+
+/* ------------------------------------------------ canvas: selection, palette, drag & drop */
+/* Every symbol the engine draws sits in <g data-id="…" data-kind="…">. The
+   page adds a transparent hit rectangle to each group (so a thin bar is easy
+   to hit), highlights the selected row's symbol, lets a click on a symbol
+   select its row, and accepts a symbol chip dropped on a busbar, RMU or
+   transformer: that adds a row fed from the target. The table stays the only
+   source of truth — the drop only writes a row. */
+let selectedId=null;
+const TYPE_PREFIX={"MV Incomer":"MV","Generator":"G","MV Busbar":"MVB","RMU":"RMU","Transformer":"TX",
+  "Pump":"P","LV Busbar":"BB","Feeder":"F","MCC":"MCC","Bus Coupler":"BC","Capacitor Bank":"CAP",
+  "Earthing/NER":"NER","Surge Arrester":"SA","UPS":"UPS","Inverter":"INV","Battery":"BAT","DC Busbar":"DCB"};
+function nextId(type){
+  const pre=TYPE_PREFIX[type]||"X", used=new Set(state.rows.map(r=>r.id.trim().toUpperCase()));
+  let n=1; while(used.has((pre+n).toUpperCase())) n++;
+  return pre+n;
+}
+function decorateSheet(){
+  const svg=$("#sheet svg"); if(!svg) return;
+  for(const g of svg.querySelectorAll("g[data-id]")){
+    let bb; try{ bb=g.getBBox(); }catch(e){ continue; }
+    if(!bb.width && !bb.height) continue;
+    const pad=8, r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    r.setAttribute("class","hit");
+    r.setAttribute("x",bb.x-pad); r.setAttribute("y",bb.y-pad);
+    r.setAttribute("width",bb.width+2*pad); r.setAttribute("height",bb.height+2*pad);
+    /* the symbol's own extent, for picking between overlapping groups */
+    r.dataset.bx=bb.x; r.dataset.by=bb.y; r.dataset.bw=bb.width; r.dataset.bh=bb.height;
+    g.insertBefore(r,g.firstChild);
+    if(g.dataset.id===selectedId) g.classList.add("sel");
+  }
+}
+function selectId(id){
+  selectedId=id||null;
+  for(const g of document.querySelectorAll("#sheet svg g[data-id]")) g.classList.toggle("sel",g.dataset.id===selectedId);
+}
+/* what a drop lands on by preference: the things a row can feed from */
+const DROP_TARGETS=["lv busbar","mv busbar","rmu","mcc","transformer","feeder","generator","mv incomer"];
+function symbolAt(clientX,clientY){
+  /* the groups under the point, topmost first; prefer one whose symbol
+     itself (not just its padded hit area) contains the point, then a
+     supply-side kind, then the topmost */
+  const svg=$("#sheet svg"); if(!svg) return null;
+  const groups=[];
+  for(const el of document.elementsFromPoint(clientX,clientY)){
+    const g=el.closest ? el.closest("#sheet svg [data-id]") : null;
+    if(g && !groups.includes(g)) groups.push(g);
+  }
+  if(!groups.length) return null;
+  let pt=null;
+  try{ const m=svg.getScreenCTM(); if(m) pt=new DOMPoint(clientX,clientY).matrixTransform(m.inverse()); }catch(e){}
+  const box=g=>{ const r=g.querySelector(":scope > rect.hit"); return r?{x:+r.dataset.bx,y:+r.dataset.by,w:+r.dataset.bw,h:+r.dataset.bh}:null; };
+  const inside=g=>{
+    const b=box(g); if(!b||!pt) return false; const s=4;
+    return pt.x>=b.x-s && pt.x<=b.x+b.w+s && pt.y>=b.y-s && pt.y<=b.y+b.h+s;
+  };
+  /* the smallest symbol containing the point wins: a bar over the MCC
+     whose enclosure starts at that bar */
+  const hits=groups.filter(inside).sort((a,b)=>{ const A=box(a), B=box(b); return (A.w+8)*(A.h+8)-(B.w+8)*(B.h+8); });
+  return hits[0] || groups.find(g=>DROP_TARGETS.includes(g.dataset.kind)) || groups[0];
+}
+function rowIndexOf(id){ return state.rows.findIndex(r=>r.id.trim()===id); }
+/* the table row follows the selection both ways */
+eqbody.addEventListener("focusin",e=>{
+  const tr=e.target.closest("tr"); if(!tr) return;
+  const row=state.rows[+tr.dataset.i]; if(row) selectId(row.id.trim());
+});
+function addRowFor(type, targetId){
+  snapshot(true);
+  const row=R(nextId(type),type,"","","",targetId||"","",TYPE_DEFAULT_PROT[type]||"");
+  let at=state.rows.length;
+  if(targetId){                       /* after the target's last way, else after the target */
+    const ways=state.rows.map((r,i)=>r.from.split(",").map(s=>s.trim()).includes(targetId)?i:-1).filter(i=>i>=0);
+    const ti=rowIndexOf(targetId);
+    at=(ways.length?Math.max(...ways):ti)+1;
+  }
+  state.rows.splice(at,0,row);
+  rebuildTable(); redraw(); persist();
+  selectId(row.id); focusCell(at,"desc");
+  return row;
+}
+/* one chip per type; the glyph is the legend's, drawn by the symbol registry */
+function chipSvg(type,variant){
+  const e=symbolForType(type,variant); if(!e) return "";
+  const s=new SVG(); e.draw(s,24,4,34);
+  return `<svg viewBox="0 0 48 44" aria-hidden="true">${s.parts.join("")}</svg>`;
+}
+function buildPalette(){
+  const pal=$("#palette"); if(!pal) return;
+  for(const [lbl,type,variant] of TYPE_LABELS){
+    const b=document.createElement("button");
+    b.className="chip"; b.type="button"; b.draggable=true; b.dataset.type=lbl;
+    b.title=`Drag onto a busbar, RMU or transformer to add a ${lbl} fed from it; click to add one under the selected row`;
+    b.innerHTML=chipSvg(type,variant)+esc(lbl);
+    b.addEventListener("dragstart",e=>{
+      e.dataTransfer.setData("text/sld-type",lbl); e.dataTransfer.setData("text/plain",lbl);
+      e.dataTransfer.effectAllowed="copy";
+    });
+    b.addEventListener("click",()=>addRowFor(lbl, selectedId && rowIndexOf(selectedId)>=0 ? selectedId : ""));
+    pal.appendChild(b);
+  }
+}
+(function bindDrop(){
+  const vp=$("#viewport"); let over=null;
+  const isChip=e=>[...e.dataTransfer.types].includes("text/sld-type");
+  const setOver=g=>{ if(over===g) return; if(over) over.classList.remove("over"); over=g; if(over) over.classList.add("over"); };
+  vp.addEventListener("dragenter",e=>{ if(isChip(e)){ e.preventDefault(); vp.classList.add("dropping"); } });
+  vp.addEventListener("dragover",e=>{
+    if(!isChip(e)) return;
+    e.preventDefault(); e.dataTransfer.dropEffect="copy";
+    setOver(symbolAt(e.clientX,e.clientY));
+  });
+  vp.addEventListener("dragleave",e=>{ if(e.target===vp){ vp.classList.remove("dropping"); setOver(null); } });
+  vp.addEventListener("drop",e=>{
+    if(!isChip(e)) return;
+    e.preventDefault();
+    const type=e.dataTransfer.getData("text/sld-type");
+    const g=symbolAt(e.clientX,e.clientY);
+    vp.classList.remove("dropping"); setOver(null);
+    addRowFor(type, g?g.dataset.id:"");
+  });
+})();
 
 /* ------------------------------------------------ data entry helpers */
 /* the usual device on a row's supply side, offered when Type is chosen */
@@ -3279,7 +3794,7 @@ function loadView(){
   }catch(e){}
   view.fitted=true;
 }
-function applyView(){
+function applyZoom(){
   sheetbox.style.width=(view.w?view.w*view.z+2*PAD:0)+"px";
   sheetbox.style.height=(view.h?view.h*view.z+2*PAD:0)+"px";
   sheetEl.style.transform=`scale(${view.z})`;
@@ -3291,7 +3806,7 @@ function setZoom(z, cx, cy){
   if(cx===undefined){ cx=viewport.clientWidth/2; cy=viewport.clientHeight/2; }
   const u=(viewport.scrollLeft+cx-PAD)/view.z, v=(viewport.scrollTop+cy-PAD)/view.z;
   view.z=z; view.fitted=false;
-  applyView();
+  applyZoom();
   viewport.scrollLeft=u*z+PAD-cx;
   viewport.scrollTop=v*z+PAD-cy;
   saveView();
@@ -3302,7 +3817,7 @@ function fitView(){
   else view.z=Math.min(ZMAX,Math.max(ZMIN,
     Math.min((vw-2*PAD)/view.w,(vh-2*PAD)/view.h)));
   view.fitted=true;
-  applyView();
+  applyZoom();
   viewport.scrollLeft=0; viewport.scrollTop=0;
   saveView();
 }
@@ -3315,7 +3830,7 @@ function syncView(){
   const refit=view.fitted || !view.w || !w || big(view.w,w) || big(view.h,h);
   view.w=w; view.h=h;
   if(refit){ fitView(); return; }
-  applyView();
+  applyZoom();
   if(view.sl!==null){                 /* the saved scroll, once at boot */
     viewport.scrollLeft=view.sl; viewport.scrollTop=view.st;
     view.sl=view.st=null;
@@ -3327,8 +3842,8 @@ function syncView(){
   viewport.addEventListener("pointerdown",e=>{
     if(e.button!==0 || onScrollbar(e)) return;
     e.preventDefault();
-    viewport.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try{ viewport.setPointerCapture(e.pointerId); }catch(err){}   /* synthetic events have no pointer to capture */
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY});
     viewport.classList.add("dragging");
     viewport.focus({preventScroll:true});
   });
@@ -3350,8 +3865,15 @@ function syncView(){
     p.x=e.clientX; p.y=e.clientY;
   });
   const release=e=>{
+    const p=pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
     if(!pointers.size) viewport.classList.remove("dragging");
+    /* a press that did not pan is a click: select the symbol under it */
+    if(e.type==="pointerup" && p && Math.hypot(e.clientX-p.x0,e.clientY-p.y0)<4){
+      const g=symbolAt(e.clientX,e.clientY);
+      if(g){ selectId(g.dataset.id); const i=rowIndexOf(g.dataset.id); if(i>=0) flashRow(i); }
+      else selectId(null);
+    }
   };
   for(const ev of ["pointerup","pointercancel","lostpointercapture"])
     viewport.addEventListener(ev,release);
@@ -3389,14 +3911,14 @@ function syncView(){
   $("#v-in").addEventListener("click",()=>setZoom(view.z*ZSTEP));
   $("#v-out").addEventListener("click",()=>setZoom(view.z/ZSTEP));
   if(typeof ResizeObserver!=="undefined")
-    new ResizeObserver(()=>{ if(view.fitted) fitView(); else applyView(); })
+    new ResizeObserver(()=>{ if(view.fitted) fitView(); else applyZoom(); })
       .observe(viewport);
 })();
 
 /* saved table: {v:2, info, rows}; a v1 blob (no "v") has the same shape */
-const STATE_KEY="sld-sketchpad", STATE_VERSION=2;
+const STATE_KEY="sld-sketchpad", STATE_VERSION=3;
 function persist(){
-  try{ localStorage.setItem(STATE_KEY, JSON.stringify({v:STATE_VERSION, info:state.info, rows:state.rows})); }catch(e){}
+  try{ localStorage.setItem(STATE_KEY, JSON.stringify({v:STATE_VERSION, info:state.info, rows:state.rows, view:view_})); }catch(e){}
 }
 function loadState(){
   try{
@@ -3405,6 +3927,7 @@ function loadState(){
     if((s.v||1)>STATE_VERSION) return null;        /* from a newer page: start clean */
     const info={site:"",date:"",by:"",notes:"",...s.info};
     const rows=s.rows.map(r=>R(r.id||"",r.type||"",r.desc||"",r.rating||"",r.voltage||"",r.from||"",r.notes||"",r.prot||""));
+    view_=normalizeView(s.view);
     return {info, rows};
   }catch(e){ return null; }
 }
@@ -3488,7 +4011,7 @@ function tableToRows(table){
   const rows=[];
   for(const r of table.slice(hi+1)){
     const o=R(cell(r,idx.id),cell(r,idx.type),cell(r,idx.desc),cell(r,idx.rating),cell(r,idx.voltage),cell(r,idx.from),cell(r,idx.notes),cell(r,idx.prot));
-    if(o.id) rows.push(o);
+    if(FIELDS.some(f=>o[f])) rows.push(o);   /* a row with data but no ID is kept, and warned about */
   }
   return rows;
 }
@@ -3562,6 +4085,7 @@ $("#copysvg").addEventListener("click",async ()=>{
 function currentDxf(){
   const {items,order,errors}=buildModel(state.rows);
   if(!order.length || errors.length) return null;
+  applyView(view_);
   const width=layout(items,order);
   return renderDxf(state.info,items,order,width);
 }
@@ -3585,7 +4109,7 @@ $("#dxf").addEventListener("click",async ()=>{
       const code=e && e.code;
       if(code==="declined") say("Save cancelled.");
       else if(code==="rate_limited") say("A save prompt is already open — answer it first.");
-      else say("This viewer cannot save .dxf files — use Copy DXF and paste into a file named .dxf, or run sld_sketch.py --dxf.",true);
+      else say("This viewer cannot save .dxf files — use Copy DXF and paste into a file named .dxf, or run: node src/cli/sld.js dxf <table>.",true);
     }
     return;
   }
@@ -3607,6 +4131,25 @@ $("#copydxf").addEventListener("click",async ()=>{
   setTimeout(()=>{ out.textContent=""; },6000);
 });
 
+/* ------------------------------------------------ view options and focus mode */
+function writeViewInputs(){
+  $("#v-spacing").value=view_.spacing; $("#v-legend").checked=view_.legend; $("#v-title").checked=view_.titleBlock;
+}
+function setView(patch){
+  view_=normalizeView({...view_,...patch});
+  writeViewInputs(); view.fitted=true; redraw(); persist();
+}
+$("#v-spacing").addEventListener("change",e=>setView({spacing:e.target.value}));
+$("#v-legend").addEventListener("change",e=>setView({legend:e.target.checked}));
+$("#v-title").addEventListener("change",e=>setView({titleBlock:e.target.checked}));
+function setFocus(on){
+  document.body.classList.toggle("focus",on);
+  $("#focus").textContent=on?"Leave focus":"Focus drawing";
+  view.fitted=true; requestAnimationFrame(()=>fitView());
+}
+$("#focus").addEventListener("click",()=>setFocus(!document.body.classList.contains("focus")));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && document.body.classList.contains("focus")) setFocus(false); });
+
 /* the how-to-fill page */
 const helpEl=$("#help");
 function showHelp(open){
@@ -3621,7 +4164,10 @@ helpEl.addEventListener("toggle",()=>$("#helpbtn").classList.toggle("on",helpEl.
 /* boot: restore last session, else start on example 1 */
 (function(){
   state=loadState()||JSON.parse(JSON.stringify(PRESETS["1"]));
+  buildPalette();
+  writeViewInputs();
   loadView();
   writeInfoInputs(); rebuildTable(); redraw(); persist(); updateUndo();
 })();
+
 </script>

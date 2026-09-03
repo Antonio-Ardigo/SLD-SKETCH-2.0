@@ -1,5 +1,17 @@
 # SLD-Sketch 2.0 — review and improvement plan
 
+## Status
+
+| phase | state | landed as |
+|---|---|---|
+| 1 — scaffold, constitution, test pool, data-entry quick wins | done | PR #2 |
+| 2 — engine as ES modules, Node CLI, page built from modules | done | `src/core/*`, `src/cli/sld.js`, `tools/build-page.mjs` |
+| 3 — structured diagnostics, graph, `<g data-id>`, click-select, drag & drop v1 | done | `src/core/diagnostics.js`, `src/core/graph.js`, palette in `src/ui/app.js`, `testdata/warnings/*` |
+| 4 — rules, rank solver, scene, scene checker, new topology fixtures | done | `src/core/rules/*`, `rank.js`, `facts.js`, `scene.js`, `check.js`, `sld check`, `testdata/topics/*` (10 cases; the MCC-under-MCC gap fixed). The solver reproduces today's tiers on every case and is not yet driving the layout — content-sized bands are the remaining piece, folded into phase 5/6 |
+| 5 — symbol registry, legend from registry, DXF text check, Python retired | done | `src/core/symbols/registry.js` (legend and palette draw from it, goldens identical), `src/core/dxf-check.js` + `sld dxf --check`; `sld_sketch.py`, `sld_dxf.py`, `sld_check.py`, `make_examples.py` removed. Not done: `device()`/`deviceH()` are still two hand-written orientation variants |
+| 6 — view options, larger sketch area, constitution enforcement | done | `src/core/views.js` (spacing, legend, title block) applied through `geometry.applyView`; view bar and Focus mode in the page; `testdata/views/*`; `test/views.test.js` (graph, ranks and verdict fixed under every view), `test/boundaries.test.js` (module import rules); `docs/EXTENDING.md`. Not done: a "flow down" step-up policy — the legacy layout has no such mode, it would be a new placement, not an option |
+| 7 — UPS / Inverter / Battery / DC Busbar | done, as symbol variants | The Type label picks the glyph, the family keeps the behaviour (constitution §2): UPS draws as the conversion box where a transformer would, Inverter and Battery as marked generation sources, DC Busbar as a dashed bar; legend entries appear only when used; `testdata/topics/dc_ups_types`. Not done: DC-specific rules (a DC bus feeding AC gear is not warned about) |
+
 ## Context
 
 SLD-Sketch turns a survey spreadsheet (one row per item; `Feeds From` is the only topology column) into an SVG/DXF single-line diagram. Two front-ends exist: `sld_sketch.py` (Python CLI, 3058 lines) and `sld_sketchpad.html` (browser page with a hand-ported JS copy of the same engine, 3332 lines). The user asked for a review and a plan covering: easier human data entry; a larger sketch area with any number of levels; better handling of particular topological cases; a written "constitution" that keeps `Feeds From` the single topological column while allowing several graphical representations later; quick standard MV/LV values; filling the table by dragging symbols onto the drawing; a test-data pool in its own directory.

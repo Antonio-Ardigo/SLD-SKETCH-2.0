@@ -1,0 +1,5 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility,,11 kV,,,
+TX1,Transformer,Step-down,1000 kVA,11/0.4 kV,,MV1,
+BB1,LV Busbar,Board,,400 V,CB,TX1,
+G1,Generator,Standby set nobody names,500 kVA,400 V,,,

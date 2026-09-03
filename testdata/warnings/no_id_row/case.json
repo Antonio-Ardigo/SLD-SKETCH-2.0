@@ -1,0 +1,28 @@
+{
+  "name": "no_id_row",
+  "group": "warnings",
+  "description": "A row with data but no ID is ignored and reported",
+  "info": {
+    "site": "Warning path: no id row",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "ROW_NO_ID"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 3,
+      "errors": 0,
+      "warnings": 1
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

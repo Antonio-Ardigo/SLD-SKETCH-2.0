@@ -2,8 +2,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { csvToRows } from "./csv.mjs";
-import { draw } from "./engine-legacy.mjs";
+import { csvToRows } from "../../src/io/csv.js";
+import { draw } from "../../src/core/pipeline.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(here, "..", "..");
@@ -38,5 +38,5 @@ export function loadCase(dir) {
 
 /** Draw a loaded case with the engine. */
 export function drawCase(c, opts) {
-  return draw(c.data.info || {}, c.rows, opts);
+  return draw(c.data.info || {}, c.rows, { view: c.data.view || null, ...(opts || {}) });
 }

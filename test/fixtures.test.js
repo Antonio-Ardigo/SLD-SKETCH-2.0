@@ -1,13 +1,30 @@
 /* Every testdata case draws exactly as its golden.svg, and its diagnostics
- * match what case.json expects.  Run:  node --test test/   */
+ * match what case.json expects.  Run:  node --test   */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { listCases, loadCase, drawCase } from "../tools/lib/cases.mjs";
+import { diagKey, DIAG } from "../src/core/diagnostics.js";
+import { checkScene, formatCheck } from "../src/core/check.js";
 
 const cases = listCases();
 assert.ok(cases.length > 0, "no cases under testdata/");
+
+/** The compact, fixture-friendly picture of the facts (what case.json asserts). */
+export function factsView(F) {
+  if (!F) return {};
+  return {
+    rings: F.rings.map(r => ({ members: r.members, closed: r.closed })),
+    spurs: F.spurs,
+    txDir: Object.fromEntries(Object.entries(F.txDir).map(([k, v]) => [k, v.class])),
+    couplers: F.couplers.map(c => ({ id: c.id, kind: c.kind, valid: c.valid, ...(c.duplicate ? { duplicate: true } : {}) })),
+    floating: F.floating,
+    sources: F.sources,
+    subBoards: Object.fromEntries(Object.entries(F.subBoards).map(([k, v]) => [k, v.via])),
+    waysOfBoard: F.waysOfBoard,
+  };
+}
 
 for (const dir of cases) {
   const c = loadCase(dir);
@@ -17,17 +34,36 @@ for (const dir of cases) {
     const out = drawCase(c);
     const exp = c.data.expect || {};
 
+    /* every diagnostic has a catalogued code and, unless it is about the whole sheet, names a row */
+    for (const d of out.diagnostics) {
+      assert.ok(DIAG[d.code], `unknown diagnostic code ${d.code}`);
+      assert.ok(d.ids.length || d.row !== undefined || d.code === "EMPTY_SHEET", `diagnostic names no row: ${d.message}`);
+    }
+    assert.equal(out.diagnostics.filter(d => d.level === "error").length, out.errors.length, "errors ↔ diagnostics");
+
+    if (exp.diagnostics) {
+      assert.deepEqual(out.diagnostics.map(diagKey).sort(), exp.diagnostics.slice().sort(),
+        `diagnostics\n  ${out.diagnostics.map(d => d.message).join("\n  ")}`);
+    }
+    if (exp.check && out.svg) {
+      const k = checkScene(out.scene, out.items, out.order), e = exp.check;
+      const detail = `\n  ${formatCheck(k)}\n  missing: ${k.items.missing.join(", ")}\n  via: ${k.edges.via.join("; ")}\n  disconnected: ${k.edges.disconnected.join("; ")}\n  overlaps: ${k.overlapList.join("; ")}\n  false nets: ${k.falseList.join(" | ")}`;
+      if (e.items === "all") assert.equal(k.items.missing.length, 0, "items drawn" + detail);
+      if (e.edges === "all") assert.equal(k.edges.connected, k.edges.total, "edges connected" + detail);
+      if (typeof e.disconnected === "number") assert.equal(k.edges.disconnected.length, e.disconnected, "disconnected edges" + detail);
+      if (typeof e.via === "number") assert.equal(k.edges.via.length, e.via, "via-other edges" + detail);
+      if (typeof e.overlaps === "number") assert.equal(k.overlaps, e.overlaps, "overlaps" + detail);
+      if (typeof e.falseNets === "number") assert.equal(k.falseNets, e.falseNets, "false nets" + detail);
+    }
+    if (exp.ranks) assert.deepEqual(out.facts && out.facts.rank, exp.ranks, "ranks");
+    if (exp.facts) {
+      const view = factsView(out.facts);
+      for (const key of Object.keys(exp.facts)) assert.deepEqual(view[key], exp.facts[key], `facts.${key}`);
+    }
     if (exp.legacy) {
       assert.equal(out.order.length, exp.legacy.items, "items parsed");
       assert.equal(out.errors.length, exp.legacy.errors, `errors: ${out.errors.join(" | ")}`);
       assert.equal(out.warnings.length, exp.legacy.warnings, `warnings: ${out.warnings.join(" | ")}`);
-    }
-
-    /* every warning names at least one row ID (a row is never dropped silently) */
-    const ids = new Set(c.rows.map(r => r.id));
-    for (const w of out.warnings) {
-      const named = [...w.matchAll(/"([^"]+)"/g)].some(m => ids.has(m[1])) || /^Row \d+/.test(w);
-      assert.ok(named, `warning does not name a row: ${w}`);
     }
 
     const goldenFile = path.join(dir, "golden.svg");
@@ -37,13 +73,17 @@ for (const dir of cases) {
     }
     if (exp.golden) {
       assert.ok(out.svg, `no drawing produced (errors: ${out.errors.join(" | ")})`);
-      if (!fs.existsSync(goldenFile)) {
-        assert.fail(`missing ${path.relative(process.cwd(), goldenFile)} — run UPDATE_GOLDEN=1 node tools/golden.mjs`);
-      }
+      assert.ok(fs.existsSync(goldenFile), `missing ${path.relative(process.cwd(), goldenFile)} — run UPDATE_GOLDEN=1 node tools/golden.mjs`);
       const have = fs.readFileSync(goldenFile, "utf8");
       if (have !== out.svg) {
         const i = [...have].findIndex((ch, k) => ch !== out.svg[k]);
         assert.fail(`golden differs at offset ${i}: …${have.slice(Math.max(0, i - 40), i + 60)}… vs …${out.svg.slice(Math.max(0, i - 40), i + 60)}…`);
+      }
+      /* every row with a symbol is findable on the canvas */
+      for (const id of out.order) {
+        const it = out.items[id];
+        if (it.type === "bus coupler" || it.x === null) continue;
+        assert.ok(out.svg.includes(`data-id="${id.replace(/&/g, "&amp;").replace(/</g, "&lt;")}"`), `no <g data-id> for ${id}`);
       }
     }
   });

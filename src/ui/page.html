@@ -1,0 +1,450 @@
+<title>SLD Sketchpad</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #f4f3ef;
+    --surface: #ffffff;
+    --ink: #1d1f22;
+    --muted: #6d6c66;
+    --border: #ddDBd3;
+    --accent: #155e8f;
+    --accent-ink: #ffffff;
+    --danger: #a33b2e;
+    --field: #faf9f6;
+    --sheet-shadow: 0 1px 3px rgba(30,32,35,.12), 0 8px 24px rgba(30,32,35,.08);
+  }
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #1a1c1f;
+      --surface: #232629;
+      --ink: #e9e8e4;
+      --muted: #9b9a93;
+      --border: #383b40;
+      --accent: #66aede;
+      --accent-ink: #10222f;
+      --danger: #e08072;
+      --field: #1e2124;
+      --sheet-shadow: 0 1px 3px rgba(0,0,0,.5), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #1a1c1f;
+    --surface: #232629;
+    --ink: #e9e8e4;
+    --muted: #9b9a93;
+    --border: #383b40;
+    --accent: #66aede;
+    --accent-ink: #10222f;
+    --danger: #e08072;
+    --field: #1e2124;
+    --sheet-shadow: 0 1px 3px rgba(0,0,0,.5), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 20px 20px 64px; }
+
+  header.top {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px;
+    padding: 6px 0 14px; border-bottom: 2px solid var(--ink); margin-bottom: 18px;
+  }
+  .brand { font-size: 21px; font-weight: 700; letter-spacing: .01em; }
+  .brand small {
+    display: block; font-size: 11.5px; font-weight: 500; color: var(--muted);
+    letter-spacing: .04em;
+  }
+  .top-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  select, input[type="text"], textarea {
+    font: 500 13px/1.3 "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    color: var(--ink); background: var(--field);
+    border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px;
+  }
+  select:focus, input:focus, textarea:focus, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  button {
+    font: 600 13px "Archivo", sans-serif; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+  }
+  button.primary:hover { filter: brightness(1.08); color: var(--accent-ink); }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px 18px; margin-bottom: 18px;
+  }
+  .panel h2 {
+    margin: 0 0 12px; font-size: 12px; font-weight: 700;
+    letter-spacing: .09em; text-transform: uppercase; color: var(--muted);
+  }
+
+  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 760px) { .info-grid { grid-template-columns: 1fr 1fr; } }
+  .info-grid label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 12px; }
+  .info-grid input { width: 100%; box-sizing: border-box; }
+
+  .tbl-scroll { overflow-x: auto; }
+  table.eq { border-collapse: collapse; width: 100%; min-width: 1020px; }
+  table.eq th {
+    font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--muted); text-align: left; padding: 4px 6px 8px;
+    border-bottom: 2px solid var(--ink); white-space: nowrap;
+  }
+  table.eq td { padding: 3px 3px; border-bottom: 1px solid var(--border); }
+  table.eq input, table.eq select {
+    width: 100%; box-sizing: border-box; border-color: transparent; background: transparent;
+    padding: 5px 6px; border-radius: 3px;
+  }
+  table.eq tr:hover input, table.eq tr:hover select { background: var(--field); }
+  table.eq input:focus, table.eq select:focus { background: var(--field); border-color: var(--border); }
+  td.rowops { white-space: nowrap; text-align: right; }
+  td.rowops button {
+    padding: 3px 7px; font-size: 12px; line-height: 1.2;
+    border-color: transparent; background: transparent; color: var(--muted);
+  }
+  td.rowops button:hover { color: var(--accent); border-color: var(--border); }
+  td.rowops button.del:hover { color: var(--danger); }
+  .tbl-foot { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+  .hint { color: var(--muted); font-size: 12.5px; margin-left: auto; }
+
+  .problems { margin: 0 0 18px; }
+  .problems div {
+    color: var(--danger); font: 500 13px "IBM Plex Mono", monospace;
+    padding: 8px 12px; border: 1px solid var(--danger); border-radius: 4px;
+    margin-bottom: 6px; background: var(--surface);
+  }
+  .problems div.warn { color: #8a5a00; border-color: #d9a441; }
+  .problems div[data-row] { cursor: pointer; }
+  .problems div[data-row]:hover { background: var(--field); }
+  /* rows the diagnostics point at */
+  table.eq tr.err td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+  table.eq tr.warn td:first-child { box-shadow: inset 3px 0 0 #d9a441; }
+  table.eq tr.flash input, table.eq tr.flash select { background: var(--field); transition: background .6s; }
+  kbd {
+    font: 500 11px "IBM Plex Mono", ui-monospace, monospace; padding: 0 4px;
+    border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 3px;
+  }
+  #undo, #redo { min-width: 32px; padding: 6px 8px; }
+
+  /* the symbol palette: one chip per type, dragged onto the drawing */
+  .palette { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .palette-hint { font-size: 12px; color: var(--muted); margin-right: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 5px;
+    font: 600 12px "Archivo", sans-serif; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px; cursor: grab; user-select: none;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip:active { cursor: grabbing; }
+  .chip svg { width: 26px; height: 24px; display: block; }
+  .chip svg * { stroke: currentColor; }
+  .chip svg [fill="#111"] { fill: currentColor; }
+  /* drop feedback and selection on the canvas */
+  #sheet svg [data-id] rect.hit { fill: transparent; stroke: none; pointer-events: all; }
+  #sheet svg [data-id]:hover rect.hit { fill: rgba(11, 94, 215, .06); }
+  #sheet svg [data-id].sel rect.hit { fill: rgba(11, 94, 215, .12); stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  #sheet svg [data-id].over rect.hit { fill: rgba(11, 94, 215, .2); stroke: var(--accent); stroke-width: 2; }
+  #sheet svg [data-id] { cursor: pointer; }
+  .viewport.dropping { outline: 2px dashed var(--accent); outline-offset: -2px; }
+  button:disabled { opacity: .45; cursor: default; }
+  button:disabled:hover { border-color: var(--border); color: var(--ink); }
+
+  .sheet-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .sheet-bar h2 {
+    margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .sheet-bar .copystate { font-size: 12.5px; color: var(--muted); }
+  .viewopts { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .viewopts label { display: inline-flex; align-items: center; gap: 4px; }
+  .viewopts select { padding: 3px 6px; font-size: 12px; }
+  /* focus mode: the drawing takes the window; the table and the panels step aside */
+  body.focus .wrap { max-width: none; padding: 8px 12px; }
+  body.focus header.top, body.focus .panel, body.focus .problems, body.focus .palette, body.focus footer.note { display: none; }
+  body.focus .viewport { height: calc(100vh - 64px); }
+  body.focus #focus { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .viewtools { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .viewtools button { padding: 4px 9px; min-width: 30px; }
+  .readout {
+    font: 500 12px "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    color: var(--muted); min-width: 4.5ch; text-align: right;
+  }
+  .viewhint { font-size: 12px; color: var(--muted); }
+  @media (max-width: 900px) { .viewhint { display: none; } }
+  /* the viewer: a fixed-height window with its own scrollbars; the sheet
+     inside is scaled by the zoom and the spacer sized to match, so the
+     scrollbars always reach every corner of the drawing */
+  .viewport {
+    height: min(72vh, 900px); overflow: scroll; scrollbar-gutter: stable;
+    background: var(--ground); border: 1px solid var(--border);
+    border-radius: 6px; cursor: grab; outline: none; position: relative;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  /* classic, always-visible scrollbars, whatever the platform's overlay setting */
+  .viewport { scrollbar-width: auto; scrollbar-color: var(--muted) var(--field); }
+  .viewport::-webkit-scrollbar { width: 14px; height: 14px; }
+  .viewport::-webkit-scrollbar-track { background: var(--field); }
+  .viewport::-webkit-scrollbar-thumb {
+    background: var(--muted); border: 3px solid var(--field); border-radius: 7px;
+  }
+  .viewport::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+  .viewport::-webkit-scrollbar-corner { background: var(--field); }
+  .viewport.dragging { cursor: grabbing; }
+  .viewport:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+  #sheetbox { position: relative; width: 100%; height: 100%; }
+  #sheet { position: absolute; left: 16px; top: 16px; transform-origin: 0 0; }
+  /* the drawing is a paper object: always white, always dark ink */
+  #sheet svg {
+    display: block; box-shadow: var(--sheet-shadow); border-radius: 3px;
+    -webkit-user-drag: none;
+  }
+
+  footer.note { margin-top: 22px; color: var(--muted); font-size: 12.5px; max-width: 68ch; }
+
+  /* the how-to-fill page: a collapsible panel of reference tables */
+  details.help { padding: 0; }
+  details.help summary {
+    cursor: pointer; padding: 14px 18px; font-size: 12px; font-weight: 700;
+    letter-spacing: .09em; text-transform: uppercase; color: var(--muted);
+    list-style: none; display: flex; align-items: center; gap: 10px;
+  }
+  details.help summary::-webkit-details-marker { display: none; }
+  details.help summary::before { content: "▸"; font-size: 11px; }
+  details.help[open] summary::before { content: "▾"; }
+  details.help summary .sub { font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 12.5px; }
+  .help-body { padding: 0 18px 18px; }
+  .help-body h3 {
+    margin: 18px 0 8px; font-size: 13px; font-weight: 700; color: var(--ink);
+  }
+  .help-body h3:first-child { margin-top: 4px; }
+  .help-body p { margin: 6px 0 10px; max-width: 80ch; }
+  .help-body table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .help-body th {
+    text-align: left; font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--muted); padding: 4px 8px 6px; border-bottom: 2px solid var(--ink);
+    white-space: nowrap;
+  }
+  .help-body td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .help-body td:first-child { white-space: nowrap; font-weight: 600; }
+  .help-body code {
+    font: 500 12px "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    background: var(--field); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px;
+  }
+  .help-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+  @media (max-width: 900px) { .help-cols { grid-template-columns: 1fr; } }
+  #helpbtn.on { border-color: var(--accent); color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">SLD Sketchpad
+      <small>site survey &rarr; single-line diagram</small>
+    </div>
+    <div class="top-actions">
+      <select id="preset" aria-label="Load an example configuration">
+        <option value="">Load example…</option>
+        <option value="1">1 · Single transformer</option>
+        <option value="2">2 · Twin transformers + coupler</option>
+        <option value="3">3 · Ring main (2 incomers)</option>
+        <option value="4">4 · Dual MV boards, pumps, MCCs</option>
+        <option value="5">5 · Three RMUs, radial</option>
+        <option value="6">6 · Three RMUs, closed ring</option>
+        <option value="7">7 · Pump station, MCCs with motors</option>
+      </select>
+      <button id="import" title="Load a survey workbook (.xlsx), a CSV of the equipment table, or a saved .json">Import…</button>
+      <input type="file" id="importfile" accept=".xlsx,.xlsm,.csv,.json" hidden>
+      <button id="undo" title="Undo (Ctrl+Z)" disabled>&#8630;</button>
+      <button id="redo" title="Redo (Ctrl+Y)" disabled>&#8631;</button>
+      <button id="clear">Clear all</button>
+      <button id="helpbtn" title="Open the how-to-fill page">How to fill</button>
+    </div>
+  </header>
+
+  <details class="panel help" id="help">
+    <summary>How to fill the table <span class="sub">— every column, every type, the wiring recipes, and the words that change a symbol</span></summary>
+    <div class="help-body">
+      <h3>The idea</h3>
+      <p>One row per item, top of the network first. The drawing's topology comes only from
+      <strong>ID</strong> and <strong>Feeds from</strong>: an item is drawn under whatever it feeds from.
+      Row order sets left-to-right order. A half-filled row still draws, with an open terminal where the
+      supply or the load is missing, and the problems box above the drawing tells you which row to complete.</p>
+
+      <h3>Columns</h3>
+      <table>
+        <tr><th>Column</th><th>What to write</th><th>What it does</th></tr>
+        <tr><td>ID</td><td>a short unique tag you invent: <code>MV1</code>, <code>RMU1</code>, <code>TX1</code>, <code>BB1</code>, <code>F1</code></td><td>the handle other rows point at; printed bold on the symbol</td></tr>
+        <tr><td>Type</td><td>pick from the list (below)</td><td>chooses the symbol and where it sits</td></tr>
+        <tr><td>Description</td><td>free text: <code>Oil-immersed, Dyn11</code>, <code>Main pump 4 (VSD)</code></td><td>printed as a label; a few words also change the symbol (below)</td></tr>
+        <tr><td>Rating</td><td>from the nameplate: <code>1000 kVA</code>, <code>630 A</code>, <code>315 kW</code></td><td>printed</td></tr>
+        <tr><td>Voltage</td><td>from the nameplate: <code>11/0.4 kV</code>, <code>400 V</code></td><td>printed only; it never moves anything</td></tr>
+        <tr><td>Protection</td><td>the device on <em>this item's supply side</em>: <code>CB</code>, <code>LBS</code>, <code>Fuse</code>, <code>Fuse-switch</code>, <code>Contactor</code>, <code>Fuse-contactor</code>; blank = the usual default; a comma list matches Feeds from order (<code>LBS, CB</code>)</td><td>swaps the device symbol on that connection; free text on a busbar (<code>87B differential</code>) is printed as a zone label</td></tr>
+        <tr><td>Feeds from</td><td>the ID of the item supplying this one; comma for two supplies (<code>BB1, BB2</code>, <code>MV1, MV2</code>)</td><td>the wiring, and the only thing that is</td></tr>
+        <tr><td>Notes</td><td>anything worth remembering</td><td>printed on ties; a few leading words change the symbol (below)</td></tr>
+      </table>
+
+      <h3>Types and how each one draws</h3>
+      <table>
+        <tr><th>Type</th><th>Also accepted</th><th>Drawn as</th></tr>
+        <tr><td>MV Incomer</td><td>Incomer, MV</td><td>a source tick at the top; feeds an MV Busbar, an RMU or a transformer</td></tr>
+        <tr><td>MV Busbar</td><td>MV board, MV switchboard</td><td>a thick bar with a breaker on every way; a board fed from another board sits one tier lower</td></tr>
+        <tr><td>RMU</td><td>Ring main unit</td><td>a dashed enclosure with load-break switches on the incoming ways and fuse-switches on the tee-offs; RMUs that feed from each other form a ring side by side</td></tr>
+        <tr><td>Transformer</td><td>Tx, Trafo, Step-up</td><td>two circles; step-down or step-up follows Feeds from (see recipes); fed from an LV board and feeding only Pumps (or nothing yet), it hangs under that board as one of its ways</td></tr>
+        <tr><td>Generator</td><td>Gen, Genset, DG, Alternator</td><td>a G circle: over the board it feeds, on top of a step-up column, or under a reversed one</td></tr>
+        <tr><td>Pump</td><td>Motor, Load</td><td>an M 3~ circle: in the transformer row on MV gear, in the feeder band on an LV board or an MCC, under a transformer of its own</td></tr>
+        <tr><td>LV Busbar</td><td>Busbar, LV board</td><td>a thick bar with its feeders under it; fed from a Feeder or another LV Busbar it becomes a sub-board on the row below</td></tr>
+        <tr><td>Feeder</td><td>LV feeder, Outgoing</td><td>a drop with its device and an arrow; on MV gear, an outgoing cable way</td></tr>
+        <tr><td>MCC</td><td>Motor control centre</td><td>a labelled box; with Pumps or Feeders under it, a bus of its own on the row below with the motor ways off it, incomer, box and bus inside a dashed outline; fed straight from a transformer that feeds no board it is that transformer's board; named on a transformer that does feed a board, it is drawn as a way of the board</td></tr>
+        <tr><td>Bus Coupler</td><td>Coupler</td><td>a breaker between two busbars of the same kind (<code>BB1, BB2</code>); between a board and a Generator, a changeover (ATS)</td></tr>
+        <tr><td>Capacitor Bank</td><td>Capacitor, PFC</td><td>the plates to earth, on an LV board or MV gear; needs no load</td></tr>
+        <tr><td>Earthing/NER</td><td>NER, NGR, Earthing transformer</td><td>the resistor box to earth; needs no load</td></tr>
+        <tr><td>Surge Arrester</td><td>Arrester, Surge</td><td>the arrester box to earth; needs no load</td></tr>
+      </table>
+
+      <h3>Wiring recipes (Feeds from)</h3>
+      <div class="help-cols">
+      <table>
+        <tr><th>You want</th><th>Write</th></tr>
+        <tr><td>Step-down</td><td>TX feeds from the MV board or RMU; the LV Busbar feeds from TX</td></tr>
+        <tr><td>Step-up from a genset or PV board</td><td>TX feeds from the Generator (or generation LV Busbar); the MV Busbar or RMU feeds from TX</td></tr>
+        <tr><td>Step-up from a live LV board</td><td>TX feeds from the LV Busbar that has its own supply; the MV gear feeds from TX</td></tr>
+        <tr><td>Genset straight onto a board</td><td>the board feeds from <code>MV, DG1, DG2</code>; the Generator rows have Feeds from blank</td></tr>
+        <tr><td>Standby set on a changeover</td><td>a Bus Coupler row <code>ATS</code> feeding from <code>MSB3, G1</code></td></tr>
+        <tr><td>Sub-board (DB)</td><td>the LV Busbar feeds from the Feeder that supplies it, or straight from the main LV Busbar</td></tr>
+        <tr><td>Motors in an MCC</td><td>the MCC feeds from the board; each Pump feeds from the MCC</td></tr>
+      </table>
+      <table>
+        <tr><th>You want</th><th>Write</th></tr>
+        <tr><td>Bus tie</td><td>a Bus Coupler feeding from the two boards <code>BB1, BB2</code>; Notes <code>Normally open</code></td></tr>
+        <tr><td>Board with two supplies</td><td>the board feeds from both: <code>TX1, TX2</code></td></tr>
+        <tr><td>Ring of RMUs from a board</td><td>each RMU feeds from its neighbours (<code>PB, R2</code> … <code>R4, PB</code>); a link written on both rows is drawn once</td></tr>
+        <tr><td>Open point of a ring</td><td>Notes on one RMU: <code>N.O. towards RMU2</code></td></tr>
+        <tr><td>Spur or sub-ring off an RMU</td><td>the spur RMU feeds from the ring RMU; a sub-ring's two RMUs feed from it and from each other</td></tr>
+        <tr><td>Boards at several voltage levels</td><td>the lower board feeds from the transformer, the transformer from the upper board; tiers follow the wiring, never the Voltage column</td></tr>
+        <tr><td>Outgoing MV cable, capacitor bank, NER</td><td>a Feeder, Capacitor Bank or Earthing/NER row feeding from the MV board or RMU</td></tr>
+      </table>
+      </div>
+
+      <h3>Words that change the symbol</h3>
+      <p>These are read from Description and Notes, so a normal survey note is enough; no extra column.</p>
+      <table>
+        <tr><th>Write</th><th>Where</th><th>Effect</th></tr>
+        <tr><td><code>VSD</code>, <code>VFD</code>, <code>drive</code></td><td>Description or Notes of a Pump</td><td>a drive box on the motor's drop</td></tr>
+        <tr><td><code>Spare</code>, <code>Future</code>, <code>Out of service</code></td><td>at the start of Notes</td><td>the way's conductor drawn dashed</td></tr>
+        <tr><td><code>N.O.</code>, <code>Normally open</code></td><td>Notes of a Bus Coupler</td><td>printed under the coupler</td></tr>
+        <tr><td><code>N.O. towards RMU2</code>, <code>ring open here</code></td><td>Notes of an RMU</td><td>an N.O. marker on the cable to the RMU named, or under the box when none is named</td></tr>
+        <tr><td><code>capacitor</code>, <code>PFC</code>, <code>kvar</code></td><td>Description or Notes of a Feeder</td><td>drawn as a capacitor bank</td></tr>
+        <tr><td><code>NER</code>, <code>earthing</code>, <code>zig-zag</code></td><td>a Feeder, or a Transformer with nothing on its output</td><td>drawn as an earthing resistor / earthing transformer to earth</td></tr>
+        <tr><td><code>arrester</code>, <code>surge</code></td><td>Description or Notes of a Feeder</td><td>drawn as a surge arrester</td></tr>
+        <tr><td><code>CB</code> <code>MCCB</code> <code>MCB</code> <code>ACB</code> · <code>LBS</code> <code>isolator</code> · <code>Fuse</code> · <code>Fuse-switch</code> <code>SFU</code> · <code>Contactor</code> · <code>Fuse-contactor</code> <code>starter</code></td><td>Protection</td><td>the device symbol on that connection</td></tr>
+      </table>
+
+      <h3>Getting it out</h3>
+      <p><strong>Copy SVG</strong> puts the drawing on the clipboard. <strong>Download DXF</strong> saves an R12 DXF with the
+      sketch and, to its right, the equipment table, centred so it opens in the middle of any CAD window; <strong>Copy DXF</strong>
+      gives the same file as text where downloads are blocked. Your table and your view are kept in this browser between visits.</p>
+    </div>
+  </details>
+
+  <section class="panel">
+    <h2>Survey info</h2>
+    <div class="info-grid">
+      <label>Site <input type="text" id="i-site" placeholder="Substation name"></label>
+      <label>Date <input type="text" id="i-date" placeholder="2026-08-31"></label>
+      <label>Surveyed by <input type="text" id="i-by" placeholder="Initials / name"></label>
+      <label>Notes <input type="text" id="i-notes" placeholder="Anything worth remembering"></label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Equipment — one row per item, top of the network first</h2>
+    <div class="tbl-scroll">
+      <table class="eq" id="eqtable">
+        <thead>
+          <tr>
+            <th style="width:8%">ID</th>
+            <th style="width:12%">Type</th>
+            <th style="width:19%">Description</th>
+            <th style="width:10%">Rating</th>
+            <th style="width:10%">Voltage</th>
+            <th style="width:11%">Protection</th>
+            <th style="width:11%">Feeds from</th>
+            <th style="width:13%">Notes</th>
+            <th style="width:6%"></th>
+          </tr>
+        </thead>
+        <tbody id="eqbody"></tbody>
+      </table>
+      <datalist id="protlist">
+        <option>CB</option><option>LBS</option><option>Fuse</option>
+        <option>Fuse-switch</option><option>Contactor</option>
+        <option>Fuse-contactor</option>
+      </datalist>
+      <!-- filled by the page: the IDs on the sheet, and standard values for the row's type -->
+      <datalist id="idlist"></datalist>
+      <datalist id="voltlist"></datalist>
+      <datalist id="ratinglist"></datalist>
+    </div>
+    <div class="tbl-foot">
+      <button id="addrow" class="primary">+ Add row</button>
+      <button id="csv" title="Download the equipment table as CSV">Download CSV</button>
+      <span class="hint">Feeds from = the ID of the item supplying this one (pick from the list); comma for two supplies (bus tie: <code>BB1, BB2</code> — ring RMU: <code>RMU1, RMU2</code>). Protection = the device on this item's supply side (CB, LBS, Fuse, Fuse-switch, Contactor, Fuse-contactor; blank = the usual default; comma list matches Feeds from). Row order sets left-to-right order. Words like <code>VSD</code>, <code>Spare</code>, <code>N.O.</code> or <code>capacitor</code> in Description / Notes change the symbol — see <a href="#help" id="helplink">How to fill</a>. Keys: <kbd>Enter</kbd> next row, <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move row, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo.</span>
+    </div>
+  </section>
+
+  <div class="problems" id="problems" hidden></div>
+
+  <section>
+    <div class="palette" id="palette" aria-label="Symbols: drag one onto a busbar, RMU or transformer in the drawing, or click to add a row under the selected item">
+      <span class="palette-hint">Drag onto the drawing</span>
+    </div>
+    <div class="sheet-bar">
+      <h2>Drawing</h2>
+      <button id="copysvg">Copy SVG</button>
+      <button id="dxf" title="Download a DXF of the sketch with the equipment table under it">Download DXF</button>
+      <button id="copydxf" title="Copy the DXF text, to paste into a .dxf file where downloads are blocked">Copy DXF</button>
+      <span class="copystate" id="copystate"></span>
+      <span class="viewopts" aria-label="View options: they change the drawing, never the table">
+        <label title="Horizontal spacing of ways and boards">Spacing
+          <select id="v-spacing"><option value="compact">compact</option><option value="normal" selected>normal</option><option value="wide">wide</option></select>
+        </label>
+        <label title="Show the legend under the sheet"><input type="checkbox" id="v-legend" checked> legend</label>
+        <label title="Show the title block"><input type="checkbox" id="v-title" checked> title block</label>
+        <button id="focus" title="Give the drawing the whole window (Esc to leave)">Focus drawing</button>
+      </span>
+      <span class="viewtools">
+        <button id="v-fit" title="Fit the whole drawing (0)">Fit</button>
+        <button id="v-100" title="Actual size (1)">100%</button>
+        <button id="v-out" title="Zoom out (&minus;)">&minus;</button>
+        <button id="v-in" title="Zoom in (+)">+</button>
+        <span class="readout" id="v-zoom">100%</span>
+        <span class="viewhint">drag to pan &middot; scrollbars or wheel to move &middot; ctrl+wheel to zoom</span>
+      </span>
+    </div>
+    <div class="viewport" id="viewport" tabindex="0"
+         aria-label="Drawing: drag or use the scrollbars to move, + and - to zoom, 0 to fit">
+      <div id="sheetbox"><div id="sheet"></div></div>
+    </div>
+  </section>
+
+  <footer class="note">
+    The drawing rebuilds as you type. Topology comes only from <strong>ID</strong> and
+    <strong>Feeds from</strong> — Description, Rating, Voltage and Notes are printed as labels.
+    Drag the drawing or use its scrollbars to move around a big sheet; Fit, +, &minus; and
+    ctrl+wheel zoom it. Your table and your view are kept in this browser between visits.
+  </footer>
+</div>
+
+<script>
+@@BUNDLE@@
+</script>

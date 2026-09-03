@@ -1,0 +1,22 @@
+{
+  "name": "dup_id",
+  "group": "warnings",
+  "description": "Two rows share an ID: an error, no drawing",
+  "info": {
+    "site": "Warning path: dup id",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "DUP_ID:F1"
+    ],
+    "golden": false,
+    "legacy": {
+      "items": 4,
+      "errors": 1,
+      "warnings": 0
+    }
+  }
+}

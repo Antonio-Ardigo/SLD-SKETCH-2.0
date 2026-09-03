@@ -1,0 +1,6 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility,,11 kV,,,
+MVB,MV Busbar,MV board,630 A,11 kV,CB,MV1,
+MCC1,MCC,On MV gear,,400 V,CB,MVB,
+F1,Feeder,A feeder,100 A,11 kV,CB,MVB,
+MCC2,MCC,On a feeder,,400 V,CB,F1,
