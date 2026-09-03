@@ -32,6 +32,7 @@ export const DIAG = {
   COUPLER_DUP:       { level: "warning", about: "a second coupler between the same two busbars" },
   /* engine */
   EMPTY_SHEET:       { level: "warning", about: "the table has no rows with an ID" },
+  RANK_CYCLE:        { level: "warning", about: "two rows each demand to sit below the other; the rank solver dropped one demand" },
 };
 
 export function makeDiag(code, ids, message, row) {

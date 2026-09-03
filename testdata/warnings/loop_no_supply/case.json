@@ -10,13 +10,25 @@
   },
   "expect": {
     "diagnostics": [
-      "LOOP_NO_SUPPLY:DB1"
+      "LOOP_NO_SUPPLY:DB1",
+      "RANK_CYCLE:DB1"
     ],
     "golden": true,
     "legacy": {
       "items": 5,
       "errors": 0,
       "warnings": 1
+    },
+    "ranks": {
+      "BB1": 0,
+      "DB1": 0,
+      "DB2": 1
+    },
+    "facts": {
+      "floating": [
+        "DB1",
+        "DB2"
+      ]
     }
   }
 }

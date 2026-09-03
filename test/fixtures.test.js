@@ -10,6 +10,21 @@ import { diagKey, DIAG } from "../src/core/diagnostics.js";
 const cases = listCases();
 assert.ok(cases.length > 0, "no cases under testdata/");
 
+/** The compact, fixture-friendly picture of the facts (what case.json asserts). */
+export function factsView(F) {
+  if (!F) return {};
+  return {
+    rings: F.rings.map(r => ({ members: r.members, closed: r.closed })),
+    spurs: F.spurs,
+    txDir: Object.fromEntries(Object.entries(F.txDir).map(([k, v]) => [k, v.class])),
+    couplers: F.couplers.map(c => ({ id: c.id, kind: c.kind, valid: c.valid, ...(c.duplicate ? { duplicate: true } : {}) })),
+    floating: F.floating,
+    sources: F.sources,
+    subBoards: Object.fromEntries(Object.entries(F.subBoards).map(([k, v]) => [k, v.via])),
+    waysOfBoard: F.waysOfBoard,
+  };
+}
+
 for (const dir of cases) {
   const c = loadCase(dir);
   const label = `${c.data.group}/${c.data.name}`;
@@ -28,6 +43,11 @@ for (const dir of cases) {
     if (exp.diagnostics) {
       assert.deepEqual(out.diagnostics.map(diagKey).sort(), exp.diagnostics.slice().sort(),
         `diagnostics\n  ${out.diagnostics.map(d => d.message).join("\n  ")}`);
+    }
+    if (exp.ranks) assert.deepEqual(out.facts && out.facts.rank, exp.ranks, "ranks");
+    if (exp.facts) {
+      const view = factsView(out.facts);
+      for (const key of Object.keys(exp.facts)) assert.deepEqual(view[key], exp.facts[key], `facts.${key}`);
     }
     if (exp.legacy) {
       assert.equal(out.order.length, exp.legacy.items, "items parsed");

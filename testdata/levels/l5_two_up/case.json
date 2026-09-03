@@ -15,6 +15,21 @@
       "items": 13,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "HV": 1,
+      "MV": 0,
+      "PVB1": 2,
+      "PVB2": 2,
+      "AUX": 2
+    },
+    "facts": {
+      "txDir": {
+        "ET": "levelLink",
+        "SU1": "inRow",
+        "SU2": "inRow",
+        "AT": "down"
+      }
     }
   }
 }

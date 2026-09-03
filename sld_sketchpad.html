@@ -565,6 +565,7 @@ const DIAG = {
   COUPLER_DUP:       { level: "warning", about: "a second coupler between the same two busbars" },
   /* engine */
   EMPTY_SHEET:       { level: "warning", about: "the table has no rows with an ID" },
+  RANK_CYCLE:        { level: "warning", about: "two rows each demand to sit below the other; the rank solver dropped one demand" },
 };
 
 function makeDiag(code, ids, message, row) {
@@ -3094,10 +3095,13 @@ function draw(info, rows, { dxf = false } = {}) {
   const norm = normalizeRows(rows);
   const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
   const { items, order, errors, warnings, diagnostics } = buildModel(norm);
-  const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, svg: null, dxf: null };
+  const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, facts: null, svg: null, dxf: null };
   if (!order.length) { out.diagnostics.push(makeDiag("EMPTY_SHEET", [], "The table has no rows with an ID.")); return out; }
   out.graph = buildGraph(items, order);
   if (errors.length) return out;
+  out.facts = buildFacts(items, order, out.graph);
+  for (const d of out.facts.dropped)
+    out.diagnostics.push(makeDiag("RANK_CYCLE", [d.a, d.b], `"${d.a}" and "${d.b}" cannot both be below each other — one of them is drawn on the row above the other.`));
   const width = layout(items, order);
   const drawn = warnings.slice();
   out.svg = render(site, items, order, width, drawn);

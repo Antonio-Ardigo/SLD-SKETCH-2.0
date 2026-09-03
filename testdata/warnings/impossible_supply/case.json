@@ -18,6 +18,12 @@
       "items": 6,
       "errors": 0,
       "warnings": 2
+    },
+    "ranks": {
+      "BB1": 0
+    },
+    "facts": {
+      "floating": []
     }
   }
 }

@@ -15,6 +15,22 @@
       "items": 14,
       "errors": 0,
       "warnings": 2
+    },
+    "ranks": {
+      "RMU": 0,
+      "MSB": 1,
+      "MCC1": 2,
+      "MCC2": 2
+    },
+    "facts": {
+      "txDir": {
+        "TX1": "down",
+        "TX2": "dedicated"
+      },
+      "waysOfBoard": {
+        "M1": "MSB",
+        "MCC1": "MSB"
+      }
     }
   }
 }

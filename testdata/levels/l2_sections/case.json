@@ -15,6 +15,33 @@
       "items": 17,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "HVA": 0,
+      "HVB": 0,
+      "MVA": 1,
+      "MVB": 1,
+      "LVA": 2,
+      "LVB": 2
+    },
+    "facts": {
+      "couplers": [
+        {
+          "id": "HVT",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "MVT",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "LVT",
+          "kind": "tie",
+          "valid": true
+        }
+      ]
     }
   }
 }

@@ -16,6 +16,27 @@
       "items": 18,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "RMU1": 0,
+      "RMU2": 0,
+      "RMU3": 0,
+      "LVP1": 1,
+      "LVP2": 1,
+      "LVP3": 1,
+      "LVP4": 1
+    },
+    "facts": {
+      "rings": [
+        {
+          "members": [
+            "RMU1",
+            "RMU2",
+            "RMU3"
+          ],
+          "closed": false
+        }
+      ]
     }
   }
 }

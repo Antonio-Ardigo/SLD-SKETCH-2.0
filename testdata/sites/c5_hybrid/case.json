@@ -15,6 +15,27 @@
       "items": 22,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "HV": 0,
+      "MV": 1,
+      "GB": 2,
+      "PVB1": 3,
+      "PVB2": 3,
+      "BB": 3,
+      "AUX": 3,
+      "SDB": 3
+    },
+    "facts": {
+      "txDir": {
+        "GT": "levelLink",
+        "SU1": "inRow",
+        "SU2": "inRow",
+        "SU3": "inRow",
+        "AT": "down",
+        "SCADA": "lvLink"
+      },
+      "sources": []
     }
   }
 }

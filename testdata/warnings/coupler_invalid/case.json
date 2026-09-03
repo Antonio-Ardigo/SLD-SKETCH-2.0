@@ -19,6 +19,35 @@
       "items": 9,
       "errors": 0,
       "warnings": 3
+    },
+    "ranks": {
+      "BB1": 0,
+      "BB2": 0
+    },
+    "facts": {
+      "couplers": [
+        {
+          "id": "BC1",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "BC2",
+          "kind": "tie",
+          "valid": true,
+          "duplicate": true
+        },
+        {
+          "id": "BC3",
+          "kind": "tie",
+          "valid": false
+        },
+        {
+          "id": "BC4",
+          "kind": "tie",
+          "valid": false
+        }
+      ]
     }
   }
 }

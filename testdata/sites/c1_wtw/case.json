@@ -15,6 +15,53 @@
       "items": 33,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "HV1": 0,
+      "HV2": 0,
+      "MV1": 1,
+      "MV2": 1,
+      "RMU1": 2,
+      "RMU2": 2,
+      "RMU3": 2,
+      "PB": 2,
+      "MSB1": 3,
+      "MSB2": 3,
+      "MSB3": 3
+    },
+    "facts": {
+      "rings": [
+        {
+          "members": [
+            "RMU1",
+            "RMU2",
+            "RMU3"
+          ],
+          "closed": true
+        }
+      ],
+      "couplers": [
+        {
+          "id": "HVT",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "MVT",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "LT12",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "ATS",
+          "kind": "changeover",
+          "valid": true
+        }
+      ]
     }
   }
 }

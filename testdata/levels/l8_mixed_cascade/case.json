@@ -15,6 +15,20 @@
       "items": 12,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "MV": 0,
+      "SUB": 1,
+      "PB": 1,
+      "LV1": 2,
+      "LV2": 2
+    },
+    "facts": {
+      "txDir": {
+        "T1": "down",
+        "PT": "levelLink",
+        "T2": "down"
+      }
     }
   }
 }

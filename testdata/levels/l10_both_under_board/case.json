@@ -15,6 +15,19 @@
       "items": 10,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "MV": 0,
+      "GBA": 1,
+      "LV": 1
+    },
+    "facts": {
+      "txDir": {
+        "SUA": "inRow",
+        "T1": "down",
+        "SUB": "reversed"
+      },
+      "sources": []
     }
   }
 }

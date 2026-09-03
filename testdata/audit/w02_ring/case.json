@@ -15,6 +15,52 @@
       "items": 34,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "PB": 0,
+      "RMU1": 1,
+      "RMU2": 1,
+      "RMU3": 1,
+      "RMU4": 1,
+      "RS": 2,
+      "R3A": 2,
+      "R3B": 2,
+      "L1": 3,
+      "L2": 3,
+      "L3": 3,
+      "L4": 3,
+      "LS": 3,
+      "L3A": 3,
+      "L3B": 3
+    },
+    "facts": {
+      "rings": [
+        {
+          "members": [
+            "RMU1",
+            "RMU2",
+            "RMU3",
+            "RMU4"
+          ],
+          "closed": true
+        },
+        {
+          "members": [
+            "R3A",
+            "R3B"
+          ],
+          "closed": false
+        }
+      ],
+      "spurs": {
+        "RMU2": [
+          "RS"
+        ],
+        "RMU3": [
+          "R3A",
+          "R3B"
+        ]
+      }
     }
   }
 }

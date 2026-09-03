@@ -15,6 +15,27 @@
       "items": 10,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "R1": 0,
+      "R2": 0,
+      "PB": 1,
+      "LV": 2
+    },
+    "facts": {
+      "rings": [
+        {
+          "members": [
+            "R1",
+            "R2"
+          ],
+          "closed": false
+        }
+      ],
+      "txDir": {
+        "PT": "levelLink",
+        "T2": "down"
+      }
     }
   }
 }

@@ -15,6 +15,17 @@
       "items": 8,
       "errors": 0,
       "warnings": 0
+    },
+    "ranks": {
+      "HV": 0,
+      "MV": 1,
+      "LV": 2
+    },
+    "facts": {
+      "txDir": {
+        "GT": "levelLink",
+        "T1": "down"
+      }
     }
   }
 }
