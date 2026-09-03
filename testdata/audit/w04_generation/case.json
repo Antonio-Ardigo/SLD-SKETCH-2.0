@@ -28,6 +28,12 @@
         "TX1": "down"
       },
       "sources": []
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

@@ -28,6 +28,12 @@
         "T2": "underBoard",
         "T3": "lvLink"
       }
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

@@ -29,6 +29,13 @@
         "PX": "MSB",
         "MCCX": "MSB"
       }
+    },
+    "check": {
+      "items": "all",
+      "disconnected": 5,
+      "via": 0,
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

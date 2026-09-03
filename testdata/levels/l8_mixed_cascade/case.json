@@ -29,6 +29,12 @@
         "PT": "levelLink",
         "T2": "down"
       }
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

@@ -12,12 +12,41 @@ import path from "node:path";
 import { readWorkbook } from "../io/xlsx.js";
 import { csvToRows } from "../io/csv.js";
 import { draw } from "../core/pipeline.js";
+import { formatCheck } from "../core/check.js";
 
 function usage(code = 2) {
   console.error(`usage:
-  sld draw <table.xlsx|table.csv|casedir> [-o out.svg] [--dxf [out.dxf]]
-  sld dxf  <table.xlsx|table.csv|casedir> [-o out.dxf]`);
+  sld draw  <table.xlsx|table.csv|casedir> [-o out.svg] [--dxf [out.dxf]]
+  sld dxf   <table.xlsx|table.csv|casedir> [-o out.dxf]
+  sld check <table|casedir>…  [--json]      drawing checked against its table; exit 1 unless clean`);
   process.exit(code);
+}
+
+function checkMany(files, json) {
+  const reports = [];
+  let bad = 0;
+  for (const file of files) {
+    const isDir = fs.existsSync(file) && fs.statSync(file).isDirectory();
+    if (isDir ? !fs.existsSync(path.join(file, "case.json")) : !/\.(xlsx|xlsm|csv)$/i.test(file)) continue;   /* not a table */
+    const { info, rows } = loadTable(file);
+    const res = draw(info, rows, { check: true });
+    const name = path.basename(file.replace(/[\\/]+$/, ""));
+    if (!res.check) { reports.push({ name, errors: res.errors }); bad++; if (!json) console.log(`${name.padEnd(28)} no drawing: ${res.errors.join(" | ")}`); continue; }
+    const k = res.check;
+    reports.push({ name, ...k });
+    if (!k.clean) bad++;
+    if (!json) {
+      console.log(`${name.padEnd(28)} ${formatCheck(k)}`);
+      for (const m of k.items.missing) console.log(`    missing      ${m}`);
+      for (const e of k.edges.via) console.log(`    via other    ${e}`);
+      for (const e of k.edges.disconnected) console.log(`    disconnected ${e}`);
+      for (const o of k.overlapList) console.log(`    overlap      ${o}`);
+      for (const f of k.falseList) console.log(`    false net    ${f}`);
+    }
+  }
+  if (json) console.log(JSON.stringify(reports, null, 2));
+  else if (files.length > 1) console.log(`\n${files.length - bad}/${files.length} clean`);
+  process.exit(bad ? 1 : 0);
 }
 
 /** Load a table from a workbook, a CSV file, or a testdata case directory. */
@@ -36,6 +65,7 @@ export function loadTable(file) {
 function main(argv) {
   const [cmd, ...rest] = argv;
   if (!cmd || cmd === "-h" || cmd === "--help") usage(cmd ? 0 : 2);
+  if (cmd === "check") { const files = rest.filter(a => !a.startsWith("-")); if (!files.length) usage(); return checkMany(files, rest.includes("--json")); }
   if (cmd !== "draw" && cmd !== "dxf") usage();
   let file = null, out = null, dxf = cmd === "dxf", dxfOut = null;
   for (let i = 0; i < rest.length; i++) {

@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { listCases, loadCase, drawCase } from "../tools/lib/cases.mjs";
 import { diagKey, DIAG } from "../src/core/diagnostics.js";
+import { checkScene, formatCheck } from "../src/core/check.js";
 
 const cases = listCases();
 assert.ok(cases.length > 0, "no cases under testdata/");
@@ -43,6 +44,16 @@ for (const dir of cases) {
     if (exp.diagnostics) {
       assert.deepEqual(out.diagnostics.map(diagKey).sort(), exp.diagnostics.slice().sort(),
         `diagnostics\n  ${out.diagnostics.map(d => d.message).join("\n  ")}`);
+    }
+    if (exp.check && out.svg) {
+      const k = checkScene(out.scene, out.items, out.order), e = exp.check;
+      const detail = `\n  ${formatCheck(k)}\n  missing: ${k.items.missing.join(", ")}\n  via: ${k.edges.via.join("; ")}\n  disconnected: ${k.edges.disconnected.join("; ")}\n  overlaps: ${k.overlapList.join("; ")}\n  false nets: ${k.falseList.join(" | ")}`;
+      if (e.items === "all") assert.equal(k.items.missing.length, 0, "items drawn" + detail);
+      if (e.edges === "all") assert.equal(k.edges.connected, k.edges.total, "edges connected" + detail);
+      if (typeof e.disconnected === "number") assert.equal(k.edges.disconnected.length, e.disconnected, "disconnected edges" + detail);
+      if (typeof e.via === "number") assert.equal(k.edges.via.length, e.via, "via-other edges" + detail);
+      if (typeof e.overlaps === "number") assert.equal(k.overlaps, e.overlaps, "overlaps" + detail);
+      if (typeof e.falseNets === "number") assert.equal(k.falseNets, e.falseNets, "false nets" + detail);
     }
     if (exp.ranks) assert.deepEqual(out.facts && out.facts.rank, exp.ranks, "ranks");
     if (exp.facts) {

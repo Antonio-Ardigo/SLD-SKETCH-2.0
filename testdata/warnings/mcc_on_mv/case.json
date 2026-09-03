@@ -18,6 +18,13 @@
       "items": 5,
       "errors": 0,
       "warnings": 2
+    },
+    "check": {
+      "items": "all",
+      "disconnected": 1,
+      "via": 0,
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

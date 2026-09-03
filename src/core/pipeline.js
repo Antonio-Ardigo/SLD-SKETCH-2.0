@@ -14,6 +14,8 @@ import { renderDxf } from "./dxf.js";
 import { buildGraph } from "./graph.js";
 import { buildFacts } from "./facts.js";
 import { diagFromMessage, makeDiag } from "./diagnostics.js";
+import { SceneCanvas } from "./scene.js";
+import { checkScene } from "./check.js";
 
 export const ROW_FIELDS = ["id", "type", "desc", "rating", "voltage", "prot", "from", "notes"];
 
@@ -26,7 +28,7 @@ export function normalizeRows(rows) {
   });
 }
 
-export function draw(info, rows, { dxf = false } = {}) {
+export function draw(info, rows, { dxf = false, check = false } = {}) {
   const norm = normalizeRows(rows);
   const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
   const { items, order, errors, warnings, diagnostics } = buildModel(norm);
@@ -39,7 +41,10 @@ export function draw(info, rows, { dxf = false } = {}) {
     out.diagnostics.push(makeDiag("RANK_CYCLE", [d.a, d.b], `"${d.a}" and "${d.b}" cannot both be below each other — one of them is drawn on the row above the other.`));
   const width = layout(items, order);
   const drawn = warnings.slice();
-  out.svg = render(site, items, order, width, drawn);
+  const canvas = new SceneCanvas();
+  out.svg = render(site, items, order, width, drawn, canvas);
+  out.scene = canvas.scene();
+  if (check) out.check = checkScene(out.scene, items, order);
   /* the drawing may add its own warnings (couplers); keep them structured too */
   for (const msg of drawn.slice(warnings.length)) {
     warnings.push(msg);

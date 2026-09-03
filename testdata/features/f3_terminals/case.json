@@ -15,6 +15,12 @@
       "items": 15,
       "errors": 0,
       "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

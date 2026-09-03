@@ -30,6 +30,12 @@
         "SU2": "inRow",
         "AT": "down"
       }
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

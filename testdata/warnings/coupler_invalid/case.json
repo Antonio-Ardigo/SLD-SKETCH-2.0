@@ -48,6 +48,12 @@
           "valid": false
         }
       ]
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 2,
+      "falseNets": 0
     }
   }
 }

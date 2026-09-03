@@ -17,6 +17,12 @@
       "items": 3,
       "errors": 0,
       "warnings": 1
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }
