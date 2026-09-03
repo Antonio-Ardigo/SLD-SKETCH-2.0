@@ -1,0 +1,20 @@
+{
+  "name": "c3_pumps",
+  "group": "sites",
+  "description": "Pumping station: 2 MV incomers, 2 MV boards + ties, 6 MV motors, 11/0.69 kV drive transformers, 400/230 V transformer, cap bank, NER, battery charger feeder",
+  "source": "tests/sites/c3_pumps.xlsx",
+  "info": {
+    "site": "C3 Pumping station",
+    "date": "",
+    "by": "",
+    "notes": "MV motors, VSD, cap bank, NER"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 28,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

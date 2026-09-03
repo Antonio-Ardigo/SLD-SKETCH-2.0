@@ -1,0 +1,21 @@
+{
+  "name": "config4_dual_mv_boards",
+  "group": "examples",
+  "description": "2 utility incomers → 2 MV switchboards (N.O. bus tie) → 3 transformers + 3 MV pumps per board; each transformer → LV board with 2–3 MCCs",
+  "source": "examples/config4_dual_mv_boards.xlsx",
+  "info": {
+    "site": "Example Site D",
+    "date": "2026-08-31",
+    "by": "A. Ardigo",
+    "notes": "Config 4 - dual MV boards, riser feeders, N.O. tie"
+  },
+  "preset": "4",
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 37,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

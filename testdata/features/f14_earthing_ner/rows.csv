@@ -1,0 +1,9 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility supply,,11 kV,,,
+MVB,MV Busbar,MV board,1250 A,11 kV,CB,MV1,
+TX1,Transformer,Substation 1,1000 kVA,11/0.4 kV,Fuse-switch,MVB,
+ET,Transformer,Earthing transformer,200 kVA,11 kV,CB,MVB,
+NER,Earthing/NER,Neutral earthing resistor,300 A 10 s,11 kV,,ET,
+LV1,LV Busbar,LV panel 1,1600 A,400 V,CB,TX1,
+F11,Feeder,Board 1-1,250 A,400 V,CB,LV1,
+F12,Feeder,Board 1-2,250 A,400 V,CB,LV1,

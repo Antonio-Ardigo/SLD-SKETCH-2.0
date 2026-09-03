@@ -1,0 +1,20 @@
+{
+  "name": "w04_generation",
+  "group": "audit",
+  "description": "Generation board feeding a step-up beside a utility incomer, and a reversed step-up to a generator",
+  "source": "tests/audit/w04_generation.xlsx",
+  "info": {
+    "site": "Tester2 W4 - Generation",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "gen board -> step-up -> MV, reversed step-up to a generator"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 14,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "l1_chain",
+  "group": "levels",
+  "description": "33 kV → 33/11 → 11 kV → 11/0.4 → LV chain",
+  "source": "tests/levels/l1_chain.xlsx",
+  "info": {
+    "site": "L1 three-level chain",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 8,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

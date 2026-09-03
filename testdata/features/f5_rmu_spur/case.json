@@ -1,0 +1,20 @@
+{
+  "name": "f5_rmu_spur",
+  "group": "features",
+  "description": "RMU-only chain with a spur, no MV board on the sheet",
+  "source": "tests/features/f5_rmu_spur.xlsx",
+  "info": {
+    "site": "F5 RMU chain with spur",
+    "date": "",
+    "by": "",
+    "notes": "no MV board on the sheet"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 17,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

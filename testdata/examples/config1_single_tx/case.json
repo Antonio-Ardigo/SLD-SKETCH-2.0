@@ -1,0 +1,21 @@
+{
+  "name": "config1_single_tx",
+  "group": "examples",
+  "description": "MV incomer → RMU → 1000 kVA transformer → LV busbar, 4 feeders",
+  "source": "examples/config1_single_tx.xlsx",
+  "info": {
+    "site": "Example Site A",
+    "date": "2026-08-31",
+    "by": "A. Ardigo",
+    "notes": "Config 1 - single transformer substation"
+  },
+  "preset": "1",
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 8,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

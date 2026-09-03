@@ -1,0 +1,20 @@
+{
+  "name": "l2_sections",
+  "group": "levels",
+  "description": "L1 with A/B sections and a tie at each of 3 levels",
+  "source": "tests/levels/l2_sections.xlsx",
+  "info": {
+    "site": "L2 sections and ties",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 17,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

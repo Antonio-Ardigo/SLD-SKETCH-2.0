@@ -1,0 +1,20 @@
+{
+  "name": "l7_three_tier",
+  "group": "levels",
+  "description": "33 → 11 → 3.3 kV with LV boards under the 11 kV and 3.3 kV boards (4 levels)",
+  "source": "tests/levels/l7_three_tier.xlsx",
+  "info": {
+    "site": "L7 three tiers",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 14,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

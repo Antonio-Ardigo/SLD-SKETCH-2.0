@@ -1,0 +1,20 @@
+{
+  "name": "f8_tx_loads",
+  "group": "features",
+  "description": "Motors/MCCs named on a transformer secondary, with and without a board",
+  "source": "tests/features/f8_tx_loads.xlsx",
+  "info": {
+    "site": "F8 loads hung off a transformer",
+    "date": "",
+    "by": "",
+    "notes": "motors and MCCs on a transformer secondary, beside its board or under it"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 14,
+      "errors": 0,
+      "warnings": 2
+    }
+  }
+}

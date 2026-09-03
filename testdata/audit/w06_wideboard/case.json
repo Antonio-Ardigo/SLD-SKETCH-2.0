@@ -1,0 +1,20 @@
+{
+  "name": "w06_wideboard",
+  "group": "audit",
+  "description": "One bar with 24 ways of every load type",
+  "source": "tests/audit/w06_wideboard.xlsx",
+  "info": {
+    "site": "Tester2 W6 - Wide board",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "one LV busbar with 24 mixed ways"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 34,
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+}

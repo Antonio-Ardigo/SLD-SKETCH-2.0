@@ -1,0 +1,15 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+INC,MV Incomer,Utility,,11 kV,,,
+RMU,RMU,RMU,630 A,11 kV,LBS,INC,
+TX1,Transformer,Tx,1000 kVA,11/0.4 kV,Fuse-switch,RMU,
+MSB,LV Busbar,Main board,1600 A,400 V,CB,TX1,
+F1,Feeder,Lighting,100 A,400 V,CB,MSB,
+T1,Transformer,Motor supply,75 kVA,0.4/0.3 kV,CB,MSB,
+P1,Pump,Well pump,30 kW,300 V,,T1,
+M2,Pump,Board pump,15 kW,400 V,CB,MSB,
+T2,Transformer,Isolation tx,50 kVA,0.4/0.4 kV,CB,MSB,load not surveyed
+F2,Feeder,Spare,63 A,400 V,MCB,MSB,
+T3,Transformer,LV/LV tx,100 kVA,0.4/0.23 kV,CB,MSB,
+SB3,LV Busbar,230 V board,200 A,230 V,CB,T3,
+F4,Feeder,Sockets,32 A,230 V,MCB,SB3,
+M4,Pump,Small motor,5 kW,230 V,CB,T3,

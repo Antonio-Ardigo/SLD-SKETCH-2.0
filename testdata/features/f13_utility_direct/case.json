@@ -1,0 +1,20 @@
+{
+  "name": "f13_utility_direct",
+  "group": "features",
+  "description": "Utility → 2 transformers directly (no MV board/RMU), LV board from both",
+  "source": "tests/features/f13_utility_direct.xlsx",
+  "info": {
+    "site": "F13 transformers straight off the utility",
+    "date": "",
+    "by": "",
+    "notes": "no MV board or RMU between the incomer and the transformers: one drop each, split from the incomer"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 5,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

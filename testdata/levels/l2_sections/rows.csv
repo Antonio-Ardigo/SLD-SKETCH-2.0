@@ -1,0 +1,18 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility A,,33 kV,,,
+U2,MV Incomer,Utility B,,33 kV,,,
+HVA,MV Busbar,33 kV sec A,630 A,33 kV,CB,U1,
+HVB,MV Busbar,33 kV sec B,630 A,33 kV,CB,U2,
+HVT,Bus Coupler,33 kV tie,,33 kV,CB,"HVA, HVB",Normally open
+GTA,Transformer,Grid tx A,10 MVA,33/11 kV,CB,HVA,
+GTB,Transformer,Grid tx B,10 MVA,33/11 kV,CB,HVB,
+MVA,MV Busbar,11 kV sec A,1250 A,11 kV,CB,GTA,
+MVB,MV Busbar,11 kV sec B,1250 A,11 kV,CB,GTB,
+MVT,Bus Coupler,11 kV tie,,11 kV,CB,"MVA, MVB",Normally open
+TA,Transformer,Dist tx A,1600 kVA,11/0.4 kV,CB,MVA,
+TB,Transformer,Dist tx B,1600 kVA,11/0.4 kV,CB,MVB,
+LVA,LV Busbar,LV sec A,2500 A,400 V,CB,TA,
+LVB,LV Busbar,LV sec B,2500 A,400 V,CB,TB,
+LVT,Bus Coupler,LV tie,,400 V,CB,"LVA, LVB",Normally open
+FA,Feeder,Feeder A,250 A,400 V,CB,LVA,
+FB,Feeder,Feeder B,250 A,400 V,CB,LVB,

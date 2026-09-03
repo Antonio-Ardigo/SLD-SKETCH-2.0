@@ -1,0 +1,20 @@
+{
+  "name": "w07_multisupply",
+  "group": "audit",
+  "description": "Board fed from two transformers on different MV boards, a sub-board fed from two feeders",
+  "source": "tests/audit/w07_multisupply.xlsx",
+  "info": {
+    "site": "Tester2 W7 - Multi-supply",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "LV board from two tx on different MV boards; DB from two feeders"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 17,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "f12_rmu_mv_loads",
+  "group": "features",
+  "description": "Motor + capacitor + arrester as ways of ring RMUs on a site with no MV busbar",
+  "source": "tests/features/f12_rmu_mv_loads.xlsx",
+  "info": {
+    "site": "F12 MV loads on a ring",
+    "date": "",
+    "by": "",
+    "notes": "a motor, a capacitor bank and an arrester as ways of ring RMUs, on a site with no MV busbar"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 29,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

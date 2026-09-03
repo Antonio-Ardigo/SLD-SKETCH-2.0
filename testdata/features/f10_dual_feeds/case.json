@@ -1,0 +1,20 @@
+{
+  "name": "f10_dual_feeds",
+  "group": "features",
+  "description": "LV board fed from two transformers on different MV boards; sub-board fed from two feeders",
+  "source": "tests/features/f10_dual_feeds.xlsx",
+  "info": {
+    "site": "F10 boards with two supplies",
+    "date": "",
+    "by": "",
+    "notes": "an LV board fed from two transformers on different MV boards, a sub-board fed from two feeders"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 17,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

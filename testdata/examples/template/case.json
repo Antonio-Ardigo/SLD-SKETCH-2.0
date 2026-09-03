@@ -1,0 +1,20 @@
+{
+  "name": "template",
+  "group": "examples",
+  "description": "Blank survey template with one example row",
+  "source": "examples/template.xlsx",
+  "info": {
+    "site": "",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 1,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

@@ -1,0 +1,34 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility 33 kV A,,33 kV,,,
+U2,MV Incomer,Utility 33 kV B,,33 kV,,,
+HV1,MV Busbar,33 kV board sec A,1250 A,33 kV,CB,U1,
+HV2,MV Busbar,33 kV board sec B,1250 A,33 kV,CB,U2,
+HVT,Bus Coupler,33 kV bus section,,33 kV,CB,"HV1, HV2",Normally open
+GT1,Transformer,Grid tx A,10 MVA,33/11 kV,CB,HV1,
+GT2,Transformer,Grid tx B,10 MVA,33/11 kV,CB,HV2,
+MV1,MV Busbar,11 kV board sec A,1250 A,11 kV,CB,GT1,
+MV2,MV Busbar,11 kV board sec B,1250 A,11 kV,CB,GT2,
+MVT,Bus Coupler,11 kV bus section,,11 kV,CB,"MV1, MV2",Normally open
+RMU1,RMU,Sub 1 (intake),630 A,11 kV,LBS,MV1,
+RMU2,RMU,Sub 2 (filters),630 A,11 kV,"LBS, LBS","RMU1, RMU3",
+RMU3,RMU,Sub 3 (chem),630 A,11 kV,LBS,MV2,N.O. point RMU2-RMU3
+T1,Transformer,Sub 1 tx,1600 kVA,11/0.4 kV,Fuse-switch,RMU1,
+T2,Transformer,Sub 2 tx,1600 kVA,11/0.4 kV,Fuse-switch,RMU2,
+T3,Transformer,Sub 3 tx,1000 kVA,11/0.4 kV,Fuse-switch,RMU3,
+PT,Transformer,Pump tx,4 MVA,11/3.3 kV,CB,MV1,
+PB,MV Busbar,3.3 kV pump board,1250 A,3.3 kV,CB,PT,
+P1,Pump,HL pump 1,800 kW,3.3 kV,Fuse-contactor,PB,
+P2,Pump,HL pump 2,800 kW,3.3 kV,Fuse-contactor,PB,
+P3,Pump,HL pump 3 (VSD),800 kW,3.3 kV,CB,PB,via VSD
+MSB1,LV Busbar,Sub 1 MSB,2500 A,400 V,CB,T1,
+MSB2,LV Busbar,Sub 2 MSB,2500 A,400 V,CB,T2,
+MSB3,LV Busbar,Sub 3 MSB,1600 A,400 V,CB,T3,
+LT12,Bus Coupler,MSB1-MSB2 tie,,400 V,CB,"MSB1, MSB2",Normally open
+G1,Generator,Standby genset,1250 kVA,400 V,CB,,feeds MSB3 via ATS
+ATS,Bus Coupler,ATS mains/gen,,400 V,CB,"MSB3, G1",changeover
+M1,MCC,Intake MCC,,400 V,CB,MSB1,
+M2,MCC,Filter MCC,,400 V,CB,MSB2,
+M3,MCC,Chem dosing MCC,,400 V,CB,MSB3,
+F1,Feeder,Site lighting,250 A,400 V,CB,MSB1,
+F2,Feeder,Admin building,400 A,400 V,CB,MSB2,
+F3,Feeder,Workshop,160 A,400 V,CB,MSB3,

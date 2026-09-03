@@ -1,0 +1,21 @@
+{
+  "name": "config6_closed_ring",
+  "group": "examples",
+  "description": "Config 5 with the RMU2–RMU3 cable in place, closing the ring RMU1–RMU2–RMU3–RMU1",
+  "source": "examples/config6_closed_ring.xlsx",
+  "info": {
+    "site": "Example Site F",
+    "date": "2026-08-31",
+    "by": "A. Ardigo",
+    "notes": "Config 6 - closed ring: RMU1-RMU2-RMU3-RMU1"
+  },
+  "preset": "6",
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 18,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

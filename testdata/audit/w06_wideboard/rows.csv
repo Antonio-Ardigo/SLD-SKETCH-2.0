@@ -1,0 +1,35 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+INC,MV Incomer,Utility 11 kV,,11 kV,,,
+RMU,RMU,3-way RMU,630 A,11 kV,LBS,INC,
+TX,Transformer,"Main tx, Dyn11",2500 kVA,11/0.4 kV,Fuse-switch,RMU,
+BB,LV Busbar,"Main LV board, 24 ways",4000 A,400 V,CB,TX,87B differential
+F1,Feeder,Chillers,630 A,400 V,CB,BB,
+F2,Feeder,AHU plant,400 A,400 V,CB,BB,
+F3,Feeder,Riser 1,400 A,400 V,CB,BB,
+F4,Feeder,Riser 2,400 A,400 V,CB,BB,Spare
+MCC1,MCC,Pump MCC,400 A,400 V,CB,BB,
+P1,Pump,CHW pump 1,45 kW,400 V,,MCC1,VSD
+P2,Pump,CHW pump 2,45 kW,400 V,,MCC1,
+MCC2,MCC,Ventilation MCC,250 A,400 V,CB,BB,not surveyed
+M1,Pump,Fire pump,75 kW,400 V,CB,BB,
+M2,Pump,Jockey pump,5.5 kW,400 V,Contactor,BB,VSD
+M3,Pump,Lift motor,22 kW,400 V,CB,BB,
+CAP,Capacitor Bank,PFC 400 kvar,400 kvar,400 V,CB,BB,
+NER,Earthing/NER,Neutral earthing resistor,100 A,400 V,,BB,
+SA,Surge Arrester,LV SPD,,400 V,,BB,
+TXM,Transformer,Motor supply tx,50 kVA,0.4/0.3 kV,CB,BB,
+PM,Pump,Well pump,22 kW,300 V,,TXM,
+TXN,Transformer,Isolation tx (load unknown),30 kVA,0.4/0.4 kV,CB,BB,
+MCC3,MCC,Kitchen MCC,160 A,400 V,CB,BB,
+P3,Pump,Extract fan,11 kW,400 V,,MCC3,
+FK,Feeder,Kitchen DB,63 A,400 V,MCB,MCC3,
+F5,Feeder,Lighting L1-L4,250 A,400 V,CB,BB,
+F6,Feeder,Lighting L5-L8,250 A,400 V,CB,BB,
+F7,Feeder,Small power L1-L4,250 A,400 V,CB,BB,
+F8,Feeder,Small power L5-L8,250 A,400 V,CB,BB,
+F9,Feeder,Car park,160 A,400 V,CB,BB,
+F10,Feeder,Data centre UPS input,400 A,400 V,CB,BB,
+F11,Feeder,Kitchen,160 A,400 V,CB,BB,Out of service
+F12,Feeder,Spare,250 A,400 V,CB,BB,Future
+PFC2,Feeder,"Detuned PFC stage 2, 200 kvar",200 kvar,400 V,CB,BB,
+F13,Feeder,Tenant A,250 A,400 V,CB,BB,

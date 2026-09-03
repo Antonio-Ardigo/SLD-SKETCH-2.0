@@ -1,0 +1,20 @@
+{
+  "name": "l5_two_up",
+  "group": "levels",
+  "description": "PV → two 400 V boards → two 0.4/11 step-ups → 11 kV → 11/33 → 33 kV export board",
+  "source": "tests/levels/l5_two_up.xlsx",
+  "info": {
+    "site": "L5 two step-ups, export",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 13,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

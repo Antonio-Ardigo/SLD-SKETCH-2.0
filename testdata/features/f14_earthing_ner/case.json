@@ -1,0 +1,20 @@
+{
+  "name": "f14_earthing_ner",
+  "group": "features",
+  "description": "Earthing transformer with an Earthing/NER row on its secondary; long Site name",
+  "source": "tests/features/f14_earthing_ner.xlsx",
+  "info": {
+    "site": "F14 earthing transformer with an NER",
+    "date": "",
+    "by": "",
+    "notes": "an Earthing/NER row fed from a transformer hangs under its secondary"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 8,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

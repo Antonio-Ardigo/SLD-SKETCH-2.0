@@ -1,0 +1,20 @@
+{
+  "name": "w10_everything",
+  "group": "audit",
+  "description": "95 rows: w01 + w03 + w05 merged with prefixed IDs",
+  "source": "tests/audit/w10_everything.xlsx",
+  "info": {
+    "site": "Tester2 W10 - Everything at once",
+    "date": "2026-09-02",
+    "by": "Tester 2",
+    "notes": "W1 + W3 + W5 merged"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 95,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

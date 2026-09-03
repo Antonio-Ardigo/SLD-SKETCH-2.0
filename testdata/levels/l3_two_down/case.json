@@ -1,0 +1,20 @@
+{
+  "name": "l3_two_down",
+  "group": "levels",
+  "description": "11 kV → 11/3.3 → 3.3 kV pump board, and 11/0.4 → LV: two step-downs side by side",
+  "source": "tests/levels/l3_two_down.xlsx",
+  "info": {
+    "site": "L3 two step-downs",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 10,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

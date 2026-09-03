@@ -1,0 +1,6 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility supply,,11 kV,,,
+TX1,Transformer,Substation 1,1000 kVA,11/0.4 kV,Fuse-switch,MV1,
+TX2,Transformer,Substation 2,1000 kVA,11/0.4 kV,Fuse-switch,MV1,
+LV1,LV Busbar,Main board,2500 A,400 V,"CB, CB","TX1, TX2",
+F11,Feeder,Board 1,250 A,400 V,CB,LV1,

@@ -1,0 +1,20 @@
+{
+  "name": "l10_both_under_board",
+  "group": "levels",
+  "description": "One 11 kV board with a step-down, a reversed step-up and a step-up column",
+  "source": "tests/levels/l10_both_under_board.xlsx",
+  "info": {
+    "site": "L10 all orientations",
+    "date": "",
+    "by": "",
+    "notes": "multi-level test"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 10,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

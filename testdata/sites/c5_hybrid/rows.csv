@@ -1,0 +1,23 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U,MV Incomer,Utility 33 kV,,33 kV,,,
+HV,MV Busbar,33 kV POC board,630 A,33 kV,CB,U,
+GT,Transformer,Grid tx,20 MVA,33/11 kV,CB,HV,
+MV,MV Busbar,11 kV main board,2000 A,11 kV,CB,GT,
+GB,MV Busbar,11 kV generation board,1250 A,11 kV,"CB, CB, CB, CB, CB, CB","MV, SU1, SU2, SU3, DG1, DG2",islanding tie
+PV1,Generator,PV inverters block 1,2.5 MW,400 V,,,inverter
+PV2,Generator,PV inverters block 2,2.5 MW,400 V,,,inverter
+PVB1,LV Busbar,PV AC board 1,4000 A,400 V,CB,PV1,
+PVB2,LV Busbar,PV AC board 2,4000 A,400 V,CB,PV2,
+SU1,Transformer,PV step-up 1,3 MVA,0.4/11 kV,CB,PVB1,
+SU2,Transformer,PV step-up 2,3 MVA,0.4/11 kV,CB,PVB2,
+BESS,Generator,BESS 2 MW / 4 MWh,2 MW,400 V,,,battery + PCS
+BB,LV Busbar,BESS AC board,3200 A,400 V,CB,BESS,
+SU3,Transformer,BESS step-up,2.5 MVA,0.4/11 kV,CB,BB,
+DG1,Generator,Diesel genset 1,2 MVA,11 kV,CB,,MV genset
+DG2,Generator,Diesel genset 2,2 MVA,11 kV,CB,,MV genset
+AT,Transformer,Aux tx,500 kVA,11/0.4 kV,CB,MV,
+AUX,LV Busbar,Aux LV board,800 A,400 V,CB,AT,
+FA1,Feeder,Site services,250 A,400 V,CB,AUX,
+FA2,Feeder,Control building,160 A,400 V,CB,AUX,
+SCADA,Transformer,UPS,30 kVA,400/400 V,CB,AUX,UPS
+SDB,LV Busbar,SCADA DB,63 A,400 V,MCB,SCADA,

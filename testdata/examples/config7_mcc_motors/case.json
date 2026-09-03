@@ -1,0 +1,21 @@
+{
+  "name": "config7_mcc_motors",
+  "group": "examples",
+  "description": "Pump station: utility incomer → RMU → 1000 kVA transformer → LV board with three MCCs; motors on VSDs, an auxiliaries feeder",
+  "source": "examples/config7_mcc_motors.xlsx",
+  "info": {
+    "site": "Example Site G",
+    "date": "2026-09-02",
+    "by": "A. Ardigo",
+    "notes": "Config 7 - pump station, MCCs feed the motors"
+  },
+  "preset": "7",
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 16,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

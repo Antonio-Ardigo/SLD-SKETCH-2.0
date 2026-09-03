@@ -1,0 +1,20 @@
+{
+  "name": "f11_rmu_cascade",
+  "group": "features",
+  "description": "One RMU feeding two RMUs, 5 RMUs each with a substation (sheet-width case)",
+  "source": "tests/features/f11_rmu_cascade.xlsx",
+  "info": {
+    "site": "F11 five RMUs cascaded",
+    "date": "",
+    "by": "",
+    "notes": "an RMU feeding two RMUs, each with a substation: the branch placed in its own slot must stay on the sheet"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 26,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

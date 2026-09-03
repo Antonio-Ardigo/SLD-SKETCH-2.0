@@ -1,0 +1,20 @@
+{
+  "name": "f3_terminals",
+  "group": "features",
+  "description": "Every terminal type (cap bank, NER, arrester) on MV gear / RMU / LV board, MV outgoing ways, alias type names",
+  "source": "tests/features/f3_terminals.xlsx",
+  "info": {
+    "site": "F3 Terminal items",
+    "date": "",
+    "by": "",
+    "notes": "capacitor, NER, arrester, MV feeders"
+  },
+  "expect": {
+    "golden": true,
+    "legacy": {
+      "items": 15,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}
