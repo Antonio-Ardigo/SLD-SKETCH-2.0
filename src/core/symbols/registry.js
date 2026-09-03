@@ -50,6 +50,15 @@ export const SYMBOLS = [
       s.line(cx - 3, yt + 11, cx, yt + 15); s.line(cx + 3, yt + 11, cx, yt + 15);
       s.line(cx, yt + 18, cx, yt + 22); s.earth(cx, yt + 22);
     } },
+  /* symbol variants: the Type label picks the glyph, the family keeps the behaviour */
+  { key: "variant:ups", label: "UPS", types: [], variant: "ups", legend: "when-used",
+    draw: (s, cx, yt, yb) => { s.rect(cx - 9, yt + 2, 18, 26, 1.5); s.line(cx - 9, yb - 2, cx + 9, yt + 2, 1); s.text(cx - 4, yt + 12, "~", { size: 8, bold: true }); s.text(cx + 4, yb - 5, "=", { size: 8, bold: true }); } },
+  { key: "variant:inverter", label: "Inverter", types: [], variant: "inverter", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y, 9); s.line(cx - 5.5, y + 5.5, cx + 5.5, y - 5.5, 1.2); s.text(cx - 3.6, y - 1.4, "~", { size: 6.3, bold: true }); s.text(cx + 3.6, y + 5.6, "=", { size: 6.3, bold: true }); } },
+  { key: "variant:battery", label: "Battery", types: [], variant: "battery", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y, 9); s.line(cx - 5, y - 2.2, cx + 5, y - 2.2, 2.5); s.line(cx - 2.7, y + 1.8, cx + 2.7, y + 1.8, 1.5); s.line(cx, y - 9, cx, y - 2.2); s.line(cx, y + 1.8, cx, y + 9); } },
+  { key: "variant:dc", label: "DC busbar", types: [], variant: "dc", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.line(cx - 14, y, cx + 14, y, 5, "7 3"); } },
   /* not in the legend, but the palette shows them */
   { key: "incomer", label: "MV incomer", types: [MV_INCOMER], legend: "never",
     draw: (s, cx, yt, yb) => { s.line(cx - 11, yt + 3, cx + 11, yt + 3, 3); s.line(cx, yt + 3, cx, yb); } },
@@ -61,12 +70,15 @@ export const byKey = Object.fromEntries(SYMBOLS.map(e => [e.key, e]));
 
 /** The legend entries for a sheet: the fixed ones plus those whose type is used. */
 export function legendEntries(usedTypes) {
-  return SYMBOLS.filter(e => e.legend === "always" || (e.legend === "when-used" && usedTypes && e.types.some(t => usedTypes.has(t))))
+  /* usedTypes holds canonical types and "variant:<name>" keys */
+  return SYMBOLS.filter(e => e.legend === "always" || (e.legend === "when-used" && usedTypes
+      && (e.types.some(t => usedTypes.has(t)) || (e.variant && usedTypes.has("variant:" + e.variant)))))
     .map(e => [e.key, e.label]);
 }
 
-/** The registry entry that draws a row type (busbars share one). */
-export function symbolForType(type) {
+/** The registry entry that draws a row type (busbars share one), or its variant. */
+export function symbolForType(type, variant) {
+  if (variant) { const v = SYMBOLS.find(e => e.variant === variant); if (v) return v; }
   return SYMBOLS.find(e => e.types && e.types.includes(type)) || null;
 }
 

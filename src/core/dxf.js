@@ -124,7 +124,7 @@ class DXF extends SVG {
     const labels={[CAPACITOR]:"Capacitor Bank",[EARTHING]:"Earthing/NER",[ARRESTER]:"Surge Arrester"};
     const rows=order.map(i=>{ const it=items[i];
       const typ=labels[it.type]||it.type.replace(/\b\w/g,c=>c.toUpperCase()).replace("Mv ","MV ").replace("Lv ","LV ").replace("Rmu","RMU").replace("Mcc","MCC");
-      return [it.id,typ,it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>dwrap(v)); });
+      return [it.id,it.label||typ,it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>dwrap(v)); });
     const cols=heads.map((h,i)=>Math.max(dtextW(h,size),...rows.flatMap(r=>r[i].map(l=>dtextW(l,size))))*1.15+2*pad);
     const x1=x0+cols.reduce((a,b)=>a+b,0), yHead=y;
     this.line(x0,y,x1,y,1.2);

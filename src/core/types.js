@@ -16,9 +16,23 @@ const TYPE_LABELS = [
   ["LV Busbar", LV_BUSBAR],
   ["Feeder", FEEDER], ["MCC", MCC], ["Bus Coupler", BUS_COUPLER],
   ["Capacitor Bank", CAPACITOR], ["Earthing/NER", EARTHING],
-  ["Surge Arrester", ARRESTER]
+  ["Surge Arrester", ARRESTER],
+  /* symbol variants of a family: the Type label chooses the glyph, the family the behaviour */
+  ["UPS", TRANSFORMER, "ups"], ["Inverter", GENERATOR, "inverter"], ["Battery", GENERATOR, "battery"],
+  ["DC Busbar", LV_BUSBAR, "dc"],
 ];
+/* a Type label that is a variant of a family: {normalised label: variant} */
+const TYPE_VARIANTS = {
+  "ups":"ups", "ups system":"ups", "static ups":"ups", "uninterruptible power supply":"ups",
+  "inverter":"inverter", "pv inverter":"inverter", "solar inverter":"inverter", "string inverter":"inverter", "central inverter":"inverter",
+  "battery":"battery", "bess":"battery", "battery storage":"battery", "energy storage":"battery", "battery bank":"battery",
+  "dc busbar":"dc", "dc board":"dc", "dc distribution":"dc", "dc distribution board":"dc", "dc bus":"dc",
+};
 const ALIASES = {
+  "ups":TRANSFORMER, "ups system":TRANSFORMER, "static ups":TRANSFORMER, "uninterruptible power supply":TRANSFORMER,
+  "inverter":GENERATOR, "pv inverter":GENERATOR, "solar inverter":GENERATOR, "string inverter":GENERATOR, "central inverter":GENERATOR,
+  "battery":GENERATOR, "bess":GENERATOR, "battery storage":GENERATOR, "energy storage":GENERATOR, "battery bank":GENERATOR,
+  "dc busbar":LV_BUSBAR, "dc board":LV_BUSBAR, "dc distribution":LV_BUSBAR, "dc distribution board":LV_BUSBAR, "dc bus":LV_BUSBAR,
   "mv incomer":MV_INCOMER, "incomer":MV_INCOMER, "mv":MV_INCOMER,
   "rmu":RMU, "ring main unit":RMU,
   "mv busbar":MV_BUSBAR, "mv board":MV_BUSBAR, "mv switchboard":MV_BUSBAR,
@@ -97,4 +111,4 @@ function protFor(item, parentId){
   return [raw, PROT_ALIASES[raw.toLowerCase().split(/\s+/).join(" ")]||null];
 }
 
-export { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, LV_LOADS, TYPE_LABELS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, stateWords, PROT_ALIASES, protFor };
+export { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, LV_LOADS, TYPE_LABELS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, stateWords, PROT_ALIASES, protFor, TYPE_VARIANTS };

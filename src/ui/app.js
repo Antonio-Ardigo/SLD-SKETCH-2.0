@@ -101,7 +101,7 @@ function redraw(){
 let selectedId=null;
 const TYPE_PREFIX={"MV Incomer":"MV","Generator":"G","MV Busbar":"MVB","RMU":"RMU","Transformer":"TX",
   "Pump":"P","LV Busbar":"BB","Feeder":"F","MCC":"MCC","Bus Coupler":"BC","Capacitor Bank":"CAP",
-  "Earthing/NER":"NER","Surge Arrester":"SA"};
+  "Earthing/NER":"NER","Surge Arrester":"SA","UPS":"UPS","Inverter":"INV","Battery":"BAT","DC Busbar":"DCB"};
 function nextId(type){
   const pre=TYPE_PREFIX[type]||"X", used=new Set(state.rows.map(r=>r.id.trim().toUpperCase()));
   let n=1; while(used.has((pre+n).toUpperCase())) n++;
@@ -172,18 +172,18 @@ function addRowFor(type, targetId){
   return row;
 }
 /* one chip per type; the glyph is the legend's, drawn by the symbol registry */
-function chipSvg(type){
-  const e=symbolForType(type); if(!e) return "";
+function chipSvg(type,variant){
+  const e=symbolForType(type,variant); if(!e) return "";
   const s=new SVG(); e.draw(s,24,4,34);
   return `<svg viewBox="0 0 48 44" aria-hidden="true">${s.parts.join("")}</svg>`;
 }
 function buildPalette(){
   const pal=$("#palette"); if(!pal) return;
-  for(const [lbl,type] of TYPE_LABELS){
+  for(const [lbl,type,variant] of TYPE_LABELS){
     const b=document.createElement("button");
     b.className="chip"; b.type="button"; b.draggable=true; b.dataset.type=lbl;
     b.title=`Drag onto a busbar, RMU or transformer to add a ${lbl} fed from it; click to add one under the selected row`;
-    b.innerHTML=chipSvg(type)+esc(lbl);
+    b.innerHTML=chipSvg(type,variant)+esc(lbl);
     b.addEventListener("dragstart",e=>{
       e.dataTransfer.setData("text/sld-type",lbl); e.dataTransfer.setData("text/plain",lbl);
       e.dataTransfer.effectAllowed="copy";

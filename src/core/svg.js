@@ -180,9 +180,26 @@ class SVG {
   vsd(x,y){              /* drive box over a motor's drop, conductor running through */
     this.rect(x-12,y-7,24,14,1.5,null,"white"); this.text(x,y+3,"VSD",{size:7.5});
   }
-  transformer(x,lines,side,y){
+  /* a generation source: the G circle, or its variants — an inverter (the
+     ~ / = box in the circle) and a battery (two plates) */
+  genMark(x,cy,r,variant){
+    this.circle(x,cy,r,2.2);
+    if(variant==="inverter"){
+      this.line(x-r*0.6,cy+r*0.6,x+r*0.6,cy-r*0.6,1.5);
+      this.text(x-r*0.4,cy-r*0.15,"~",{size:r*0.7,bold:true}); this.text(x+r*0.4,cy+r*0.62,"=",{size:r*0.7,bold:true});
+    } else if(variant==="battery"){
+      this.line(x-r*0.55,cy-r*0.25,x+r*0.55,cy-r*0.25,3); this.line(x-r*0.3,cy+r*0.2,x+r*0.3,cy+r*0.2,2);
+      this.line(x,cy-r,x,cy-r*0.25); this.line(x,cy+r*0.2,x,cy+r);
+    } else this.text(x,cy+4,"G",{size:13,bold:true});
+  }
+  transformer(x,lines,side,y,variant){
     const c1=(y===undefined)?Y_TX_C1:y;
-    this.circle(x,c1,TX_R,2.2); this.circle(x,c1+27,TX_R,2.2);
+    if(variant==="ups"){            /* a UPS: the box with its conversion marks */
+      this.rect(x-TX_R,c1-TX_R,2*TX_R,27+2*TX_R,2.2);
+      this.line(x-TX_R,c1+27+TX_R,x+TX_R,c1-TX_R,1.2);
+      this.text(x-7,c1+4,"~",{size:11,bold:true}); this.text(x+7,c1+27+2,"=",{size:11,bold:true});
+      this.text(x,c1+27+TX_R-5,"UPS",{size:7});
+    } else { this.circle(x,c1,TX_R,2.2); this.circle(x,c1+27,TX_R,2.2); }
     let ty=c1-6;
     for(const s of lines){
       if(side==="left") this.text(x-TX_R-10,ty,s,{anchor:"end"});

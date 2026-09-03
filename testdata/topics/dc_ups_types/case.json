@@ -1,0 +1,37 @@
+{
+  "name": "dc_ups_types",
+  "group": "topics",
+  "description": "The four symbol variants: a UPS (transformer family) with its output board, an inverter feeding the main board, a battery over a DC busbar that is also charged from a feeder",
+  "info": {
+    "site": "Topology: UPS, inverter, battery, DC busbar",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "MSB": 0,
+      "UPSO": 0,
+      "DCB": 1
+    },
+    "facts": {
+      "txDir": {
+        "T1": "down",
+        "UPS1": "lvLink"
+      }
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    },
+    "legacy": {
+      "items": 14,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

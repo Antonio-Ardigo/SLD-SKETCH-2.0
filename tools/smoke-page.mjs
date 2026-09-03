@@ -132,7 +132,7 @@ try {
   check("selected symbol highlighted", await evaluate(`document.querySelector('#sheet svg g[data-id="TX1"]').classList.contains('sel')`));
 
   /* the palette: dropping a Feeder on the LV board adds a row fed from it */
-  check("palette has a chip per type", await evaluate(`document.querySelectorAll('#palette .chip').length`) === 13);
+  check("palette has a chip per type", await evaluate(`document.querySelectorAll('#palette .chip').length`) === 17);
   const rowsBefore = await evaluate(`state.rows.length`);
   await evaluate(`(function(){ const g=document.querySelector('#sheet svg g[data-id="MSB"]'); g.scrollIntoView({block:'center'}); const r=g.getBoundingClientRect();
      const vp=document.querySelector('#viewport'); const dt=new DataTransfer(); dt.setData('text/sld-type','Feeder');

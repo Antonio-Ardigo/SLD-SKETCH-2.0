@@ -1,4 +1,4 @@
-import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, PROT_ALIASES } from "./types.js";
+import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, PROT_ALIASES, TYPE_VARIANTS } from "./types.js";
 import { genFeeds } from "./geometry.js";
 import { txBoard } from "./layout.js";
 import { makeDiag } from "./diagnostics.js";
@@ -30,12 +30,14 @@ function buildModel(rows){
       return;
     }
     if(items[id]){ err("DUP_ID",[id],`Duplicate ID "${id}" (row ${i+1}).`,i+1); return; }
-    const type = ALIASES[r.type.trim().toLowerCase()] || null;
+    const rawType=r.type.trim().toLowerCase().replace(/\s+/g," ");
+    const type = ALIASES[rawType] || null;
     if(!type) warn("UNKNOWN_TYPE",[id],`Row "${id}": unknown type "${r.type}" — drawn as a feeder.`);
     items[id]={ id, type: type||FEEDER, desc:r.desc.trim(), rating:r.rating.trim(),
       voltage:r.voltage.trim(), notes:r.notes.trim(),
       parents:r.from.split(",").map(s=>s.trim()).filter(Boolean),
       prots:(r.prot||"").split(",").map(s=>s.trim()).filter(Boolean),
+      variant:TYPE_VARIANTS[rawType]||null, label:r.type.trim(),   /* the symbol variant and the label the surveyor wrote */
       x:null, xLeft:null, xRight:null, land:{}, tee:{} };
     order.push(id);
   });

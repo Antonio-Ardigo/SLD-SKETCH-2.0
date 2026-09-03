@@ -466,9 +466,23 @@ const TYPE_LABELS = [
   ["LV Busbar", LV_BUSBAR],
   ["Feeder", FEEDER], ["MCC", MCC], ["Bus Coupler", BUS_COUPLER],
   ["Capacitor Bank", CAPACITOR], ["Earthing/NER", EARTHING],
-  ["Surge Arrester", ARRESTER]
+  ["Surge Arrester", ARRESTER],
+  /* symbol variants of a family: the Type label chooses the glyph, the family the behaviour */
+  ["UPS", TRANSFORMER, "ups"], ["Inverter", GENERATOR, "inverter"], ["Battery", GENERATOR, "battery"],
+  ["DC Busbar", LV_BUSBAR, "dc"],
 ];
+/* a Type label that is a variant of a family: {normalised label: variant} */
+const TYPE_VARIANTS = {
+  "ups":"ups", "ups system":"ups", "static ups":"ups", "uninterruptible power supply":"ups",
+  "inverter":"inverter", "pv inverter":"inverter", "solar inverter":"inverter", "string inverter":"inverter", "central inverter":"inverter",
+  "battery":"battery", "bess":"battery", "battery storage":"battery", "energy storage":"battery", "battery bank":"battery",
+  "dc busbar":"dc", "dc board":"dc", "dc distribution":"dc", "dc distribution board":"dc", "dc bus":"dc",
+};
 const ALIASES = {
+  "ups":TRANSFORMER, "ups system":TRANSFORMER, "static ups":TRANSFORMER, "uninterruptible power supply":TRANSFORMER,
+  "inverter":GENERATOR, "pv inverter":GENERATOR, "solar inverter":GENERATOR, "string inverter":GENERATOR, "central inverter":GENERATOR,
+  "battery":GENERATOR, "bess":GENERATOR, "battery storage":GENERATOR, "energy storage":GENERATOR, "battery bank":GENERATOR,
+  "dc busbar":LV_BUSBAR, "dc board":LV_BUSBAR, "dc distribution":LV_BUSBAR, "dc distribution board":LV_BUSBAR, "dc bus":LV_BUSBAR,
   "mv incomer":MV_INCOMER, "incomer":MV_INCOMER, "mv":MV_INCOMER,
   "rmu":RMU, "ring main unit":RMU,
   "mv busbar":MV_BUSBAR, "mv board":MV_BUSBAR, "mv switchboard":MV_BUSBAR,
@@ -1080,12 +1094,14 @@ function buildModel(rows){
       return;
     }
     if(items[id]){ err("DUP_ID",[id],`Duplicate ID "${id}" (row ${i+1}).`,i+1); return; }
-    const type = ALIASES[r.type.trim().toLowerCase()] || null;
+    const rawType=r.type.trim().toLowerCase().replace(/\s+/g," ");
+    const type = ALIASES[rawType] || null;
     if(!type) warn("UNKNOWN_TYPE",[id],`Row "${id}": unknown type "${r.type}" — drawn as a feeder.`);
     items[id]={ id, type: type||FEEDER, desc:r.desc.trim(), rating:r.rating.trim(),
       voltage:r.voltage.trim(), notes:r.notes.trim(),
       parents:r.from.split(",").map(s=>s.trim()).filter(Boolean),
       prots:(r.prot||"").split(",").map(s=>s.trim()).filter(Boolean),
+      variant:TYPE_VARIANTS[rawType]||null, label:r.type.trim(),   /* the symbol variant and the label the surveyor wrote */
       x:null, xLeft:null, xRight:null, land:{}, tee:{} };
     order.push(id);
   });
@@ -1824,9 +1840,26 @@ class SVG {
   vsd(x,y){              /* drive box over a motor's drop, conductor running through */
     this.rect(x-12,y-7,24,14,1.5,null,"white"); this.text(x,y+3,"VSD",{size:7.5});
   }
-  transformer(x,lines,side,y){
+  /* a generation source: the G circle, or its variants — an inverter (the
+     ~ / = box in the circle) and a battery (two plates) */
+  genMark(x,cy,r,variant){
+    this.circle(x,cy,r,2.2);
+    if(variant==="inverter"){
+      this.line(x-r*0.6,cy+r*0.6,x+r*0.6,cy-r*0.6,1.5);
+      this.text(x-r*0.4,cy-r*0.15,"~",{size:r*0.7,bold:true}); this.text(x+r*0.4,cy+r*0.62,"=",{size:r*0.7,bold:true});
+    } else if(variant==="battery"){
+      this.line(x-r*0.55,cy-r*0.25,x+r*0.55,cy-r*0.25,3); this.line(x-r*0.3,cy+r*0.2,x+r*0.3,cy+r*0.2,2);
+      this.line(x,cy-r,x,cy-r*0.25); this.line(x,cy+r*0.2,x,cy+r);
+    } else this.text(x,cy+4,"G",{size:13,bold:true});
+  }
+  transformer(x,lines,side,y,variant){
     const c1=(y===undefined)?Y_TX_C1:y;
-    this.circle(x,c1,TX_R,2.2); this.circle(x,c1+27,TX_R,2.2);
+    if(variant==="ups"){            /* a UPS: the box with its conversion marks */
+      this.rect(x-TX_R,c1-TX_R,2*TX_R,27+2*TX_R,2.2);
+      this.line(x-TX_R,c1+27+TX_R,x+TX_R,c1-TX_R,1.2);
+      this.text(x-7,c1+4,"~",{size:11,bold:true}); this.text(x+7,c1+27+2,"=",{size:11,bold:true});
+      this.text(x,c1+27+TX_R-5,"UPS",{size:7});
+    } else { this.circle(x,c1,TX_R,2.2); this.circle(x,c1+27,TX_R,2.2); }
     let ty=c1-6;
     for(const s of lines){
       if(side==="left") this.text(x-TX_R-10,ty,s,{anchor:"end"});
@@ -1894,6 +1927,15 @@ const SYMBOLS = [
       s.line(cx - 3, yt + 11, cx, yt + 15); s.line(cx + 3, yt + 11, cx, yt + 15);
       s.line(cx, yt + 18, cx, yt + 22); s.earth(cx, yt + 22);
     } },
+  /* symbol variants: the Type label picks the glyph, the family keeps the behaviour */
+  { key: "variant:ups", label: "UPS", types: [], variant: "ups", legend: "when-used",
+    draw: (s, cx, yt, yb) => { s.rect(cx - 9, yt + 2, 18, 26, 1.5); s.line(cx - 9, yb - 2, cx + 9, yt + 2, 1); s.text(cx - 4, yt + 12, "~", { size: 8, bold: true }); s.text(cx + 4, yb - 5, "=", { size: 8, bold: true }); } },
+  { key: "variant:inverter", label: "Inverter", types: [], variant: "inverter", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y, 9); s.line(cx - 5.5, y + 5.5, cx + 5.5, y - 5.5, 1.2); s.text(cx - 3.6, y - 1.4, "~", { size: 6.3, bold: true }); s.text(cx + 3.6, y + 5.6, "=", { size: 6.3, bold: true }); } },
+  { key: "variant:battery", label: "Battery", types: [], variant: "battery", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.circle(cx, y, 9); s.line(cx - 5, y - 2.2, cx + 5, y - 2.2, 2.5); s.line(cx - 2.7, y + 1.8, cx + 2.7, y + 1.8, 1.5); s.line(cx, y - 9, cx, y - 2.2); s.line(cx, y + 1.8, cx, y + 9); } },
+  { key: "variant:dc", label: "DC busbar", types: [], variant: "dc", legend: "when-used",
+    draw: (s, cx, yt, yb) => { const y = yc(yt, yb); s.line(cx - 14, y, cx + 14, y, 5, "7 3"); } },
   /* not in the legend, but the palette shows them */
   { key: "incomer", label: "MV incomer", types: [MV_INCOMER], legend: "never",
     draw: (s, cx, yt, yb) => { s.line(cx - 11, yt + 3, cx + 11, yt + 3, 3); s.line(cx, yt + 3, cx, yb); } },
@@ -1905,12 +1947,15 @@ const byKey = Object.fromEntries(SYMBOLS.map(e => [e.key, e]));
 
 /** The legend entries for a sheet: the fixed ones plus those whose type is used. */
 function legendEntries(usedTypes) {
-  return SYMBOLS.filter(e => e.legend === "always" || (e.legend === "when-used" && usedTypes && e.types.some(t => usedTypes.has(t))))
+  /* usedTypes holds canonical types and "variant:<name>" keys */
+  return SYMBOLS.filter(e => e.legend === "always" || (e.legend === "when-used" && usedTypes
+      && (e.types.some(t => usedTypes.has(t)) || (e.variant && usedTypes.has("variant:" + e.variant)))))
     .map(e => [e.key, e.label]);
 }
 
-/** The registry entry that draws a row type (busbars share one). */
-function symbolForType(type) {
+/** The registry entry that draws a row type (busbars share one), or its variant. */
+function symbolForType(type, variant) {
+  if (variant) { const v = SYMBOLS.find(e => e.variant === variant); if (v) return v; }
   return SYMBOLS.find(e => e.types && e.types.includes(type)) || null;
 }
 
@@ -2373,8 +2418,7 @@ function render(info, items, order, width, warnings, canvas){
     const fed=genFeeds(items,order,g).filter(([b])=>b.type===LV_BUSBAR && b.xLeft!==null);
     /* the circle stands over the (first) board it supplies */
     const yg=fed.length?lvY(fed[0][0])-(Y_BUS-Y_TX_C1):Y_TX_C1;
-    svg.circle(g.x,yg+13,20,2.2);
-    svg.text(g.x,yg+17,"G",{size:13,bold:true});
+    svg.genMark(g.x,yg+13,20,g.variant);
     let ty=yg-6;
     for(const t of [g.id,g.desc,[g.rating,g.voltage].filter(Boolean).join(" ")].filter(Boolean)){
       svg.text(g.x+30,ty,t,{anchor:"start"}); ty+=15;
@@ -2404,8 +2448,7 @@ function render(info, items, order, width, warnings, canvas){
     /* on the top tier the column has headroom of its own; lower down it
        fits in the 200 px tier gap, under the bar above */
     const yGen=((depth[b0.id]||0)===0)?Y_GEN:yTo0-(b0.type===MV_BUSBAR?112:82);
-    svg.circle(g.x,yGen,20,2.2);
-    svg.text(g.x,yGen+4,"G",{size:13,bold:true});
+    svg.genMark(g.x,yGen,20,g.variant);
     const lbl=[g.id,g.desc,[g.rating,g.voltage].filter(Boolean).join(" ")].filter(Boolean);
     if(b0.type===MV_BUSBAR){        /* stacked above the circle, centred */
       let ty=yGen-28-14*(lbl.length-1);
@@ -2465,8 +2508,7 @@ function render(info, items, order, width, warnings, canvas){
     let ySrcBot=yGen;
     if(src) svg.begin(src.id,src.type);
     if(src && src.type===GENERATOR){
-      svg.circle(tx.x,yGen,20,2.2);
-      svg.text(tx.x,yGen+4,"G",{size:13,bold:true});
+      svg.genMark(tx.x,yGen,20,src.variant);
       let ty=yGen-26;
       for(const t of [src.id,src.desc,[src.rating,src.voltage].filter(Boolean).join(" ")].filter(Boolean)){
         svg.text(tx.x+30,ty,t,{size:11,anchor:"start"}); ty+=14;
@@ -2556,8 +2598,7 @@ function render(info, items, order, width, warnings, canvas){
     svg.begin(src.id,src.type);
     if(src.type===GENERATOR){
       svg.line(tx.x,Y_TX_C2+TX_R,tx.x,ySrc-20);
-      svg.circle(tx.x,ySrc,20,2.2);
-      svg.text(tx.x,ySrc+4,"G",{size:13,bold:true});
+      svg.genMark(tx.x,ySrc,20,src.variant);
       let t2=ySrc-6;
       for(const t of [src.id,src.desc,[src.rating,src.voltage].filter(Boolean).join(" ")].filter(Boolean)){
         svg.text(tx.x+30,t2,t,{size:11,anchor:"start"}); t2+=14;
@@ -2586,7 +2627,7 @@ function render(info, items, order, width, warnings, canvas){
     if(order.some(i=>items[i].type===GENERATOR && items[i].x!==null
                      && items[i].x-tx.x>0 && items[i].x-tx.x<120))
       side="left";                  /* a generator stands to its right */
-    svg.transformer(tx.x,[tx.id,tx.desc,[tx.rating,tx.voltage].filter(Boolean).join(" ")].filter(Boolean),side);
+    svg.transformer(tx.x,[tx.id,tx.desc,[tx.rating,tx.voltage].filter(Boolean).join(" ")].filter(Boolean),side,undefined,tx.variant);
     for(const q of tx.parents){
       const par=items[q];
       if(par.type===RMU) svg.line(tx.x,yRmu(par)[1],tx.x,Y_TX_C1-TX_R);
@@ -2674,7 +2715,7 @@ function render(info, items, order, width, warnings, canvas){
     if(bb.xLeft===null) continue;
     const yb=lvY(bb);
     svg.begin(bb.id,bb.type);
-    svg.line(bb.xLeft,yb,bb.xRight,yb,5.5);
+    svg.line(bb.xLeft,yb,bb.xRight,yb,5.5,bb.variant==="dc"?"14 6":null);   /* a DC bar is dashed */
     svg.end();
     const [praw,pkind]=protFor(bb);
     const zone=(praw && !pkind)?(" · "+praw):"";  /* e.g. 87B differential */
@@ -2951,6 +2992,7 @@ function render(info, items, order, width, warnings, canvas){
   /* legend (a view option) */
   const used=new Set(order.map(i=>items[i].type));
   if(order.some(i=>earthBelow(items,items[i]))) used.add(EARTHING);
+  for(const i of order) if(items[i].variant) used.add("variant:"+items[i].variant);
   if(!VIEW.legend){ svg.layer="drawing"; return svg.document(width,DIAG_H); }
   svg.layer="legend";
   drawLegend(svg,used,width);
@@ -3082,7 +3124,7 @@ class DXF extends SVG {
     const labels={[CAPACITOR]:"Capacitor Bank",[EARTHING]:"Earthing/NER",[ARRESTER]:"Surge Arrester"};
     const rows=order.map(i=>{ const it=items[i];
       const typ=labels[it.type]||it.type.replace(/\b\w/g,c=>c.toUpperCase()).replace("Mv ","MV ").replace("Lv ","LV ").replace("Rmu","RMU").replace("Mcc","MCC");
-      return [it.id,typ,it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>dwrap(v)); });
+      return [it.id,it.label||typ,it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>dwrap(v)); });
     const cols=heads.map((h,i)=>Math.max(dtextW(h,size),...rows.flatMap(r=>r[i].map(l=>dtextW(l,size))))*1.15+2*pad);
     const x1=x0+cols.reduce((a,b)=>a+b,0), yHead=y;
     this.line(x0,y,x1,y,1.2);
@@ -3483,7 +3525,7 @@ function redraw(){
 let selectedId=null;
 const TYPE_PREFIX={"MV Incomer":"MV","Generator":"G","MV Busbar":"MVB","RMU":"RMU","Transformer":"TX",
   "Pump":"P","LV Busbar":"BB","Feeder":"F","MCC":"MCC","Bus Coupler":"BC","Capacitor Bank":"CAP",
-  "Earthing/NER":"NER","Surge Arrester":"SA"};
+  "Earthing/NER":"NER","Surge Arrester":"SA","UPS":"UPS","Inverter":"INV","Battery":"BAT","DC Busbar":"DCB"};
 function nextId(type){
   const pre=TYPE_PREFIX[type]||"X", used=new Set(state.rows.map(r=>r.id.trim().toUpperCase()));
   let n=1; while(used.has((pre+n).toUpperCase())) n++;
@@ -3554,18 +3596,18 @@ function addRowFor(type, targetId){
   return row;
 }
 /* one chip per type; the glyph is the legend's, drawn by the symbol registry */
-function chipSvg(type){
-  const e=symbolForType(type); if(!e) return "";
+function chipSvg(type,variant){
+  const e=symbolForType(type,variant); if(!e) return "";
   const s=new SVG(); e.draw(s,24,4,34);
   return `<svg viewBox="0 0 48 44" aria-hidden="true">${s.parts.join("")}</svg>`;
 }
 function buildPalette(){
   const pal=$("#palette"); if(!pal) return;
-  for(const [lbl,type] of TYPE_LABELS){
+  for(const [lbl,type,variant] of TYPE_LABELS){
     const b=document.createElement("button");
     b.className="chip"; b.type="button"; b.draggable=true; b.dataset.type=lbl;
     b.title=`Drag onto a busbar, RMU or transformer to add a ${lbl} fed from it; click to add one under the selected row`;
-    b.innerHTML=chipSvg(type)+esc(lbl);
+    b.innerHTML=chipSvg(type,variant)+esc(lbl);
     b.addEventListener("dragstart",e=>{
       e.dataTransfer.setData("text/sld-type",lbl); e.dataTransfer.setData("text/plain",lbl);
       e.dataTransfer.effectAllowed="copy";

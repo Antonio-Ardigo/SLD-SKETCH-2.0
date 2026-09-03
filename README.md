@@ -67,7 +67,7 @@ diagram's title block.
 | Column | Meaning | Example |
 |---|---|---|
 | ID | Short unique tag you invent | `MV1`, `RMU1`, `TX1`, `BB1`, `F1` |
-| Type | Dropdown: MV Incomer, Generator, MV Busbar, RMU, Transformer, Pump, LV Busbar, Feeder, MCC, Bus Coupler, Capacitor Bank, Earthing/NER, Surge Arrester | `Transformer` |
+| Type | Dropdown: MV Incomer, Generator, MV Busbar, RMU, Transformer, Pump, LV Busbar, Feeder, MCC, Bus Coupler, Capacitor Bank, Earthing/NER, Surge Arrester — and four symbol variants: UPS (a transformer that draws as the UPS box), Inverter and Battery (generation sources with their own marks), DC Busbar (a dashed bar) | `Transformer` |
 | Description | Free text | `Oil-immersed, Dyn11` |
 | Rating | From the nameplate | `1000 kVA`, `630 A` |
 | Voltage | From the nameplate | `11/0.4 kV`, `400 V` |

@@ -458,8 +458,7 @@ function render(info, items, order, width, warnings, canvas){
     const fed=genFeeds(items,order,g).filter(([b])=>b.type===LV_BUSBAR && b.xLeft!==null);
     /* the circle stands over the (first) board it supplies */
     const yg=fed.length?lvY(fed[0][0])-(Y_BUS-Y_TX_C1):Y_TX_C1;
-    svg.circle(g.x,yg+13,20,2.2);
-    svg.text(g.x,yg+17,"G",{size:13,bold:true});
+    svg.genMark(g.x,yg+13,20,g.variant);
     let ty=yg-6;
     for(const t of [g.id,g.desc,[g.rating,g.voltage].filter(Boolean).join(" ")].filter(Boolean)){
       svg.text(g.x+30,ty,t,{anchor:"start"}); ty+=15;
@@ -489,8 +488,7 @@ function render(info, items, order, width, warnings, canvas){
     /* on the top tier the column has headroom of its own; lower down it
        fits in the 200 px tier gap, under the bar above */
     const yGen=((depth[b0.id]||0)===0)?Y_GEN:yTo0-(b0.type===MV_BUSBAR?112:82);
-    svg.circle(g.x,yGen,20,2.2);
-    svg.text(g.x,yGen+4,"G",{size:13,bold:true});
+    svg.genMark(g.x,yGen,20,g.variant);
     const lbl=[g.id,g.desc,[g.rating,g.voltage].filter(Boolean).join(" ")].filter(Boolean);
     if(b0.type===MV_BUSBAR){        /* stacked above the circle, centred */
       let ty=yGen-28-14*(lbl.length-1);
@@ -550,8 +548,7 @@ function render(info, items, order, width, warnings, canvas){
     let ySrcBot=yGen;
     if(src) svg.begin(src.id,src.type);
     if(src && src.type===GENERATOR){
-      svg.circle(tx.x,yGen,20,2.2);
-      svg.text(tx.x,yGen+4,"G",{size:13,bold:true});
+      svg.genMark(tx.x,yGen,20,src.variant);
       let ty=yGen-26;
       for(const t of [src.id,src.desc,[src.rating,src.voltage].filter(Boolean).join(" ")].filter(Boolean)){
         svg.text(tx.x+30,ty,t,{size:11,anchor:"start"}); ty+=14;
@@ -641,8 +638,7 @@ function render(info, items, order, width, warnings, canvas){
     svg.begin(src.id,src.type);
     if(src.type===GENERATOR){
       svg.line(tx.x,Y_TX_C2+TX_R,tx.x,ySrc-20);
-      svg.circle(tx.x,ySrc,20,2.2);
-      svg.text(tx.x,ySrc+4,"G",{size:13,bold:true});
+      svg.genMark(tx.x,ySrc,20,src.variant);
       let t2=ySrc-6;
       for(const t of [src.id,src.desc,[src.rating,src.voltage].filter(Boolean).join(" ")].filter(Boolean)){
         svg.text(tx.x+30,t2,t,{size:11,anchor:"start"}); t2+=14;
@@ -671,7 +667,7 @@ function render(info, items, order, width, warnings, canvas){
     if(order.some(i=>items[i].type===GENERATOR && items[i].x!==null
                      && items[i].x-tx.x>0 && items[i].x-tx.x<120))
       side="left";                  /* a generator stands to its right */
-    svg.transformer(tx.x,[tx.id,tx.desc,[tx.rating,tx.voltage].filter(Boolean).join(" ")].filter(Boolean),side);
+    svg.transformer(tx.x,[tx.id,tx.desc,[tx.rating,tx.voltage].filter(Boolean).join(" ")].filter(Boolean),side,undefined,tx.variant);
     for(const q of tx.parents){
       const par=items[q];
       if(par.type===RMU) svg.line(tx.x,yRmu(par)[1],tx.x,Y_TX_C1-TX_R);
@@ -759,7 +755,7 @@ function render(info, items, order, width, warnings, canvas){
     if(bb.xLeft===null) continue;
     const yb=lvY(bb);
     svg.begin(bb.id,bb.type);
-    svg.line(bb.xLeft,yb,bb.xRight,yb,5.5);
+    svg.line(bb.xLeft,yb,bb.xRight,yb,5.5,bb.variant==="dc"?"14 6":null);   /* a DC bar is dashed */
     svg.end();
     const [praw,pkind]=protFor(bb);
     const zone=(praw && !pkind)?(" · "+praw):"";  /* e.g. 87B differential */
@@ -1036,6 +1032,7 @@ function render(info, items, order, width, warnings, canvas){
   /* legend (a view option) */
   const used=new Set(order.map(i=>items[i].type));
   if(order.some(i=>earthBelow(items,items[i]))) used.add(EARTHING);
+  for(const i of order) if(items[i].variant) used.add("variant:"+items[i].variant);
   if(!VIEW.legend){ svg.layer="drawing"; return svg.document(width,DIAG_H); }
   svg.layer="legend";
   drawLegend(svg,used,width);
