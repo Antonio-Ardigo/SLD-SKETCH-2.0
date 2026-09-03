@@ -1,5 +1,17 @@
 # SLD-Sketch 2.0 — review and improvement plan
 
+## Status
+
+| phase | state | landed as |
+|---|---|---|
+| 1 — scaffold, constitution, test pool, data-entry quick wins | done | PR #2 |
+| 2 — engine as ES modules, Node CLI, page built from modules | done | `src/core/*`, `src/cli/sld.js`, `tools/build-page.mjs` |
+| 3 — structured diagnostics, graph, `<g data-id>`, click-select, drag & drop v1 | done | `src/core/diagnostics.js`, `src/core/graph.js`, palette in `src/ui/app.js`, `testdata/warnings/*` |
+| 4 — rules, rank solver, content-sized bands, scene, scene checker | next | |
+| 5 — symbol registry, legend from registry, DXF from scene, delete Python | | |
+| 6 — view options, larger sketch area, constitution enforcement | | |
+| 7 — UPS / Inverter / Battery / DC Busbar types (optional) | | |
+
 ## Context
 
 SLD-Sketch turns a survey spreadsheet (one row per item; `Feeds From` is the only topology column) into an SVG/DXF single-line diagram. Two front-ends exist: `sld_sketch.py` (Python CLI, 3058 lines) and `sld_sketchpad.html` (browser page with a hand-ported JS copy of the same engine, 3332 lines). The user asked for a review and a plan covering: easier human data entry; a larger sketch area with any number of levels; better handling of particular topological cases; a written "constitution" that keeps `Feeds From` the single topological column while allowing several graphical representations later; quick standard MV/LV values; filling the table by dragging symbols onto the drawing; a test-data pool in its own directory.

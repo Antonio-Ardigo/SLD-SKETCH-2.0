@@ -1,0 +1,23 @@
+{
+  "name": "no_supply",
+  "group": "warnings",
+  "description": "A feeder and a transformer with an empty Feeds From",
+  "info": {
+    "site": "Warning path: no supply",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "NO_SUPPLY:F1",
+      "TX_NO_SUPPLY:TX2"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 6,
+      "errors": 0,
+      "warnings": 2
+    }
+  }
+}

@@ -29,6 +29,10 @@ class SVG {
   document(width,height){
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${n0(width)}" height="${height}" viewBox="0 0 ${n0(width)} ${height}"><rect width="100%" height="100%" fill="white"/>${this.parts.join("")}</svg>`;
   }
+  /* everything drawn between begin(id) and end() belongs to that table row:
+     the page finds a symbol's row with closest('[data-id]') */
+  begin(id,kind){ this.parts.push(`<g data-id="${esc(id)}" data-kind="${kind}">`); }
+  end(){ this.parts.push("</g>"); }
   line(x1,y1,x2,y2,w=2,dash=null){
     this._track(x1,y1,x2,y2);
     this.parts.push(`<line x1="${n1(x1)}" y1="${n1(y1)}" x2="${n1(x2)}" y2="${n1(y2)}" stroke="#111" stroke-width="${w}"${dash?` stroke-dasharray="${dash}"`:""} stroke-linecap="round"/>`);

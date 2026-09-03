@@ -1,0 +1,24 @@
+{
+  "name": "coupler_invalid",
+  "group": "warnings",
+  "description": "A good tie, a duplicate tie, a one-ended coupler and a board-to-transformer coupler",
+  "info": {
+    "site": "Warning path: coupler invalid",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "COUPLER_DUP:BC2",
+      "COUPLER_INVALID:BC3",
+      "COUPLER_INVALID:BC4"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 9,
+      "errors": 0,
+      "warnings": 3
+    }
+  }
+}

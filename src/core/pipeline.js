@@ -11,6 +11,8 @@ import { buildModel } from "./model.js";
 import { layout } from "./layout.js";
 import { render } from "./render.js";
 import { renderDxf } from "./dxf.js";
+import { buildGraph } from "./graph.js";
+import { diagFromMessage, makeDiag } from "./diagnostics.js";
 
 export const ROW_FIELDS = ["id", "type", "desc", "rating", "voltage", "prot", "from", "notes"];
 
@@ -26,11 +28,19 @@ export function normalizeRows(rows) {
 export function draw(info, rows, { dxf = false } = {}) {
   const norm = normalizeRows(rows);
   const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
-  const { items, order, errors, warnings } = buildModel(norm);
-  const out = { errors, warnings, items, order, svg: null, dxf: null };
-  if (errors.length || !order.length) return out;
+  const { items, order, errors, warnings, diagnostics } = buildModel(norm);
+  const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, svg: null, dxf: null };
+  if (!order.length) { out.diagnostics.push(makeDiag("EMPTY_SHEET", [], "The table has no rows with an ID.")); return out; }
+  out.graph = buildGraph(items, order);
+  if (errors.length) return out;
   const width = layout(items, order);
-  out.svg = render(site, items, order, width, warnings.slice());
+  const drawn = warnings.slice();
+  out.svg = render(site, items, order, width, drawn);
+  /* the drawing may add its own warnings (couplers); keep them structured too */
+  for (const msg of drawn.slice(warnings.length)) {
+    warnings.push(msg);
+    out.diagnostics.push(diagFromMessage(msg) || makeDiag("COUPLER_INVALID", [], msg));
+  }
   if (dxf) {
     /* the page re-reads the model for the DXF; do the same so the two never share state */
     const m2 = buildModel(norm);

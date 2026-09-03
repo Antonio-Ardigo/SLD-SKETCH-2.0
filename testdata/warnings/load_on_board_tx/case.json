@@ -1,0 +1,23 @@
+{
+  "name": "load_on_board_tx",
+  "group": "warnings",
+  "description": "A motor and an MCC named on a transformer that feeds a board; drawn as ways of that board",
+  "info": {
+    "site": "Warning path: load on board tx",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "LOAD_ON_BOARD_TX:MCC1",
+      "LOAD_ON_BOARD_TX:P1"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 5,
+      "errors": 0,
+      "warnings": 2
+    }
+  }
+}

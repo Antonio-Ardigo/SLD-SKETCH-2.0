@@ -29,6 +29,8 @@ function dwrap(s,n=DXF_WRAP_AT){
 }
 class DXF extends SVG {
   constructor(table){ super(); this.ents=[]; this.table=table||null; this.count=0; }
+  begin(){}  /* row grouping is an SVG affair; DXF has layers */
+  end(){}
   _layer(kind){
     if(this.layer==="frame") return "SLD_FRAME";
     if(this.layer==="legend") return "SLD_LEGEND";

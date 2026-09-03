@@ -33,9 +33,12 @@ workbooks are generated from it (`node tools/gen-fixtures.mjs` →
 }
 ```
 
-Only the keys present under `expect` are asserted. As the engine grows
-structured diagnostics, ranks and facts (see `docs/PLAN.md`), `expect` gains
-`diagnostics`, `ranks`, `facts` and `check` blocks; `legacy` goes away.
+Only the keys present under `expect` are asserted. `diagnostics` is the sorted
+list of `CODE:firstId` keys (`["DUP_ID:F1"]`) the reader must report — see
+`src/core/diagnostics.js` for the catalogue; `golden: false` says the case
+must *not* draw (an error stops the drawing). As the engine grows ranks and
+facts (see `docs/PLAN.md`), `expect` gains `ranks`, `facts` and `check`
+blocks; `legacy` goes away.
 
 ## Groups
 
@@ -46,6 +49,7 @@ structured diagnostics, ranks and facts (see `docs/PLAN.md`), `expect` gains
 | `levels` | 10 | every arrangement of boards at different voltages joined by transformers (`levels/LEVELS.md`) |
 | `features` | 15 | regression fixtures, each added after a bug |
 | `audit` | 10 | sites written by an independent tester from the README alone (`audit/README.md`); `w08_wrongloads` is wrong on purpose |
+| `warnings` | 15 | one case per diagnostic code: duplicate ID, unknown supply, unknown type, a row with no ID, a loop no supply reaches, impossible supplies, open transformer ends, couplers that cannot be drawn, … Each `case.json` lists the `CODE:firstId` keys the reader must report |
 
 ## Commands
 

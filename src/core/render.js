@@ -134,6 +134,7 @@ function render(info, items, order, width, warnings, canvas){
   /* RMU enclosures */
   const rmuBox={};
   for(const rmu of rmus){
+    svg.begin(rmu.id,rmu.type);
     const waysIn=mvs.filter(m=>childrenOf(items,order,m.id).some(k=>k.id===rmu.id))
       .concat(Object.keys(sus).map(t=>items[t])
         .filter(t=>childrenOf(items,order,t.id).some(k=>k.id===rmu.id)));
@@ -207,6 +208,7 @@ function render(info, items, order, width, warnings, canvas){
       .concat(childrenOf(items,order,rmu.id,[RMU]));
     if(noUnnamed(rmu,linked))       /* the open point is here, way unnamed */
       svg.text(rmu.x+12,rb+14,"N.O.",{size:9,anchor:"start"});
+    svg.end();
   }
 
   /* RMU-to-RMU cables */
@@ -264,6 +266,7 @@ function render(info, items, order, width, warnings, canvas){
 
   /* MV incomers */
   for(const m of mvs){
+    svg.begin(m.id,m.type);
     const kids=childrenOf(items,order,m.id);
     const below=kids.filter(k=>k.id in depth).map(k=>dy(k));
     const yTop=Y_MV_TOP+(below.length?Math.min(...below):0);
@@ -290,12 +293,15 @@ function render(info, items, order, width, warnings, canvas){
       svg.line(Math.min(...xs),ySplit,Math.max(...xs),ySplit);
       for(const t of direct){ svg.dot(t.x,ySplit); svg.line(t.x,ySplit,t.x,Y_TX_C1-TX_R); }
     }
+    svg.end();
   }
 
   /* MV switchboards */
   for(const mvb of mvbs){
     const yb=yBus(mvb);
+    svg.begin(mvb.id,mvb.type);
     svg.line(mvb.xLeft,yb,mvb.xRight,yb,5.5);
+    svg.end();
     const [praw,pkind]=protFor(mvb);
     const zone=(praw && !pkind)?(" · "+praw):"";  /* e.g. 87B differential */
     barLabels.push([mvb.xLeft,mvb.xRight,yb-12,
@@ -412,6 +418,7 @@ function render(info, items, order, width, warnings, canvas){
   /* pumps */
   for(const p of pumps){
     if(p.x===null) continue;
+    svg.begin(p.id,p.type);
     /* an MV motor sits in the transformer row; a motor fed from an LV
        board or its own transformer hangs in the feeder band below it */
     const lvPar=p.parents.map(q=>items[q])
@@ -465,6 +472,7 @@ function render(info, items, order, width, warnings, canvas){
     } else {
       svg.text(p.x+4,yc+r+14,lines.join(" · "),{size:11,anchor:"start",rotate:90});
     }
+    svg.end();
   }
 
   /* generation sources feeding an LV board directly */
@@ -473,6 +481,7 @@ function render(info, items, order, width, warnings, canvas){
     const suKids=order.filter(i=>items[i].type===TRANSFORMER)
       .flatMap(i=>childrenOf(items,order,i,[GENERATOR]).map(k=>k.id));
     if(g.x===null || suSrcIds.includes(g.id) || suKids.includes(g.id) || (g.id in gens)) continue;
+    svg.begin(g.id,g.type);
     const fed=genFeeds(items,order,g).filter(([b])=>b.type===LV_BUSBAR && b.xLeft!==null);
     /* the circle stands over the (first) board it supplies */
     const yg=fed.length?lvY(fed[0][0])-(Y_BUS-Y_TX_C1):Y_TX_C1;
@@ -494,12 +503,14 @@ function render(info, items, order, width, warnings, canvas){
         svg.text(g.x+16,ym+12,cpl.notes.trim().toLowerCase()===cpl.id.trim().toLowerCase()?"":cpl.notes,{size:10,anchor:"start"});
       }
     }
+    svg.end();
   }
 
   /* generators standing over MV gear as a supply */
   for(const gid of Object.keys(gens)){
     const g=items[gid], fed=gens[gid];
     if(g.x===null) continue;
+    svg.begin(g.id,g.type);
     const b0=fed[0][0];
     const yTo0=(b0.type===MV_BUSBAR)?yBus(b0):yRmu(b0)[0];
     /* on the top tier the column has headroom of its own; lower down it
@@ -527,11 +538,13 @@ function render(info, items, order, width, warnings, canvas){
         }
       } else svg.line(g.x,yGen+20,g.x,yRmu(b)[0]);   /* the RMU draws its way in */
     }
+    svg.end();
   }
 
   /* transformers between two MV tiers */
   for(const [u,tx,l] of links){
     if(tx.x===null) continue;
+    svg.begin(tx.id,tx.type);
     const yU=(u.type===MV_BUSBAR)?yBus(u):yRmu(u)[1];
     const yL=(l.type===MV_BUSBAR)?yBus(l):yRmu(l)[0];
     const c1=Math.floor((yU+yL)/2)-13;   /* integer: both engines round alike */
@@ -550,16 +563,19 @@ function render(info, items, order, width, warnings, canvas){
     const kindL=(l.parents.includes(tx.id)?protFor(l,tx.id)[1]:protFor(tx,l.id)[1])||"cb";
     if(l.type===MV_BUSBAR){ svg.drop(tx.x,c1+27+TX_R,yL,kindL); svg.dot(tx.x,yL); }
     else svg.line(tx.x,c1+27+TX_R,tx.x,yL);      /* the RMU draws its way in */
+    svg.end();
   }
 
   /* step-up columns: source -> transformer -> MV busbar / RMU */
   for(const txId of Object.keys(sus)){
     const tx=items[txId], src=sus[txId];
     if(tx.x===null) continue;
+    svg.begin(tx.id,tx.type);
     const fed0=childrenOf(items,order,txId,[MV_BUSBAR,RMU]);
     const off=fed0.length?Math.min(...fed0.map(f=>dy(f))):0;
     const yGen=Y_GEN+off, yC1=Y_SU_C1+off, yC2=Y_SU_C2+off;
     let ySrcBot=yGen;
+    if(src) svg.begin(src.id,src.type);
     if(src && src.type===GENERATOR){
       svg.circle(tx.x,yGen,20,2.2);
       svg.text(tx.x,yGen+4,"G",{size:13,bold:true});
@@ -580,6 +596,7 @@ function render(info, items, order, width, warnings, canvas){
         svg.text(tx.x,ty,t,{size:11.5,bold:i===0}); ty+=14; i++;
       }
     }
+    if(src) svg.end();
     svg.line(tx.x,ySrcBot,tx.x,yC1-TX_R);
     svg.circle(tx.x,yC1,TX_R,2.2);
     svg.circle(tx.x,yC2,TX_R,2.2);
@@ -592,6 +609,7 @@ function render(info, items, order, width, warnings, canvas){
       svg.drop(tx.x,yC2+TX_R,yTo,protFor(fed,txId)[1]||"cb");
       if(fed.type===MV_BUSBAR) svg.dot(tx.x,yTo);
     }
+    svg.end();
   }
 
   /* step-ups from a real LV board: board below, MV gear above */
@@ -599,6 +617,7 @@ function render(info, items, order, width, warnings, canvas){
   for(const txId of Object.keys(midMap)){
     const tx=items[txId], src=midMap[txId][0], up=midMap[txId][1];
     if(tx.x===null) continue;
+    svg.begin(tx.id,tx.type);
     svg.circle(tx.x,Y_TX_C1,TX_R,2.2);
     svg.circle(tx.x,Y_TX_C2,TX_R,2.2);
     let ty=Y_TX_C1-6;
@@ -622,12 +641,14 @@ function render(info, items, order, width, warnings, canvas){
     } else {
       svg.line(tx.x,yRmu(up)[1],tx.x,Y_TX_C1-TX_R);
     }
+    svg.end();
   }
 
   /* reversed step-ups: board on top, source below */
   for(const tx of order.map(i=>items[i])
                        .filter(o=>genBelow(items,order,o))){
     if(tx.x===null) continue;
+    svg.begin(tx.id,tx.type);
     for(const f of tx.parents.map(p=>items[p])
                      .filter(p=>[MV_BUSBAR,RMU].includes(p.type))){
       const yFrom=f.type===MV_BUSBAR?yBus(f):yRmu(f)[1];
@@ -642,8 +663,9 @@ function render(info, items, order, width, warnings, canvas){
     }
     const kids=childrenOf(items,order,tx.id,[GENERATOR,LV_BUSBAR,MV_INCOMER]);
     const src=kids.length?kids[0]:null;
-    if(!src) continue;
+    if(!src){ svg.end(); continue; }
     const ySrc=Y_BUS;
+    svg.begin(src.id,src.type);
     if(src.type===GENERATOR){
       svg.line(tx.x,Y_TX_C2+TX_R,tx.x,ySrc-20);
       svg.circle(tx.x,ySrc,20,2.2);
@@ -662,12 +684,14 @@ function render(info, items, order, width, warnings, canvas){
         svg.text(tx.x,t2,t,{size:11.5,bold:i===0}); t2+=14; i++;
       }
     }
+    svg.end(); svg.end();
   }
 
   /* transformers */
   for(const tx of txs){
     if(tx.x===null || (tx.id in sus) || (tx.id in lvsubMid) || ltx.has(tx.id)
        || genBelow(items,order,tx) || boardTx(items,tx)) continue;   /* drawn as its own column */
+    svg.begin(tx.id,tx.type);
     const fed=childrenOf(items,order,tx.id,[LV_BUSBAR]);
     /* transformers sharing a board label away from each other */
     let side=fed.some(bb=>bb.parents.length>1 && tx.x<bb.x)?"left":"right";
@@ -754,13 +778,16 @@ function render(info, items, order, width, warnings, canvas){
       svg.line(Math.min(...xs),ysplit,Math.max(...xs),ysplit);
       for(const k of hung) svg.dot(k.x,ysplit);
     }
+    svg.end();
   }
 
   /* LV busbars */
   for(const bb of busbars){
     if(bb.xLeft===null) continue;
     const yb=lvY(bb);
+    svg.begin(bb.id,bb.type);
     svg.line(bb.xLeft,yb,bb.xRight,yb,5.5);
+    svg.end();
     const [praw,pkind]=protFor(bb);
     const zone=(praw && !pkind)?(" · "+praw):"";  /* e.g. 87B differential */
     barLabels.push([bb.xLeft,bb.xRight,yb-12,barLabel(bb)+zone]);
@@ -846,6 +873,7 @@ function render(info, items, order, width, warnings, canvas){
     const dev=ckind||"cb";
     const extra=(craw && !ckind)?craw:"";
     const lbl=[bc.id,bc.rating,extra].filter(Boolean).join(" ");
+    svg.begin(bc.id,bc.type);
 
     if(Math.abs(ya-yb)>1){
       /* boards on different levels: the link runs in the gap beside them,
@@ -872,6 +900,7 @@ function render(info, items, order, width, warnings, canvas){
         svg.text(xLink-10,ym,lbl,{size:11,anchor:"end"});
         svg.text(xLink-10,ym+14,bc.notes,{size:10,anchor:"end"});
       }
+      svg.end();
       continue;
     }
     const blocking=busbars.concat(mvbs).filter(o=>o!==a&&o!==b&&o.xLeft!==null
@@ -892,6 +921,7 @@ function render(info, items, order, width, warnings, canvas){
       svg.dot(b.xLeft,yb);
       svg.text(xd,yLane-10,lbl,{size:11});
       svg.text(xd,yLane-24,bc.notes,{size:10});
+      svg.end();
       continue;
     }
     const cgap=svg.deviceH(dev,xm,ya);
@@ -899,11 +929,13 @@ function render(info, items, order, width, warnings, canvas){
     svg.line(xm+cgap,ya,b.xLeft,ya,2);
     svg.text(xm,ya+24,lbl,{size:11});
     svg.text(xm,ya+38,bc.notes,{size:10});
+    svg.end();
   }
 
   /* feeders and MCCs */
   for(const f of feeders){
     if(f.x===null) continue;
+    svg.begin(f.id,f.type);
     let par=f.parents.length?items[f.parents[0]]:null;
     const pid=par?par.id:null;
     if(par && par.type===TRANSFORMER && txBoard(items,par)) par=txBoard(items,par);  /* a way of the board it feeds */
@@ -917,6 +949,7 @@ function render(info, items, order, width, warnings, canvas){
       svg.drop(f.x,y0,y0+26,kind);
       const h=svg.terminal(f.type,f.x,y0+26);
       svg.text(f.x+4,y0+26+h+12,lbl,{size:11,anchor:"start",rotate:90});
+      svg.end();
       continue;
     }
     if(par && [MV_BUSBAR,RMU].includes(par.type)){
@@ -939,6 +972,7 @@ function render(info, items, order, width, warnings, canvas){
         const h=svg.terminal(f.type,f.x,yTip-24);
         svg.text(f.x+4,yTip-24+h+12,lbl,{size:11,anchor:"start",rotate:90});
       }
+      svg.end();
       continue;
     }
     const yb=(par && (par.type===LV_BUSBAR||par.type===MCC))?lvY(par):Y_BUS;
@@ -961,6 +995,7 @@ function render(info, items, order, width, warnings, canvas){
         svg.line(f.x,yArrow,f.x,yM);
         svg.line(f.xLeft,yM,f.xRight,yM,5.5);
         barLabels.push([f.xLeft,f.xRight,yM-12,barLabel(f)]);
+        svg.end();
         continue;
       }
     } else if(TERMINALS.includes(f.type)){
@@ -970,12 +1005,14 @@ function render(info, items, order, width, warnings, canvas){
     } else if(subBoardsOf(items,order,f).length){
       /* the drop carries on to the sub-board below (drawn with it) */
       svg.text(f.x+8,yDev+30,lbl,{size:11,anchor:"start"});
+      svg.end();
       continue;
     } else {
       svg.drop(f.x,yb,yArrow-10,kind,yDev,dash);
       svg.arrowDown(f.x,yArrow);
     }
     svg.text(f.x+4,yLbl,lbl,{size:11,anchor:"start",rotate:90});
+    svg.end();
   }
 
   /* transformers hanging under an LV board (a way feeding a motor) */
@@ -983,12 +1020,14 @@ function render(info, items, order, width, warnings, canvas){
     if(tx.x===null || !boardTx(items,tx)) continue;
     const par=items[tx.parents[0]];
     if(par.xLeft===null) continue;
+    svg.begin(tx.id,tx.type);
     const yb=lvY(par), yC1=yb+70;
     svg.dot(tx.x,yb);
     svg.drop(tx.x,yb,yC1-TX_R,protFor(tx,par.id)[1]||"cb",yb+30);
     svg.transformer(tx.x,txLines(tx),"right",yC1);
     if(!Object.values(items).some(c=>c.parents.includes(tx.id)))
       svg.openEnd(tx.x,yC1+27+TX_R,yC1+27+TX_R+36,"outgoing not defined");
+    svg.end();
   }
 
   /* bar labels: placed now that every conductor is drawn — a label starts

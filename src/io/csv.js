@@ -49,7 +49,8 @@ export function csvToRows(text) {
   return tableToRows(table);
 }
 
-/** array-of-arrays (first row = header) → row objects. Blank-ID rows are dropped. */
+/** array-of-arrays (first row = header) → row objects. Empty rows are dropped; a
+ *  row with data but no ID is kept, so the reader can warn about it. */
 export function tableToRows(table) {
   let hi = table.findIndex(r => {
     const cells = r.map(c => String(c ?? "").trim().toLowerCase());
@@ -71,7 +72,7 @@ export function tableToRows(table) {
   for (const r of table.slice(hi + 1)) {
     const o = {};
     for (const f of FIELDS) o[f] = cell(r, idx[f]);
-    if (!o.id) continue;
+    if (!FIELDS.some(f => o[f])) continue;
     rows.push(o);
   }
   return rows;

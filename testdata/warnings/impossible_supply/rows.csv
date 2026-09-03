@@ -1,0 +1,7 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility,,11 kV,,,
+TX1,Transformer,Step-down,1000 kVA,11/0.4 kV,,MV1,
+BB1,LV Busbar,Board,,400 V,CB,TX1,
+P1,Pump,Pump,55 kW,400 V,,BB1,
+F1,Feeder,Off a motor,100 A,400 V,CB,P1,
+P2,Pump,Off the incomer,55 kW,11 kV,,MV1,

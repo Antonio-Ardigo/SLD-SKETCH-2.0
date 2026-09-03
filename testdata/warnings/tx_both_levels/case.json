@@ -1,0 +1,22 @@
+{
+  "name": "tx_both_levels",
+  "group": "warnings",
+  "description": "One transformer feeding both an MV board and an LV board; drawn as a step-up",
+  "info": {
+    "site": "Warning path: tx both levels",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "TX_BOTH_LEVELS:TX1"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 5,
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+}

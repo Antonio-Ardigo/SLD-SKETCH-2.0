@@ -1,0 +1,22 @@
+{
+  "name": "unknown_type",
+  "group": "warnings",
+  "description": "A Type nobody knows, drawn as a feeder",
+  "info": {
+    "site": "Warning path: unknown type",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "UNKNOWN_TYPE:X1"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 4,
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+}

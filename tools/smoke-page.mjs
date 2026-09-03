@@ -121,6 +121,31 @@ try {
   check("xlsx import loads 16 rows", await evaluate(`document.querySelectorAll('#eqbody tr').length`) === 16, await evaluate(`document.querySelector('#copystate').textContent`));
   check("xlsx import reads Info", await evaluate(`document.querySelector('#i-site').value`) === "Example Site G");
 
+  /* symbols carry their row id; clicking one selects the row */
+  check("symbols carry data-id", await evaluate(`document.querySelectorAll('#sheet svg g[data-id]').length`) >= 10);
+  check("hit areas added", await evaluate(`document.querySelectorAll('#sheet svg g[data-id] rect.hit').length`) >= 10);
+  await evaluate(`(function(){ const g=document.querySelector('#sheet svg g[data-id="TX1"]'); g.scrollIntoView({block:'center'}); const r=g.getBoundingClientRect();
+     const vp=document.querySelector('#viewport'); const x=r.left+r.width/2, y=r.top+r.height/2;
+     vp.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,button:0,pointerId:7,bubbles:true}));
+     vp.dispatchEvent(new PointerEvent('pointerup',{clientX:x,clientY:y,button:0,pointerId:7,bubbles:true})); })()`);
+  check("click on TX1 selects its row", await evaluate(`document.activeElement.closest('tr') && state.rows[+document.activeElement.closest('tr').dataset.i].id`) === "TX1");
+  check("selected symbol highlighted", await evaluate(`document.querySelector('#sheet svg g[data-id="TX1"]').classList.contains('sel')`));
+
+  /* the palette: dropping a Feeder on the LV board adds a row fed from it */
+  check("palette has a chip per type", await evaluate(`document.querySelectorAll('#palette .chip').length`) === 13);
+  const rowsBefore = await evaluate(`state.rows.length`);
+  await evaluate(`(function(){ const g=document.querySelector('#sheet svg g[data-id="MSB"]'); g.scrollIntoView({block:'center'}); const r=g.getBoundingClientRect();
+     const vp=document.querySelector('#viewport'); const dt=new DataTransfer(); dt.setData('text/sld-type','Feeder');
+     const ev=new DragEvent('drop',{clientX:r.left+r.width/2,clientY:r.top+r.height/2,dataTransfer:dt,bubbles:true,cancelable:true});
+     vp.dispatchEvent(ev); })()`);
+  await sleep(400);
+  check("drop adds a row", await evaluate(`state.rows.length`) === rowsBefore + 1);
+  const dropped = await evaluate(`JSON.stringify(state.rows.find(r=>r.type==='Feeder'&&!r.desc&&!r.rating)||null)`);
+  check("new row is a Feeder fed from MSB with an auto ID and CB", /"id":"F\d+".*"from":"MSB".*"prot":"CB"/.test(dropped), dropped);
+  check("new row is drawn", await evaluate(`(function(){ const r=state.rows.find(r=>r.type==='Feeder'&&!r.desc&&!r.rating); return !!r && !!document.querySelector('#sheet svg g[data-id="'+r.id+'"]'); })()`));
+  await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))`);
+  check("undo removes the dropped row", await evaluate(`state.rows.length`) === rowsBefore);
+
   /* saved state is versioned */
   check("saved state has a version", await evaluate(`JSON.parse(localStorage.getItem('sld-sketchpad')).v`) === 2);
 

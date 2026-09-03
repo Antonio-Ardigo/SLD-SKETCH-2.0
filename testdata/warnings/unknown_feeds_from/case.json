@@ -1,0 +1,22 @@
+{
+  "name": "unknown_feeds_from",
+  "group": "warnings",
+  "description": "Feeds From names an ID that is not on the sheet: an error, no drawing",
+  "info": {
+    "site": "Warning path: unknown feeds from",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "UNKNOWN_SUPPLY:BB1"
+    ],
+    "golden": false,
+    "legacy": {
+      "items": 3,
+      "errors": 1,
+      "warnings": 0
+    }
+  }
+}

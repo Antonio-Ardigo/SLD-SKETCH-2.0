@@ -1,0 +1,22 @@
+{
+  "name": "tx_open_ends",
+  "group": "warnings",
+  "description": "A transformer nothing feeds from (open outgoing terminal) beside an earthing transformer (resistor to earth, no warning)",
+  "info": {
+    "site": "Warning path: tx open ends",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "TX_NO_LOAD:TX1"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 4,
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+}

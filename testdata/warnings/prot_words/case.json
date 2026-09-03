@@ -1,0 +1,23 @@
+{
+  "name": "prot_words",
+  "group": "warnings",
+  "description": "Protection on an MV incomer (not drawn) and a protection word nobody knows",
+  "info": {
+    "site": "Warning path: prot words",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "PROT_ON_INCOMER:MV1",
+      "UNKNOWN_PROT:F1"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 4,
+      "errors": 0,
+      "warnings": 2
+    }
+  }
+}

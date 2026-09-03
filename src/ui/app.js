@@ -81,8 +81,141 @@ function redraw(){
   const width=layout(items,order);
   const svgStr=render(state.info,items,order,width,warnings);
   $("#sheet").innerHTML=svgStr;
+  decorateSheet();
   syncView();
 }
+
+/* ------------------------------------------------ canvas: selection, palette, drag & drop */
+/* Every symbol the engine draws sits in <g data-id="…" data-kind="…">. The
+   page adds a transparent hit rectangle to each group (so a thin bar is easy
+   to hit), highlights the selected row's symbol, lets a click on a symbol
+   select its row, and accepts a symbol chip dropped on a busbar, RMU or
+   transformer: that adds a row fed from the target. The table stays the only
+   source of truth — the drop only writes a row. */
+let selectedId=null;
+const TYPE_PREFIX={"MV Incomer":"MV","Generator":"G","MV Busbar":"MVB","RMU":"RMU","Transformer":"TX",
+  "Pump":"P","LV Busbar":"BB","Feeder":"F","MCC":"MCC","Bus Coupler":"BC","Capacitor Bank":"CAP",
+  "Earthing/NER":"NER","Surge Arrester":"SA"};
+function nextId(type){
+  const pre=TYPE_PREFIX[type]||"X", used=new Set(state.rows.map(r=>r.id.trim().toUpperCase()));
+  let n=1; while(used.has((pre+n).toUpperCase())) n++;
+  return pre+n;
+}
+function decorateSheet(){
+  const svg=$("#sheet svg"); if(!svg) return;
+  for(const g of svg.querySelectorAll("g[data-id]")){
+    let bb; try{ bb=g.getBBox(); }catch(e){ continue; }
+    if(!bb.width && !bb.height) continue;
+    const pad=8, r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    r.setAttribute("class","hit");
+    r.setAttribute("x",bb.x-pad); r.setAttribute("y",bb.y-pad);
+    r.setAttribute("width",bb.width+2*pad); r.setAttribute("height",bb.height+2*pad);
+    /* the symbol's own extent, for picking between overlapping groups */
+    r.dataset.bx=bb.x; r.dataset.by=bb.y; r.dataset.bw=bb.width; r.dataset.bh=bb.height;
+    g.insertBefore(r,g.firstChild);
+    if(g.dataset.id===selectedId) g.classList.add("sel");
+  }
+}
+function selectId(id){
+  selectedId=id||null;
+  for(const g of document.querySelectorAll("#sheet svg g[data-id]")) g.classList.toggle("sel",g.dataset.id===selectedId);
+}
+/* what a drop lands on by preference: the things a row can feed from */
+const DROP_TARGETS=["lv busbar","mv busbar","rmu","mcc","transformer","feeder","generator","mv incomer"];
+function symbolAt(clientX,clientY){
+  /* the groups under the point, topmost first; prefer one whose symbol
+     itself (not just its padded hit area) contains the point, then a
+     supply-side kind, then the topmost */
+  const svg=$("#sheet svg"); if(!svg) return null;
+  const groups=[];
+  for(const el of document.elementsFromPoint(clientX,clientY)){
+    const g=el.closest ? el.closest("#sheet svg [data-id]") : null;
+    if(g && !groups.includes(g)) groups.push(g);
+  }
+  if(!groups.length) return null;
+  let pt=null;
+  try{ const m=svg.getScreenCTM(); if(m) pt=new DOMPoint(clientX,clientY).matrixTransform(m.inverse()); }catch(e){}
+  const box=g=>{ const r=g.querySelector(":scope > rect.hit"); return r?{x:+r.dataset.bx,y:+r.dataset.by,w:+r.dataset.bw,h:+r.dataset.bh}:null; };
+  const inside=g=>{
+    const b=box(g); if(!b||!pt) return false; const s=4;
+    return pt.x>=b.x-s && pt.x<=b.x+b.w+s && pt.y>=b.y-s && pt.y<=b.y+b.h+s;
+  };
+  /* the smallest symbol containing the point wins: a bar over the MCC
+     whose enclosure starts at that bar */
+  const hits=groups.filter(inside).sort((a,b)=>{ const A=box(a), B=box(b); return (A.w+8)*(A.h+8)-(B.w+8)*(B.h+8); });
+  return hits[0] || groups.find(g=>DROP_TARGETS.includes(g.dataset.kind)) || groups[0];
+}
+function rowIndexOf(id){ return state.rows.findIndex(r=>r.id.trim()===id); }
+/* the table row follows the selection both ways */
+eqbody.addEventListener("focusin",e=>{
+  const tr=e.target.closest("tr"); if(!tr) return;
+  const row=state.rows[+tr.dataset.i]; if(row) selectId(row.id.trim());
+});
+function addRowFor(type, targetId){
+  snapshot(true);
+  const row=R(nextId(type),type,"","","",targetId||"","",TYPE_DEFAULT_PROT[type]||"");
+  let at=state.rows.length;
+  if(targetId){                       /* after the target's last way, else after the target */
+    const ways=state.rows.map((r,i)=>r.from.split(",").map(s=>s.trim()).includes(targetId)?i:-1).filter(i=>i>=0);
+    const ti=rowIndexOf(targetId);
+    at=(ways.length?Math.max(...ways):ti)+1;
+  }
+  state.rows.splice(at,0,row);
+  rebuildTable(); redraw(); persist();
+  selectId(row.id); focusCell(at,"desc");
+  return row;
+}
+/* one chip per type; a tiny glyph in the engine's style */
+const CHIP_GLYPHS={
+  "MV Incomer":'<line x1="5" y1="5" x2="17" y2="5" stroke-width="2.5"/><line x1="11" y1="5" x2="11" y2="20"/>',
+  "Generator":'<circle cx="11" cy="11" r="7"/><text x="11" y="14" font-size="8" text-anchor="middle" font-weight="bold" stroke="none" fill="currentColor">G</text>',
+  "MV Busbar":'<line x1="2" y1="7" x2="20" y2="7" stroke-width="3.5"/><line x1="11" y1="7" x2="11" y2="20"/>',
+  "RMU":'<rect x="3" y="4" width="16" height="14" stroke-dasharray="3 2" fill="none"/><line x1="6" y1="11" x2="16" y2="11" stroke-width="2.5"/>',
+  "Transformer":'<circle cx="11" cy="8" r="5.5"/><circle cx="11" cy="14" r="5.5"/>',
+  "Pump":'<circle cx="11" cy="12" r="7"/><text x="11" y="15" font-size="8" text-anchor="middle" font-weight="bold" stroke="none" fill="currentColor">M</text>',
+  "LV Busbar":'<line x1="2" y1="7" x2="20" y2="7" stroke-width="3.5"/><line x1="7" y1="7" x2="7" y2="18"/><line x1="15" y1="7" x2="15" y2="18"/>',
+  "Feeder":'<line x1="11" y1="2" x2="11" y2="14"/><polygon points="7,13 15,13 11,20" fill="#111" stroke="none"/>',
+  "MCC":'<rect x="3" y="6" width="16" height="11" fill="none"/><text x="11" y="14.5" font-size="6" text-anchor="middle" stroke="none" fill="currentColor">MCC</text>',
+  "Bus Coupler":'<line x1="1" y1="11" x2="7" y2="11" stroke-width="3"/><line x1="15" y1="11" x2="21" y2="11" stroke-width="3"/><line x1="7" y1="11" x2="14" y2="8"/><line x1="9" y1="13" x2="13" y2="9"/>',
+  "Capacitor Bank":'<line x1="11" y1="2" x2="11" y2="8"/><line x1="5" y1="8" x2="17" y2="8" stroke-width="2"/><line x1="5" y1="12" x2="17" y2="12" stroke-width="2"/><line x1="11" y1="12" x2="11" y2="17"/><line x1="6" y1="17" x2="16" y2="17"/><line x1="8" y1="20" x2="14" y2="20"/>',
+  "Earthing/NER":'<line x1="11" y1="1" x2="11" y2="5"/><rect x="7" y="5" width="8" height="9" fill="none"/><line x1="11" y1="14" x2="11" y2="17"/><line x1="6" y1="17" x2="16" y2="17"/><line x1="8" y1="20" x2="14" y2="20"/>',
+  "Surge Arrester":'<line x1="11" y1="1" x2="11" y2="4"/><rect x="7" y="4" width="8" height="11" fill="none"/><line x1="11" y1="6" x2="11" y2="13"/><polygon points="9,11 13,11 11,14" fill="#111" stroke="none"/><line x1="11" y1="15" x2="11" y2="17"/><line x1="6" y1="17" x2="16" y2="17"/>',
+};
+function buildPalette(){
+  const pal=$("#palette"); if(!pal) return;
+  for(const [lbl] of TYPE_LABELS){
+    const b=document.createElement("button");
+    b.className="chip"; b.type="button"; b.draggable=true; b.dataset.type=lbl;
+    b.title=`Drag onto a busbar, RMU or transformer to add a ${lbl} fed from it; click to add one under the selected row`;
+    b.innerHTML=`<svg viewBox="0 0 22 22" aria-hidden="true" fill="none" stroke="#111" stroke-width="1.6" stroke-linecap="round">${CHIP_GLYPHS[lbl]||""}</svg>${esc(lbl)}`;
+    b.addEventListener("dragstart",e=>{
+      e.dataTransfer.setData("text/sld-type",lbl); e.dataTransfer.setData("text/plain",lbl);
+      e.dataTransfer.effectAllowed="copy";
+    });
+    b.addEventListener("click",()=>addRowFor(lbl, selectedId && rowIndexOf(selectedId)>=0 ? selectedId : ""));
+    pal.appendChild(b);
+  }
+}
+(function bindDrop(){
+  const vp=$("#viewport"); let over=null;
+  const isChip=e=>[...e.dataTransfer.types].includes("text/sld-type");
+  const setOver=g=>{ if(over===g) return; if(over) over.classList.remove("over"); over=g; if(over) over.classList.add("over"); };
+  vp.addEventListener("dragenter",e=>{ if(isChip(e)){ e.preventDefault(); vp.classList.add("dropping"); } });
+  vp.addEventListener("dragover",e=>{
+    if(!isChip(e)) return;
+    e.preventDefault(); e.dataTransfer.dropEffect="copy";
+    setOver(symbolAt(e.clientX,e.clientY));
+  });
+  vp.addEventListener("dragleave",e=>{ if(e.target===vp){ vp.classList.remove("dropping"); setOver(null); } });
+  vp.addEventListener("drop",e=>{
+    if(!isChip(e)) return;
+    e.preventDefault();
+    const type=e.dataTransfer.getData("text/sld-type");
+    const g=symbolAt(e.clientX,e.clientY);
+    vp.classList.remove("dropping"); setOver(null);
+    addRowFor(type, g?g.dataset.id:"");
+  });
+})();
 
 /* ------------------------------------------------ data entry helpers */
 /* the usual device on a row's supply side, offered when Type is chosen */
@@ -289,8 +422,8 @@ function syncView(){
   viewport.addEventListener("pointerdown",e=>{
     if(e.button!==0 || onScrollbar(e)) return;
     e.preventDefault();
-    viewport.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try{ viewport.setPointerCapture(e.pointerId); }catch(err){}   /* synthetic events have no pointer to capture */
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY});
     viewport.classList.add("dragging");
     viewport.focus({preventScroll:true});
   });
@@ -312,8 +445,15 @@ function syncView(){
     p.x=e.clientX; p.y=e.clientY;
   });
   const release=e=>{
+    const p=pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
     if(!pointers.size) viewport.classList.remove("dragging");
+    /* a press that did not pan is a click: select the symbol under it */
+    if(e.type==="pointerup" && p && Math.hypot(e.clientX-p.x0,e.clientY-p.y0)<4){
+      const g=symbolAt(e.clientX,e.clientY);
+      if(g){ selectId(g.dataset.id); const i=rowIndexOf(g.dataset.id); if(i>=0) flashRow(i); }
+      else selectId(null);
+    }
   };
   for(const ev of ["pointerup","pointercancel","lostpointercapture"])
     viewport.addEventListener(ev,release);
@@ -450,7 +590,7 @@ function tableToRows(table){
   const rows=[];
   for(const r of table.slice(hi+1)){
     const o=R(cell(r,idx.id),cell(r,idx.type),cell(r,idx.desc),cell(r,idx.rating),cell(r,idx.voltage),cell(r,idx.from),cell(r,idx.notes),cell(r,idx.prot));
-    if(o.id) rows.push(o);
+    if(FIELDS.some(f=>o[f])) rows.push(o);   /* a row with data but no ID is kept, and warned about */
   }
   return rows;
 }
@@ -583,6 +723,7 @@ helpEl.addEventListener("toggle",()=>$("#helpbtn").classList.toggle("on",helpEl.
 /* boot: restore last session, else start on example 1 */
 (function(){
   state=loadState()||JSON.parse(JSON.stringify(PRESETS["1"]));
+  buildPalette();
   loadView();
   writeInfoInputs(); rebuildTable(); redraw(); persist(); updateUndo();
 })();

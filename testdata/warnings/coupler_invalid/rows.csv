@@ -1,0 +1,10 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility,,11 kV,,,
+TX1,Transformer,A,1000 kVA,11/0.4 kV,,MV1,
+TX2,Transformer,B,1000 kVA,11/0.4 kV,,MV1,
+BB1,LV Busbar,Board A,,400 V,CB,TX1,
+BB2,LV Busbar,Board B,,400 V,CB,TX2,
+BC1,Bus Coupler,Tie,,400 V,CB,"BB1, BB2",Normally open
+BC2,Bus Coupler,Duplicate tie,,400 V,CB,"BB1, BB2",
+BC3,Bus Coupler,One end only,,400 V,CB,BB1,
+BC4,Bus Coupler,Board to transformer,,400 V,CB,"BB1, TX2",

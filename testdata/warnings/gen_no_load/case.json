@@ -1,0 +1,22 @@
+{
+  "name": "gen_no_load",
+  "group": "warnings",
+  "description": "A generator nobody names",
+  "info": {
+    "site": "Warning path: gen no load",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "GEN_NO_LOAD:G1"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 4,
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+}

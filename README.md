@@ -39,7 +39,12 @@ the cell is empty. `Enter` moves down a row (a new one after the last),
 in the problems box marks the row it is about and clicking it jumps there.
 **Import…** (or dropping a file on the table) loads a survey workbook, a CSV
 of the equipment table, or a saved `.json`; **Download CSV** writes the table
-back out. Reading `.xlsx` in the page uses `vendor/xlsx.full.min.js`, so keep
+back out. Every symbol on the drawing knows its row: click one to select
+the row, and drag a chip from the **symbol palette** above the drawing onto a
+busbar, RMU or transformer to add a row of that type fed from it (the ID is
+numbered for you, the usual Protection filled in). Clicking a chip adds the
+row under the selected item. The table stays the only source of truth: a
+drop writes a row, nothing else. Reading `.xlsx` in the page uses `vendor/xlsx.full.min.js`, so keep
 the `vendor/` folder beside the page.
 
 ## The spreadsheet

@@ -1,10 +1,11 @@
 /* Every testdata case draws exactly as its golden.svg, and its diagnostics
- * match what case.json expects.  Run:  node --test test/   */
+ * match what case.json expects.  Run:  node --test   */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { listCases, loadCase, drawCase } from "../tools/lib/cases.mjs";
+import { diagKey, DIAG } from "../src/core/diagnostics.js";
 
 const cases = listCases();
 assert.ok(cases.length > 0, "no cases under testdata/");
@@ -17,17 +18,21 @@ for (const dir of cases) {
     const out = drawCase(c);
     const exp = c.data.expect || {};
 
+    /* every diagnostic has a catalogued code and, unless it is about the whole sheet, names a row */
+    for (const d of out.diagnostics) {
+      assert.ok(DIAG[d.code], `unknown diagnostic code ${d.code}`);
+      assert.ok(d.ids.length || d.row !== undefined || d.code === "EMPTY_SHEET", `diagnostic names no row: ${d.message}`);
+    }
+    assert.equal(out.diagnostics.filter(d => d.level === "error").length, out.errors.length, "errors ↔ diagnostics");
+
+    if (exp.diagnostics) {
+      assert.deepEqual(out.diagnostics.map(diagKey).sort(), exp.diagnostics.slice().sort(),
+        `diagnostics\n  ${out.diagnostics.map(d => d.message).join("\n  ")}`);
+    }
     if (exp.legacy) {
       assert.equal(out.order.length, exp.legacy.items, "items parsed");
       assert.equal(out.errors.length, exp.legacy.errors, `errors: ${out.errors.join(" | ")}`);
       assert.equal(out.warnings.length, exp.legacy.warnings, `warnings: ${out.warnings.join(" | ")}`);
-    }
-
-    /* every warning names at least one row ID (a row is never dropped silently) */
-    const ids = new Set(c.rows.map(r => r.id));
-    for (const w of out.warnings) {
-      const named = [...w.matchAll(/"([^"]+)"/g)].some(m => ids.has(m[1])) || /^Row \d+/.test(w);
-      assert.ok(named, `warning does not name a row: ${w}`);
     }
 
     const goldenFile = path.join(dir, "golden.svg");
@@ -37,13 +42,17 @@ for (const dir of cases) {
     }
     if (exp.golden) {
       assert.ok(out.svg, `no drawing produced (errors: ${out.errors.join(" | ")})`);
-      if (!fs.existsSync(goldenFile)) {
-        assert.fail(`missing ${path.relative(process.cwd(), goldenFile)} — run UPDATE_GOLDEN=1 node tools/golden.mjs`);
-      }
+      assert.ok(fs.existsSync(goldenFile), `missing ${path.relative(process.cwd(), goldenFile)} — run UPDATE_GOLDEN=1 node tools/golden.mjs`);
       const have = fs.readFileSync(goldenFile, "utf8");
       if (have !== out.svg) {
         const i = [...have].findIndex((ch, k) => ch !== out.svg[k]);
         assert.fail(`golden differs at offset ${i}: …${have.slice(Math.max(0, i - 40), i + 60)}… vs …${out.svg.slice(Math.max(0, i - 40), i + 60)}…`);
+      }
+      /* every row with a symbol is findable on the canvas */
+      for (const id of out.order) {
+        const it = out.items[id];
+        if (it.type === "bus coupler" || it.x === null) continue;
+        assert.ok(out.svg.includes(`data-id="${id.replace(/&/g, "&amp;").replace(/</g, "&lt;")}"`), `no <g data-id> for ${id}`);
       }
     }
   });

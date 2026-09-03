@@ -1,0 +1,23 @@
+{
+  "name": "mcc_on_mv",
+  "group": "warnings",
+  "description": "An MCC on MV gear and an MCC on a feeder",
+  "info": {
+    "site": "Warning path: mcc on mv",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "MCC_BAD_SUPPLY:MCC2",
+      "MCC_ON_MV:MCC1"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 5,
+      "errors": 0,
+      "warnings": 2
+    }
+  }
+}

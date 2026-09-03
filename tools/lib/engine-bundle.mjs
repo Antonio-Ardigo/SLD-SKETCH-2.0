@@ -40,7 +40,9 @@ export function drawWithBundle(info, rows, { dxf = false } = {}) {
   const { items, order, errors, warnings } = E.buildModel(norm);
   const out = { errors, warnings, items, order, svg: null, dxf: null };
   if (errors.length || !order.length) return out;
-  out.svg = E.render(site, items, order, E.layout(items, order), warnings.slice());
+  const drawn = warnings.slice();
+  out.svg = E.render(site, items, order, E.layout(items, order), drawn);
+  for (const msg of drawn.slice(warnings.length)) warnings.push(msg);
   if (dxf) { const m2 = E.buildModel(norm); out.dxf = E.renderDxf(site, m2.items, m2.order, E.layout(m2.items, m2.order)); }
   return out;
 }

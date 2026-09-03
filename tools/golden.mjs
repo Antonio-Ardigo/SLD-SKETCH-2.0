@@ -9,6 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { listCases, loadCase, drawCase } from "./lib/cases.mjs";
+import { sameGeometry, rootTag } from "./lib/svg-geometry.mjs";
 
 const args = process.argv.slice(2);
 const update = !!process.env.UPDATE_GOLDEN;
@@ -26,7 +27,9 @@ for (const dir of listCases(filter)) {
   const legacy = { items: out.order.length, errors: out.errors.length, warnings: out.warnings.length };
   const svg = out.svg || "";
   const have = fs.existsSync(goldenFile) ? fs.readFileSync(goldenFile, "utf8") : null;
-  const status = have === null ? "new" : have === svg ? "same" : "changed";
+  /* "regroup": the same marks at the same places, only the <g> grouping differs */
+  let status = have === null ? "new" : have === svg ? "same" : "changed";
+  if (status === "changed" && svg && rootTag(have) === rootTag(svg) && sameGeometry(have, svg)) status = "regroup";
   if (status === "same") same++; else if (status === "new") missing++; else changed++;
   if (update && status !== "same") {
     if (svg) fs.writeFileSync(goldenFile, svg); else if (have !== null) fs.unlinkSync(goldenFile);

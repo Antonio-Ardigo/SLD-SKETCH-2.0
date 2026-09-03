@@ -1,0 +1,22 @@
+{
+  "name": "loop_no_supply",
+  "group": "warnings",
+  "description": "Two sub-boards feeding each other with no supply reaching them; drawn floating",
+  "info": {
+    "site": "Warning path: loop no supply",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "LOOP_NO_SUPPLY:DB1"
+    ],
+    "golden": true,
+    "legacy": {
+      "items": 5,
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+}

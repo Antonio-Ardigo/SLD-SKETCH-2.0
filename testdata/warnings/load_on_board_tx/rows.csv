@@ -1,0 +1,6 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility,,11 kV,,,
+TX1,Transformer,Step-down,1000 kVA,11/0.4 kV,,MV1,
+BB1,LV Busbar,Board,,400 V,CB,TX1,
+P1,Pump,Named on the transformer,55 kW,400 V,,TX1,
+MCC1,MCC,Named on the transformer,,400 V,CB,TX1,
