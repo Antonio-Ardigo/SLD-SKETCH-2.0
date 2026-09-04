@@ -120,7 +120,7 @@ function render(info, items, order, width, warnings, canvas){
                  || hangHas(hang,p.id,rmu.id)); /* from the RMU above it */
     const midAll=suMid(items,order);
     const waysOut=childrenOf(items,order,rmu.id,
-                             [TRANSFORMER,PUMP].concat(LV_LOADS))
+                             [TRANSFORMER,PUMP,MV_BUSBAR].concat(LV_LOADS))
       .concat(childrenOf(items,order,rmu.id,[RMU]).filter(k=>hangHas(hang,rmu.id,k.id)))
       .concat(Object.keys(midAll).filter(t=>midAll[t][1].id===rmu.id
                                             && items[t].x!==null)
@@ -288,12 +288,17 @@ function render(info, items, order, width, warnings, canvas){
     if(![MV_BUSBAR,RMU].includes(it.type) || it.x===null) continue;
     for(const p of it.parents){
       const par=items[p];
-      if(par.type!==MV_BUSBAR) continue;
-      const yFrom=yBus(par);
+      /* from a board's bar, or out of the bottom of an RMU that feeds a
+         board (the way itself is drawn inside the enclosure) */
+      const fromBar=par.type===MV_BUSBAR;
+      if(!fromBar && !(par.type===RMU && it.type===MV_BUSBAR)) continue;
+      if(par.x===null) continue;
+      const yFrom=fromBar?yBus(par):yRmu(par)[1];
       const yTo=(it.type===MV_BUSBAR)?yBus(it):yRmu(it)[0];
       let xTo=(par.id in it.land)?it.land[par.id]:it.x;
       if(it.type===MV_BUSBAR) xTo=Math.min(Math.max(xTo,it.xLeft+20),it.xRight-20);
-      const xFrom=Math.min(Math.max(xTo,par.xLeft),par.xRight);
+      const xFrom=fromBar?Math.min(Math.max(xTo,par.xLeft),par.xRight)
+                         :((it.id in par.tee)?par.tee[it.id]:it.x);
       mvFeeds.push([it,par,xFrom,xTo,yFrom,yTo]);
     }
   }
@@ -306,13 +311,17 @@ function render(info, items, order, width, warnings, canvas){
     Object.assign(mvLane,allocLanes(runs,[yTo-30,yTo-43,yTo-56]));
   }
   for(const [it,par,xFrom,xTo,yFrom,yTo] of mvFeeds){
+    const fromBar=par.type===MV_BUSBAR;
     const kind=(it.type===RMU)?"cb":(protFor(it,par.id)[1]||"cb");
-    svg.dot(xFrom,yFrom);
+    if(fromBar) svg.dot(xFrom,yFrom);
+    /* the device sits on the way off a bar; an RMU has already drawn its
+       own way out inside the enclosure, so this run is bare cable */
+    const leave=(x,y0,y1)=>fromBar?svg.drop(x,y0,y1,kind):svg.line(x,y0,x,y1);
     if(Math.abs(xFrom-xTo)<1){
-      svg.drop(xTo,yFrom,yTo,kind);
+      leave(xTo,yFrom,yTo);
     } else {                        /* sub-board offset from the way */
       const yMid=mvLane[it.id+"|"+par.id];
-      svg.drop(xFrom,yFrom,yMid,kind);
+      leave(xFrom,yFrom,yMid);
       svg.line(xFrom,yMid,xTo,yMid);
       svg.line(xTo,yMid,xTo,yTo);
     }

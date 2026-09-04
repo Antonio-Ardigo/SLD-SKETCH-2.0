@@ -89,6 +89,19 @@ try {
   await evaluate(`document.querySelector('tr[data-i="4"] [data-f="rating"]').dispatchEvent(new FocusEvent('focusin',{bubbles:true}))`);
   check("feeder rating list", await evaluate(`[...document.querySelectorAll('#ratinglist option')].map(o=>o.value).includes('250 A')`));
 
+  /* the quick values follow what a row is, not how its Type is spelled, and a
+     Type the sheet wrote its own way is kept rather than shown as an empty cell */
+  await evaluate(`(function(){ state.rows.push(R("CAPX","PFC","Power factor correction","","400 V","BB1","","CB")); rebuildTable(); redraw(); })()`);
+  await sleep(300);
+  await evaluate(`(function(){ const i=state.rows.length-1; document.querySelector('tr[data-i="'+i+'"] [data-f="rating"]').dispatchEvent(new FocusEvent('focusin',{bubbles:true})); })()`);
+  check("an aliased capacitor bank is offered kvar",
+    await evaluate(`[...document.querySelectorAll('#ratinglist option')].every(o=>o.value.endsWith(' kvar'))`),
+    await evaluate(`[...document.querySelectorAll('#ratinglist option')].map(o=>o.value).join(', ')`));
+  check("the sheet's own Type label is kept",
+    await evaluate(`document.querySelector('tr[data-i="'+(state.rows.length-1)+'"] [data-f="type"]').value`) === "PFC");
+  await evaluate(`(function(){ state.rows.pop(); rebuildTable(); redraw(); })()`);
+  await sleep(300);
+
   /* Enter on the last row adds one; Type change offers a default protection */
   await evaluate(`(function(){ const el=document.querySelector('tr[data-i="7"] [data-f="desc"]'); el.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));
      el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); })()`);

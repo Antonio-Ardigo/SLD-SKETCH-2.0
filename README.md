@@ -36,8 +36,10 @@ merely draws, then what the reader would call impossible, each saying what it
 is and where it is a stretch. Nothing is hidden: the order is the advice.
 Type `BB1, ` and it offers the second supply, preferring another board of the
 same kind. **Voltage** and
-**Rating** offer standard values for the row's type (11 kV, 400 V, 11/0.4 kV,
-1000 kVA, 250 A, 55 kW, …); choosing a **Type** fills the usual Protection if
+**Rating** offer standard values for what the row *is*, however its Type is
+spelled — a `PFC` or a `Cap bank` is a capacitor bank and is offered kvar, a
+`Genset` kVA, a `Trafo` the transformer ratios (11 kV, 400 V, 11/0.4 kV,
+1000 kVA, 250 A, 55 kW, 300 kvar, …); choosing a **Type** fills the usual Protection if
 the cell is empty. `Enter` moves down a row (a new one after the last),
 `Alt`+`↑`/`↓` moves the row, `Ctrl`+`Z` / `Ctrl`+`Y` undo and redo. A message
 in the problems box marks the row it is about and clicking it jumps there.
@@ -124,6 +126,10 @@ load — the name is kept as an alias of `Transformer`.
 
 The last one works because a generator is never a load: a `Generator` whose
 `Feeds From` names a transformer can only be feeding *up* through it.
+
+An MV switchboard whose `Feeds From` names an **RMU** is a board on one of the
+RMU's ways: it is drawn one tier below the enclosure, wired from the way out of
+it. Two RMUs naming each other are a ring and stay level; a board never is.
 
 Because `Feeds From` only ever points *upstream*, a step-up needs to be named
 on the row of the board it supplies. Until you do that it still draws — as a

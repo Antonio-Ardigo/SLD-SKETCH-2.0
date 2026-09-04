@@ -1,0 +1,10 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+U1,MV Incomer,Utility supply,,11 kV,,,
+RMU1,RMU,Intake ring main unit,630 A,11 kV,LBS,U1,
+MVB1,MV Busbar,11 kV switchboard,1250 A,11 kV,CB,RMU1,
+T1,Transformer,Substation A,1000 kVA,11/0.4 kV,CB,MVB1,
+BB1,LV Busbar,Main LV board,1600 A,400 V,CB,T1,
+CAP1,Capacitor Bank,Power factor correction,300 kvar,400 V,CB,BB1,
+T2,Transformer,Substation B,630 kVA,11/0.4 kV,CB,MVB1,
+BB2,LV Busbar,Workshop board,1000 A,400 V,CB,T2,
+F1,Feeder,Workshop supplies,250 A,400 V,CB,BB2,

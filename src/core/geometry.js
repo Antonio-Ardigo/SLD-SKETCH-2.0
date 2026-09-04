@@ -372,7 +372,9 @@ function mvDepth(items, order){
         const par=items[p]; let d;
         if(par.id in depth){
           if(hangHas(hang,oid,p)) continue;   /* written both ways */
-          const down=par.type===MV_BUSBAR || hangHas(hang,p,oid);
+          /* a board is never a ring peer: an MV board fed from an RMU is
+             one tier below it, as it is when fed from another board */
+          const down=par.type===MV_BUSBAR || items[oid].type===MV_BUSBAR || hangHas(hang,p,oid);
           d=depth[par.id]+(down?1:0);
         }
         else if(par.type===TRANSFORMER){
