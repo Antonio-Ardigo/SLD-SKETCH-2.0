@@ -104,8 +104,9 @@ const PROT_ALIASES = {
 function protFor(item, parentId){
   if(!item.prots || !item.prots.length) return ["", null];
   let raw=item.prots[0];
-  if(parentId!=null && item.prots.length>1 && item.parents.includes(parentId)){
-    const i=item.parents.indexOf(parentId);
+  const named=item.supplies||item.parents;   /* the list the devices were written against */
+  if(parentId!=null && item.prots.length>1 && named.includes(parentId)){
+    const i=named.indexOf(parentId);
     if(i<item.prots.length) raw=item.prots[i];
   }
   return [raw, PROT_ALIASES[raw.toLowerCase().split(/\s+/).join(" ")]||null];

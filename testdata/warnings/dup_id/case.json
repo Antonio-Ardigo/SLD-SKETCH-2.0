@@ -1,7 +1,7 @@
 {
   "name": "dup_id",
   "group": "warnings",
-  "description": "Two rows share an ID: an error, no drawing",
+  "description": "Two rows share an ID: the second is dropped and named, the sheet still draws",
   "info": {
     "site": "Warning path: dup id",
     "date": "",
@@ -12,11 +12,17 @@
     "diagnostics": [
       "DUP_ID:F1"
     ],
-    "golden": false,
+    "golden": true,
     "legacy": {
       "items": 4,
       "errors": 1,
       "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

@@ -5,13 +5,17 @@
  *
  * `message` is the sentence shown to the surveyor (the page, the CLI). Tests
  * assert on `code` and `ids`, never on the wording, so the wording can improve
- * freely. An "error" stops the drawing (the table cannot be read as one
- * network); a "warning" still draws, with the row floating, open or marked. */
+ * freely. An "error" is a fault in the table itself (two rows with one ID, a
+ * supply that is not on the sheet); a "warning" is a network the reader could
+ * read but doubts. Both still draw (constitution §6): the row in question
+ * floats, stands open or is marked, and the message says why. A diagnostic
+ * may carry a `fix` — `{ id, field, from, to }` — a one-click correction the
+ * page can offer; it is never applied on its own. */
 
 export const DIAG = {
   /* reader: the table itself */
   DUP_ID:            { level: "error",   about: "two rows share an ID" },
-  UNKNOWN_SUPPLY:    { level: "error",   about: "Feeds From names an ID that is not on the sheet" },
+  UNKNOWN_SUPPLY:    { level: "error",   about: "Feeds From names an ID that is not on the sheet; drawn without that supply" },
   ROW_NO_ID:         { level: "warning", about: "a row has data but no ID; it is ignored" },
   UNKNOWN_TYPE:      { level: "warning", about: "Type is not one of the known types; drawn as a feeder" },
   UNKNOWN_PROT:      { level: "warning", about: "Protection is not a known device; the default symbol is drawn" },
@@ -35,11 +39,12 @@ export const DIAG = {
   RANK_CYCLE:        { level: "warning", about: "two rows each demand to sit below the other; the rank solver dropped one demand" },
 };
 
-export function makeDiag(code, ids, message, row) {
+export function makeDiag(code, ids, message, row, extra) {
   const def = DIAG[code];
   if (!def) throw new Error(`unknown diagnostic code ${code}`);
   const d = { code, level: def.level, ids: ids.filter(Boolean), message };
   if (row !== undefined) d.row = row;
+  if (extra) Object.assign(d, extra);
   return d;
 }
 

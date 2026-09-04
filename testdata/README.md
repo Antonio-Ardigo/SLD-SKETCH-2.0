@@ -37,7 +37,7 @@ Only the keys present under `expect` are asserted:
 
 - `diagnostics` — the sorted `CODE:firstId` keys (`["DUP_ID:F1"]`) the reader
   must report; `src/core/diagnostics.js` is the catalogue.
-- `golden: false` — the case must *not* draw (an error stops the drawing).
+- `golden: false` — the case must *not* draw (only an empty table does not draw; an error still draws, with the row it names floating or dropped and the message saying so).
 - `ranks` — the row every board sits on, from the rank solver (`{"HV":0,"MV":1,"LV":2}`).
 - `facts` — a subset of the named facts: `rings` (members, closed), `spurs`,
   `txDir` (class per transformer), `couplers`, `sources`, `subBoards`,

@@ -31,7 +31,7 @@ export function drawEquipmentTable(svg, table, xLeft, yTop, { wrap, textWidth })
   y+=6;
   const heads=EQ_HEADS;
   const rows=order.map(i=>{ const it=items[i];
-    return [it.id,eqTypeLabel(it),it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>wrap(v)); });
+    return [it.id,eqTypeLabel(it),it.desc,it.rating,it.voltage,it.prots.join(", "),(it.supplies||it.parents).join(", "),it.notes].map(v=>wrap(v)); });
   const cols=heads.map((h,i)=>Math.max(textWidth(h,size),...rows.flatMap(r=>r[i].map(l=>textWidth(l,size))))*1.15+2*pad);
   const x1=x0+cols.reduce((a,b)=>a+b,0), yHead=y;
   svg.line(x0,y,x1,y,1.2);

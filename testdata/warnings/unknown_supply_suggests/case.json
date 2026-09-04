@@ -1,0 +1,31 @@
+{
+  "name": "unknown_supply_suggests",
+  "group": "warnings",
+  "description": "Four unknown supplies: the wrong case, a slip, a space and one nothing like any ID. Each row is drawn without its supply; the first three carry the ID they most likely meant",
+  "info": {
+    "site": "Warning path: unknown supply, suggested",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "UNKNOWN_SUPPLY:F1",
+      "UNKNOWN_SUPPLY:F2",
+      "UNKNOWN_SUPPLY:P1",
+      "UNKNOWN_SUPPLY:F3"
+    ],
+    "golden": true,
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    },
+    "legacy": {
+      "items": 9,
+      "errors": 4,
+      "warnings": 0
+    }
+  }
+}

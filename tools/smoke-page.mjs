@@ -63,6 +63,20 @@ try {
   await sleep(400);
   check("unknown supply marks the row", await evaluate(`document.querySelector('tr[data-i="8"]').classList.contains('err')`));
   check("problem line points at the row", await evaluate(`document.querySelector('#problems div[data-row="8"]') !== null`));
+  /* the drawing is not withheld by the error: the row is on the sheet, floating, and exports still work */
+  check("the sheet still draws with an unknown supply", await evaluate(`!!document.querySelector('#sheet svg g[data-id="F9"]')`));
+  check("exports are not blocked by the error", await evaluate(`currentSheet()!==null`));
+  check("nothing near NOPE: no suggestion offered", await evaluate(`document.querySelectorAll('#problems button.fix').length`) === 0);
+  /* a near miss is named, and one click puts it right */
+  await evaluate(`(function(){ const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='bb1'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+  await sleep(400);
+  check("a near miss offers the ID it meant", (await evaluate(`(document.querySelector('#problems button.fix')||{}).textContent`)) === "use BB1");
+  await evaluate(`document.querySelector('#problems button.fix').click()`);
+  await sleep(400);
+  check("one click writes the fix into the cell", await evaluate(`state.rows[8].from`) === "BB1" && await evaluate(`document.querySelector('tr[data-i="8"] [data-f="from"]').value`) === "BB1");
+  check("and the error is gone", await evaluate(`document.querySelectorAll('#problems .err').length`) === 0);
+  await evaluate(`(function(){ const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='NOPE'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+  await sleep(400);
 
   /* undo removes the typing and the row */
   const before = await evaluate(`document.querySelectorAll('#eqbody tr').length`);
@@ -129,6 +143,32 @@ try {
   check("typing clears that cell's tint", await evaluate(`(function(){ const r=state.rows.findIndex(r=>r.type==='Feeder'&&r.voltage==='690 V');
      const tr=document.querySelector('tr[data-i="'+r+'"]');
      return !tr.querySelector('[data-f="voltage"]').classList.contains('proposed') && tr.querySelector('[data-f="prot"]').classList.contains('proposed'); })()`));
+
+  /* renaming a board: every way that named it follows, in one edit */
+  const refs = id => evaluate(`state.rows.filter(r=>r.from.split(',').map(s=>s.trim()).includes(${JSON.stringify(id)})).length`);
+  const waysOfMSB = await refs("MSB");
+  await sleep(900);   /* a pause, as a person makes before a new edit: the rename is its own undo step */
+  await evaluate(`(function(){ const i=rowIndexOf('MSB'); const el=document.querySelector('tr[data-i="'+i+'"] [data-f="id"]');
+     el.dispatchEvent(new FocusEvent('focusin',{bubbles:true})); el.value='MSB1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+  check("renaming an ID renames every reference to it", waysOfMSB >= 5 && await refs("MSB1") === waysOfMSB && await refs("MSB") === 0,
+    await evaluate(`JSON.stringify(state.rows.map(r=>r.id+'<'+r.from))`));
+  check("the renamed sheet has no errors", await evaluate(`document.querySelectorAll('#problems .err').length`) === 0);
+  check("the cells on screen show the new name", await evaluate(`[...document.querySelectorAll('[data-f="from"]')].filter(e=>e.value.split(',').map(s=>s.trim()).includes('MSB1')).length`) === waysOfMSB);
+  await evaluate(`undo()`);
+  await sleep(400);
+  check("one undo brings back the old name and its references together", await evaluate(`rowIndexOf('MSB')>=0`) && await refs("MSB") === waysOfMSB && await refs("MSB1") === 0,
+    await evaluate(`JSON.stringify(state.rows.map(r=>r.id+'<'+r.from))`));
+  /* a rename onto an ID another row already has: nothing follows, and the reader says so */
+  const refsF1 = await refs("F1");
+  await sleep(900);
+  await evaluate(`(function(){ const i=rowIndexOf('F1'); const el=document.querySelector('tr[data-i="'+i+'"] [data-f="id"]');
+     el.dispatchEvent(new FocusEvent('focusin',{bubbles:true})); el.value='F2'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+  check("a rename onto an existing ID is reported, not followed", (await evaluate(`document.querySelector('#problems').textContent`)).includes('Duplicate ID "F2"') && await refs("F1") === refsF1);
+  await evaluate(`undo()`);
+  await sleep(400);
+  check("and undone", await evaluate(`state.rows.filter(r=>r.id==='F1').length`) === 1);
 
   /* a source is added with no supply: the drop names where the row goes, not
      what feeds it, and the board it was dropped on is left alone */

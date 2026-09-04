@@ -62,9 +62,10 @@ const gestures = {
 async function state() {
   return evaluate(`(function(){
     const errs=document.querySelectorAll('#problems .err').length, warns=document.querySelectorAll('#problems .warn').length;
-    const svg=!!document.querySelector('#sheet svg');
+    const sheet=document.querySelector('#sheet'), svg=!!sheet.querySelector('svg');
+    /* the page stamps the drawing with the table it was made from */
     return { errors: errs, warnings: warns,
-      drawing: errs ? (svg ? "stale" : "none") : (svg ? "fresh" : "none"),
+      drawing: !svg ? "none" : (sheet.dataset.rev===modelRev() ? "fresh" : "stale"),
       export: currentSheet()!==null, rows: state.rows.length };
   })()`);
 }
@@ -154,9 +155,12 @@ await task("T4_fix_typo_supply", async () => {
   await loadPreset(1);
   await loadRows((await evaluate(`state.rows`)).map(r => r.id === "F2" ? { ...r, from: "BB!" } : r));
   const s0 = await state();
-  const suggestion = await evaluate(`/mean|use BB1/i.test(document.querySelector('#problems').textContent)`);
-  await gestures.clickProblem(0);                            /* the message takes you to the row */
-  await gestures.type(await rowIndex("F2"), "from", "BB1");  /* and you retype it */
+  const suggestion = await evaluate(`!!document.querySelector('#problems button.fix')`);
+  if (suggestion) await gestures.click("#problems button.fix");   /* the message names the ID: one click */
+  else {
+    await gestures.clickProblem(0);                            /* the message takes you to the row */
+    await gestures.type(await rowIndex("F2"), "from", "BB1");  /* and you retype it */
+  }
   await settle();
   return { drawingWhileWrong: s0.drawing, exportWhileWrong: s0.export, suggestion };
 });
@@ -198,7 +202,7 @@ await scenario("W2_case_mismatch_bb1", async () => {
   await settle();
   const s = await state();
   return { errors: s.errors, drawing: s.drawing, export: s.export,
-    suggestion: await evaluate(`/mean|use BB1/i.test(document.querySelector('#problems').textContent)`) };
+    suggestion: await evaluate(`!!document.querySelector('#problems button.fix')`) };
 });
 
 /* W3 — Enter six times, typing only an ID each time */

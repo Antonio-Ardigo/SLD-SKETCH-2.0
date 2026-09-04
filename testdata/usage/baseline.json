@@ -13,19 +13,19 @@
     "tableKept": false
   },
   "T3_rename_board_with_ways": {
-    "actions": 6,
+    "actions": 1,
     "drawing": "fresh",
     "export": true,
     "ways": 5,
-    "drawingWhileRenamed": "stale"
+    "drawingWhileRenamed": "fresh"
   },
   "T4_fix_typo_supply": {
-    "actions": 2,
+    "actions": 1,
     "drawing": "fresh",
     "export": true,
-    "drawingWhileWrong": "stale",
-    "exportWhileWrong": false,
-    "suggestion": false
+    "drawingWhileWrong": "fresh",
+    "exportWhileWrong": true,
+    "suggestion": true
   },
   "T5_move_feeder": {
     "actions": 3,
@@ -44,17 +44,17 @@
     "outcome": {
       "ways": 5,
       "errors": 5,
-      "drawing": "stale",
-      "export": false,
-      "orphansStillDrawn": true
+      "drawing": "fresh",
+      "export": true,
+      "orphansStillDrawn": false
     }
   },
   "W2_case_mismatch_bb1": {
     "outcome": {
       "errors": 1,
-      "drawing": "stale",
-      "export": false,
-      "suggestion": false
+      "drawing": "fresh",
+      "export": true,
+      "suggestion": true
     }
   },
   "W3_enter_x6_ids_only": {

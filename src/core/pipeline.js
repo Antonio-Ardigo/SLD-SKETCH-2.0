@@ -3,7 +3,7 @@
  *   const out = draw(info, rows, { dxf: true });
  *   out.errors / out.warnings   messages from the reader (buildModel)
  *   out.items / out.order       the model
- *   out.svg                     the SVG document, or null when errors stop the drawing
+ *   out.svg                     the SVG document (null only for an empty table)
  *   out.dxf                     the R12 DXF text when asked for
  *   out.pdf                     the one-page A3 PDF when asked for
  *
@@ -40,7 +40,8 @@ export function draw(info, rows, { dxf = false, pdf = false, check = false, view
   const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, facts: null, svg: null, dxf: null, pdf: null };
   if (!order.length) { out.diagnostics.push(makeDiag("EMPTY_SHEET", [], "The table has no rows with an ID.")); return out; }
   out.graph = buildGraph(items, order);
-  if (errors.length) return out;
+  /* errors do not withhold the drawing (constitution §6): a duplicate row was
+     dropped and named, an unknown supply left the row floating and named */
   out.facts = buildFacts(items, order, out.graph);
   for (const d of out.facts.dropped)
     out.diagnostics.push(makeDiag("RANK_CYCLE", [d.a, d.b], `"${d.a}" and "${d.b}" cannot both be below each other — one of them is drawn on the row above the other.`));

@@ -71,6 +71,21 @@ soon as you type in one, so you can see what came from the engine and what
 you entered. Choosing a Type on a blank row fills the rest the same way.
 Nothing is proposed once the row exists: from then on every cell is yours.
 
+**Renaming an ID renames every reference to it.** Change a board's ID and,
+when you leave the cell, every `Feeds From` that named the old ID names the
+new one — one edit, one undo step, the same drawing under a new name. If the
+new ID is already another row's, nothing follows: the reader reports the
+duplicate and the references that now dangle, each with the ID it thinks
+they meant.
+
+**An error never takes the drawing away.** A `Feeds From` that names an ID
+not on the sheet, or two rows with one ID, is an error in the problems box —
+but the sheet still draws: the row in question floats (or, for a duplicate,
+the second row is left out) and the message says so. Exports work too. An
+unknown supply that is within a slip of an existing ID — `bb1`, `BB!`,
+`MCC 1` — is named in the message with a **use BB1** button; that click, and
+only that click, writes it into the cell.
+
 **View options** sit in the drawing's toolbar: spacing (compact / normal /
 wide), the legend and the title block on or off, and **Focus drawing**, which
 gives the drawing the whole window (Esc to leave). A view changes the picture

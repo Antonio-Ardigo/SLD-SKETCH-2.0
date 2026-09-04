@@ -40,7 +40,7 @@ export function drawWithBundle(info, rows, { dxf = false, view = null } = {}) {
   const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
   const { items, order, errors, warnings } = E.buildModel(norm);
   const out = { errors, warnings, items, order, svg: null, dxf: null };
-  if (errors.length || !order.length) return out;
+  if (!order.length) return out;   /* errors draw too, as the page does */
   const drawn = warnings.slice();
   out.svg = E.render(site, items, order, E.layout(items, order), drawn);
   for (const msg of drawn.slice(warnings.length)) warnings.push(msg);

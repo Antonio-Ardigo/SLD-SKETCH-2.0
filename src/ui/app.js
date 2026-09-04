@@ -10,6 +10,7 @@ import { SVG } from "../core/svg.js";
 import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
 import { supplyCandidates } from "../core/supplies.js";
+import { renameReferences, canFollowRename } from "../core/edit.js";
 import { R, PRESETS } from "./presets.generated.js";
 
 /* ------------------------------------------------ UI wiring */
@@ -71,20 +72,43 @@ function messageRow(msg){
   }
   return -1;
 }
-function showProblems(errors, warnings){
+/* the problems box: errors first, then warnings, each pointing at its row;
+   a diagnostic that carries a fix (an unknown supply with a likely ID) gets a
+   button that applies it — one click, and only that click, changes the table */
+function showProblems(diagnostics){
   const probs=$("#problems");
-  const line=(msg,cls)=>{
-    const i=messageRow(msg);
-    return `<div class="${cls}"${i>=0?` data-row="${i}"`:""}>${esc(msg)}</div>`;
+  const rowOf=d=>d.row!==undefined?d.row-1:messageRow(d.message);
+  const line=d=>{
+    const i=rowOf(d), cls=d.level==="error"?"err":"warn";
+    const fix=d.fix?` <button type="button" class="fix" data-fix="${esc(JSON.stringify(d.fix))}" title="Write ${esc(d.fix.to)} into the Feeds from of ${esc(d.fix.id)}">use ${esc(d.fix.to)}</button>`:"";
+    return `<div class="${cls}"${i>=0?` data-row="${i}"`:""}>${esc(d.message)}${fix}</div>`;
   };
-  probs.innerHTML=errors.map(e=>line(e,"err")).concat(warnings.map(w=>line(w,"warn"))).join("");
-  probs.hidden=!(errors.length||warnings.length);
+  const ordered=diagnostics.filter(d=>d.level==="error").concat(diagnostics.filter(d=>d.level!=="error"));
+  probs.innerHTML=ordered.map(line).join("");
+  probs.hidden=!ordered.length;
   for(const tr of eqbody.querySelectorAll("tr")) tr.classList.remove("err","warn");
-  const mark=(msgs,cls)=>{ for(const m of msgs){ const i=messageRow(m); const tr=eqbody.querySelector(`tr[data-i="${i}"]`); if(tr) tr.classList.add(cls); } };
-  mark(warnings,"warn"); mark(errors,"err");
+  for(const d of ordered){ const tr=eqbody.querySelector(`tr[data-i="${rowOf(d)}"]`); if(tr) tr.classList.add(d.level==="error"?"err":"warn"); }
+}
+$("#problems").addEventListener("click",e=>{
+  const b=e.target.closest("button.fix"); if(!b) return;
+  e.stopPropagation();
+  const fix=JSON.parse(b.dataset.fix), i=rowIndexOf(fix.id); if(i<0) return;
+  snapshot(true);
+  const row=state.rows[i];
+  row[fix.field]=row[fix.field].split(",").map(s=>s.trim()).filter(Boolean).map(t=>t===fix.from?fix.to:t).join(", ");
+  clearMark(row,fix.field);
+  const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="${fix.field}"]`); if(el){ el.value=row[fix.field]; el.classList.remove("proposed"); }
+  redraw(); persist();
+});
+/* a stamp of what the drawing was made from, so a test can tell a fresh
+   drawing from a stale one without guessing (the baseline reads it) */
+function modelRev(){
+  let h=5381; const s=JSON.stringify(state.rows.map(r=>[r.id,r.type,r.desc,r.rating,r.voltage,r.prot,r.from,r.notes]))+JSON.stringify(view_);
+  for(let i=0;i<s.length;i++) h=((h*33)^s.charCodeAt(i))>>>0;
+  return h.toString(36);
 }
 function redraw(){
-  const {items,order,errors,warnings}=buildModel(state.rows);
+  const {items,order,warnings,diagnostics}=buildModel(state.rows);
   refreshIdList();
   if(!order.length){
     $("#sheet").innerHTML="";
@@ -95,12 +119,14 @@ function redraw(){
     syncView();
     return;
   }
-  showProblems(errors, warnings);
-  if(errors.length) return; /* keep the last good drawing on screen */
+  showProblems(diagnostics);
+  /* an error never withholds the drawing: the row it names floats or is
+     dropped, and the message says so (constitution §6) */
   applyView(view_);
   const width=layout(items,order);
   const svgStr=render(state.info,items,order,width,warnings);
   $("#sheet").innerHTML=svgStr;
+  $("#sheet").dataset.rev=modelRev();
   decorateSheet();
   syncView();
 }
@@ -357,8 +383,24 @@ function refreshIdList(input){
   fillList("idlist", supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
     .map(c=>({value:prefix+c.id, label:c.label})));
 }
+/* renaming an ID: the name it had when the cell was entered, so that on
+   commit every Feeds From that named it can follow (src/core/edit.js) */
+let idBefore="";
+eqbody.addEventListener("change",e=>{
+  if(e.target.dataset.f!=="id") return;
+  const i=+e.target.closest("tr").dataset.i, row=state.rows[i]; if(!row) return;
+  const before=idBefore.trim(), after=row.id.trim(); idBefore=after;
+  if(!before || before===after) return;
+  if(!canFollowRename(state.rows,i,after)) return;   /* another row owns that ID: nothing follows */
+  /* no snapshot of its own: the typing that changed the ID already took one,
+     so a single undo brings back the old name and its references together */
+  if(!renameReferences(state.rows,before,after)) return;
+  for(const [k,r] of state.rows.entries()){ const el=eqbody.querySelector(`tr[data-i="${k}"] [data-f="from"]`); if(el && el.value!==r.from) el.value=r.from; }
+  redraw(); persist();
+});
 eqbody.addEventListener("focusin",e=>{
   const f=e.target.dataset.f; if(!f) return;
+  if(f==="id") idBefore=(state.rows[+e.target.closest("tr").dataset.i]||{}).id||"";
   const type=(state.rows[+e.target.closest("tr").dataset.i]||{}).type||"";
   if(f==="voltage") fillList("voltlist", quickVolt(type));
   else if(f==="rating") fillList("ratinglist", quickRating(type));
@@ -700,8 +742,7 @@ function loadXlsx(){
   });
 }
 async function importFile(file){
-  const name=file.name.toLowerCase(), out=$("#copystate");
-  const say=m=>{ out.textContent=m; setTimeout(()=>{ out.textContent=""; },8000); };
+  const name=file.name.toLowerCase();
   try{
     let info={site:"",date:"",by:"",notes:""}, rows;
     if(name.endsWith(".json")){
@@ -736,19 +777,21 @@ const eqPanel=eqbody.closest("section")||eqbody;
 eqPanel.addEventListener("dragover",e=>{ if([...e.dataTransfer.types].includes("Files")){ e.preventDefault(); } });
 eqPanel.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f){ e.preventDefault(); importFile(f); } });
 /* ------------------------------------------------ getting it out */
+/* the one status line, under the drawing's bar: imports and exports report
+   here. Only the timer that wrote the current message may clear it, so an
+   earlier message's timeout never wipes a later one */
+let sayN=0;
+function say(m, keep){
+  const out=$("#copystate"), n=++sayN; out.textContent=m;
+  if(!keep) setTimeout(()=>{ if(n===sayN) out.textContent=""; },8000);
+}
 /* Four files, each written from the table by the engine. Inside the
    claude.ai viewer a page cannot download by itself and the viewer's save
    prompt does it; opened as a file, the browser's own download does. */
 function fileName(ext){
   return ((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+"."+ext;
 }
-let sayN=0;
 async function saveFile(name, text, mime, note){
-  const out=$("#copystate");
-  /* only the timer that wrote the current message may clear it, or an earlier
-     export's timeout wipes a later one's line */
-  const say=(m,keep)=>{ const n=++sayN; out.textContent=m;
-    if(!keep) setTimeout(()=>{ if(n===sayN) out.textContent=""; },8000); };
   const dl=(window.claude && typeof window.claude.use==="function") ? await window.claude.use("downloads") : null;
   if(dl){
     try{ await dl.save({filename:name, data:text}); say(`${name} saved${note?" — "+note:""}.`); }
@@ -768,14 +811,14 @@ async function saveFile(name, text, mime, note){
 }
 /* the model, laid out, ready for an exporter — or null when the table cannot be drawn */
 function currentSheet(){
-  const {items,order,errors}=buildModel(state.rows);
-  if(!order.length || errors.length) return null;
+  const {items,order}=buildModel(state.rows);
+  if(!order.length) return null;
   applyView(view_);
   return [items,order,layout(items,order)];
 }
 function exportSheet(ext, mime, note, make){
   const sheet=currentSheet();
-  if(!sheet){ $("#copystate").textContent="Nothing to export yet — fix the table first."; return; }
+  if(!sheet){ say("Nothing to export yet — add a row with an ID first."); return; }
   saveFile(fileName(ext), make(state.info,...sheet), mime, note);
 }
 $("#csv").addEventListener("click",()=>{
