@@ -76,5 +76,49 @@
       "drawing": "fresh",
       "impossible": true
     }
+  },
+  "T7_semicolon_csv": {
+    "actions": 5,
+    "drawing": "fresh",
+    "export": true,
+    "rowsBrought": 9,
+    "read": true
+  },
+  "W5_coupler_extra_supply": {
+    "outcome": {
+      "warnings": 1,
+      "errors": 0,
+      "drawing": "fresh",
+      "drawn": true,
+      "saysWhichIsNotDrawn": true
+    }
+  },
+  "W6_coupler_one_end": {
+    "outcome": {
+      "warnings": 1,
+      "errors": 0,
+      "drawing": "fresh",
+      "export": true,
+      "drawn": true,
+      "grabbable": true,
+      "saysOpenEnded": true
+    }
+  },
+  "W7_decoy_id_column": {
+    "outcome": {
+      "rowsBrought": 4,
+      "boundToTheRightColumn": true,
+      "errors": 0,
+      "drawing": "fresh"
+    }
+  },
+  "W8_prototype_supply": {
+    "outcome": {
+      "errors": 1,
+      "drawing": "fresh",
+      "export": true,
+      "rowStillDrawn": true,
+      "saysUnknown": true
+    }
   }
 }

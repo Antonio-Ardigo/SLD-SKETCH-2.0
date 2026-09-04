@@ -31,8 +31,12 @@ export function readWorkbook(file) {
       info[k] = String(v).trim();
     }
   }
-  if (!wb.Sheets["Equipment"]) throw new Error(`${file}: no 'Equipment' sheet (found ${wb.SheetNames.join(", ")})`);
-  const table = XLSX.utils.sheet_to_json(wb.Sheets["Equipment"], { header: 1, defval: "", raw: false });
+  /* the Equipment sheet if the workbook has one, else the first — the page has
+     always fallen back like this, and demanding the name here meant the same
+     workbook imported in the browser and threw on the command line */
+  const ws = wb.Sheets["Equipment"] || wb.Sheets[wb.SheetNames[0]];
+  if (!ws) throw new Error(`${file}: the workbook has no sheets`);
+  const table = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: false });
   return { info, rows: tableToRows(table), sheets: wb.SheetNames };
 }
 
