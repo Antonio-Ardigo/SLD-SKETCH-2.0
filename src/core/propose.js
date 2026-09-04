@@ -5,13 +5,15 @@
  * row's values and the page writes them into the table. Only that row, only
  * at that moment: afterwards it is an ordinary row and every cell is edited
  * as usual. Nothing here reads or changes connectivity (constitution §2): the
- * supply is the drop target or the neighbour's supply, the voltage is a label
- * inferred from that supply's label, the protection the usual device.
+ * supply is the drop target, else the best supply on the sheet for that Type
+ * (supplies.js), else the neighbour's; the voltage is a label inferred from
+ * that supply's label, the protection the usual device.
  *
  *   proposeRow(items, order, { type, targetId, sibling })
  *     → { id, type, desc, rating, voltage, prot, from, notes, proposed: [field…] }
  */
 import { MV_INCOMER, MV_BUSBAR, RMU, TRANSFORMER, LV_BUSBAR, MCC, FEEDER, GENERATOR, ALIASES } from "./types.js";
+import { defaultSupply } from "./supplies.js";
 
 /* the prefix of an auto-numbered ID, per Type label */
 export const TYPE_PREFIX = {
@@ -113,13 +115,19 @@ export function proposeProt(type, supply) {
  * Propose a whole row. `items`/`order` is the current model (buildModel of the
  * rows on the sheet); `type` the Type label chosen (may be ""); `targetId` the
  * supply the item was dropped on (""); `sibling` the row above, whose supply
- * is proposed when there is no target.
+ * is proposed when there is no target and no Type to reason from.
  */
 export function proposeRow(items, order, { type = "", targetId = "", sibling = null } = {}) {
   const row = { id: "", type, desc: "", rating: "", voltage: "", prot: "", from: "", notes: "", proposed: [] };
   const mark = f => { if (row[f] && !row.proposed.includes(f)) row.proposed.push(f); };
 
-  row.from = targetId || (sibling && sibling.from ? sibling.from.trim() : "");
+  const canon = ALIASES[String(type).trim().toLowerCase().replace(/\s+/g, " ")] || null;
+  /* the drop target if there was one; else the best supply on the sheet for
+     this Type, so the new row lands where it belongs; else, with no Type to
+     reason from, the row above's supply */
+  row.from = targetId
+    || (canon ? defaultSupply(items, order, canon) : "")
+    || (sibling && sibling.from ? sibling.from.trim() : "");
   mark("from");
   const supplyId = row.from.split(",").map(s => s.trim()).filter(Boolean)[0] || "";
   const supply = supplyId && items[supplyId] ? items[supplyId] : null;

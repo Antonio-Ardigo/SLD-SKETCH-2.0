@@ -76,6 +76,12 @@ try {
   check("drawing rendered", await evaluate(`!!document.querySelector('#sheet svg')`));
   check("Feeds from has the ID picker", await evaluate(`document.querySelector('[data-f="from"]').getAttribute('list')`) === "idlist");
   check("ID list holds the sheet's IDs", await evaluate(`document.querySelectorAll('#idlist option').length`) >= 7);
+  /* the picker orders the sheet's IDs by what can feed the row: F1 is a feeder,
+     so its LV board leads and the MV incomer that cannot feed it is last */
+  await evaluate(`document.querySelector('tr[data-i="4"] [data-f="from"]').dispatchEvent(new FocusEvent('focusin',{bubbles:true}))`);
+  const idlist = await evaluate(`JSON.stringify([...document.querySelectorAll('#idlist option')].map(o=>o.value+'|'+o.label))`);
+  check("the ID list is ordered by what can feed the row", /^\["BB1\|LV Busbar · Main LV board".*"MV1\|MV Incomer · Utility supply — cannot feed a Feeder"\]$/.test(idlist), idlist);
+  check("the row's own ID is not offered", !JSON.parse(idlist).some(o => o.startsWith("F1|")), idlist);
 
   /* quick values follow the row's type */
   await evaluate(`document.querySelector('tr[data-i="2"] [data-f="voltage"]').dispatchEvent(new FocusEvent('focusin',{bubbles:true})); document.querySelectorAll('#voltlist option').length`);
@@ -172,7 +178,10 @@ try {
      s.value='Transformer'; s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   await sleep(400);
   const typed = await evaluate(`JSON.stringify(state.rows[state.rows.length-1])`);
-  check("choosing a Type proposes ID, protection and voltage", /"id":"TX\d+".*"prot":"CB"/.test(typed), typed);
+  /* the Type moves the row to where it belongs: a transformer sits on the MV
+     gear, not on the LV board the row above happened to name */
+  check("choosing a Type proposes the supply, ID, protection and voltage",
+    /"id":"TX\d+".*"voltage":"11\/0.4 kV".*"from":"RMU1".*"prot":"Fuse-switch"/.test(typed), typed);
   check("the proposal never leaves the page", !(await evaluate(`rowsToCsv(state.rows)`)).includes("_p"));
   await evaluate(`(function(){ const p=document.querySelector('#preset'); p.value='1'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   await sleep(400);

@@ -30,7 +30,12 @@ Fit / 100 % / − / + (or ctrl+wheel, the keys 0, 1, −, +) to zoom, so a
 2500 px site stays reachable end to end.
 
 Filling the table in the page: **Feeds from** offers the IDs already on the
-sheet (type `BB1, ` and it offers the second supply); **Voltage** and
+sheet, ordered by what can actually feed the row — the usual supplies first
+(a feeder is offered the LV board, a transformer the MV gear), then what
+merely draws, then what the reader would call impossible, each saying what it
+is and where it is a stretch. Nothing is hidden: the order is the advice.
+Type `BB1, ` and it offers the second supply, preferring another board of the
+same kind. **Voltage** and
 **Rating** offer standard values for the row's type (11 kV, 400 V, 11/0.4 kV,
 1000 kVA, 250 A, 55 kW, …); choosing a **Type** fills the usual Protection if
 the cell is empty. `Enter` moves down a row (a new one after the last),
@@ -48,7 +53,9 @@ drop writes a row, nothing else.
 **A new row comes pre-filled.** However you add it — a drop, a palette chip,
 **+ Add row**, `Enter` on the last row — the engine proposes what it can and
 writes it into the table: the ID (numbered from the type: `TX3`, `F12`), the
-supply (the drop target, or the supply of the row above), the usual
+supply (the drop target, else the best supply on the sheet for that Type — the
+last LV board for a feeder, the last MV board for a transformer — so the item
+lands where it belongs instead of at the edge of the drawing), the usual
 protection, and the voltage read off that supply (a transformer on an 11 kV
 board gets `11/0.4 kV`, a feeder on a 400 V board `400 V`, a board under a
 `33/11 kV` transformer `11 kV`). Proposed cells are tinted; the tint goes as
@@ -304,7 +311,8 @@ the drawing obey; `docs/PLAN.md` is the roadmap.
 
 ```
 vendor/       xlsx.full.min.js (SheetJS) and fonts/ (Archivo, IBM Plex Mono)
-src/core/     the engine, as ES modules: types, diagnostics, geometry, model (the
+src/core/     the engine, as ES modules: types, supplies (which supply can feed
+              which row), diagnostics, geometry, model (the
               reader), graph, rules/ + rank + facts (what the engine infers),
               layout, svg (primitives and symbols), symbols/registry (one entry
               per symbol: legend and palette), render, dxf, scene + check (the

@@ -1,5 +1,6 @@
 import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, PROT_ALIASES, TYPE_VARIANTS } from "./types.js";
 import { genFeeds } from "./geometry.js";
+import { canSupply, isRoot } from "./supplies.js";
 import { txBoard } from "./layout.js";
 import { makeDiag } from "./diagnostics.js";
 
@@ -88,15 +89,13 @@ function buildModel(rows){
     }
     if([TRANSFORMER].includes(it.type) && !it.parents.length)
       warn("TX_NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn with an open supply terminal.`);
-    else if(!it.parents.length && ![MV_INCOMER,GENERATOR].includes(it.type))
+    else if(!it.parents.length && !isRoot(it.type))
       warn("NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn without a supply.`);
     /* a supply that cannot feed this row: the row draws floating */
     for(const p of it.parents){
       if(!items[p]) continue;
       const pt=items[p].type;
-      if([PUMP,BUS_COUPLER].concat(TERMINALS).includes(pt)
-         || (pt===FEEDER && ![LV_BUSBAR,MCC].includes(it.type))
-         || (pt===MV_INCOMER && [PUMP,FEEDER,MCC,LV_BUSBAR].concat(TERMINALS).includes(it.type)))
+      if(!canSupply(pt,it.type))
         warn("IMPOSSIBLE_SUPPLY",[id,p],`"${id}" feeds from "${p}" (${pt}) — a ${pt} cannot supply a ${it.type}; drawn floating.`);
     }
     if(it.type===MCC || it.type===PUMP)

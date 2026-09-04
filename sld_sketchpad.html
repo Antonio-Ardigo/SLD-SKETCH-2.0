@@ -1087,6 +1087,108 @@ function tierOffsets(depth, links, hung){
   return off;
 }
 
+/* Which supply can feed which row — one table, read by the reader, the
+ * proposal and the page's Feeds From picker.
+ *
+ * The knowledge used to sit in two places: model.js judged an impossible
+ * supply, and the picker judged nothing at all and offered every ID on the
+ * sheet as an equal. Here it is once, as a pure function of two canonical
+ * types (constitution §2: nothing below reads or writes topology — it only
+ * says what a supply would mean if the surveyor chose it).
+ *
+ *   supplyRank(parentType, childType) → 2 usual | 1 possible | 0 impossible
+ *   canSupply(parentType, childType)  → the reader's predicate (rank > 0)
+ *   supplyCandidates(items, order, childType, opts) → every ID, best first
+ *   defaultSupply(items, order, childType) → the one a new row starts on
+ */
+
+/* the usual supplies of each row type, best first: what a surveyor would
+   reach for, and what the engine has nothing to say about */
+const USUAL_SUPPLIES = {
+  [MV_INCOMER]:  [],                                                  /* a root: the utility is off the sheet */
+  [MV_BUSBAR]:   [MV_INCOMER, TRANSFORMER, MV_BUSBAR, RMU, GENERATOR],
+  [RMU]:         [MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, GENERATOR],
+  [TRANSFORMER]: [MV_BUSBAR, RMU, LV_BUSBAR, MV_INCOMER, GENERATOR],
+  [GENERATOR]:   [TRANSFORMER],                                       /* through its step-up; otherwise a root */
+  [LV_BUSBAR]:   [TRANSFORMER, FEEDER, LV_BUSBAR, MCC, GENERATOR],
+  [MCC]:         [LV_BUSBAR, MCC, TRANSFORMER],
+  [PUMP]:        [LV_BUSBAR, MCC, MV_BUSBAR, RMU, TRANSFORMER],
+  [FEEDER]:      [LV_BUSBAR, MCC, MV_BUSBAR, RMU],
+  [BUS_COUPLER]: [LV_BUSBAR, MV_BUSBAR, GENERATOR],
+  [CAPACITOR]:   [LV_BUSBAR, MV_BUSBAR, RMU, TRANSFORMER],
+  [EARTHING]:    [LV_BUSBAR, MV_BUSBAR, RMU, TRANSFORMER],
+  [ARRESTER]:    [LV_BUSBAR, MV_BUSBAR, RMU, TRANSFORMER],
+};
+
+/** How well a `parentType` supplies a `childType`: 2 usual, 1 possible, 0 impossible. */
+function supplyRank(parentType, childType){
+  if(!parentType || !childType) return 0;
+  /* rank 0 is the reader's own judgement, verbatim: these draw floating */
+  if([PUMP,BUS_COUPLER].concat(TERMINALS).includes(parentType)) return 0;
+  if(parentType===FEEDER && ![LV_BUSBAR,MCC].includes(childType)) return 0;
+  if(parentType===MV_INCOMER && [PUMP,FEEDER,MCC,LV_BUSBAR].concat(TERMINALS).includes(childType)) return 0;
+  return (USUAL_SUPPLIES[childType]||[]).includes(parentType) ? 2 : 1;
+}
+
+/** Can a `parentType` feed a `childType` at all? model.js's IMPOSSIBLE_SUPPLY. */
+function canSupply(parentType, childType){ return supplyRank(parentType, childType) > 0; }
+
+/* the types whose supply is off the sheet: the reader lets them stand with no
+   Feeds From, and a new one is proposed without a supply */
+const ROOT_TYPES = [MV_INCOMER, GENERATOR];
+
+/** Is `type` a root — an incomer or a generator, fed from outside the drawing? */
+function isRoot(type){ return ROOT_TYPES.includes(type); }
+
+/** The Type label a canonical type is written with ("lv busbar" → "LV Busbar"). */
+function typeLabel(type){
+  const e = TYPE_LABELS.find(t => t[1]===type && !t[2]);
+  return e ? e[0] : String(type||"");
+}
+
+function candidateLabel(item, rank, childType){
+  const head = typeLabel(item.type) + (item.desc ? " · " + item.desc : "");
+  if(rank===2) return head;
+  const kid = typeLabel(childType);
+  return head + (rank===1 ? ` — unusual for a ${kid}` : ` — cannot feed a ${kid}`);
+}
+
+/**
+ * Every ID on the sheet as a possible supply for a new `childType`, best
+ * first: the usual supplies in the order of the table above, then what is
+ * merely possible, then what the reader would call impossible. Nothing is
+ * hidden — the order is the advice. Within one supply type the bottom-most
+ * row wins, because a survey is filled downwards and the newest board is
+ * the one being worked on.
+ *
+ *   exclude    — IDs to leave out (the row's own, the ones already named)
+ *   sameKindAs — a canonical type to promote within its rank: the second end
+ *                of a bus coupler, or the second link of a ring RMU
+ */
+function supplyCandidates(items, order, childType, { exclude = [], sameKindAs = null } = {}){
+  const skip = new Set(exclude.map(s => String(s||"").trim()).filter(Boolean));
+  const usual = USUAL_SUPPLIES[childType] || [];
+  const out = [];
+  order.forEach((id, at) => {
+    if(skip.has(id)) return;
+    const it = items[id];
+    if(!it) return;
+    const rank = supplyRank(it.type, childType), pref = usual.indexOf(it.type);
+    out.push({ id, type: it.type, rank, label: candidateLabel(it, rank, childType),
+      _kin: sameKindAs && it.type===sameKindAs ? 0 : 1,
+      _pref: pref<0 ? usual.length : pref, _at: at });
+  });
+  out.sort((a,b) => b.rank-a.rank || a._kin-b._kin || a._pref-b._pref || b._at-a._at);
+  return out.map(({id,type,rank,label}) => ({id,type,rank,label}));
+}
+
+/** The supply a new `childType` starts on: the best candidate that can feed it, else "". */
+function defaultSupply(items, order, childType){
+  if(isRoot(childType)) return "";        /* its supply is off the sheet */
+  const best = supplyCandidates(items, order, childType).find(c => c.rank>0);
+  return best ? best.id : "";
+}
+
 /* ------------------------------------------------ model helpers */
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
   .replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -1172,15 +1274,13 @@ function buildModel(rows){
     }
     if([TRANSFORMER].includes(it.type) && !it.parents.length)
       warn("TX_NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn with an open supply terminal.`);
-    else if(!it.parents.length && ![MV_INCOMER,GENERATOR].includes(it.type))
+    else if(!it.parents.length && !isRoot(it.type))
       warn("NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn without a supply.`);
     /* a supply that cannot feed this row: the row draws floating */
     for(const p of it.parents){
       if(!items[p]) continue;
       const pt=items[p].type;
-      if([PUMP,BUS_COUPLER].concat(TERMINALS).includes(pt)
-         || (pt===FEEDER && ![LV_BUSBAR,MCC].includes(it.type))
-         || (pt===MV_INCOMER && [PUMP,FEEDER,MCC,LV_BUSBAR].concat(TERMINALS).includes(it.type)))
+      if(!canSupply(pt,it.type))
         warn("IMPOSSIBLE_SUPPLY",[id,p],`"${id}" feeds from "${p}" (${pt}) — a ${pt} cannot supply a ${it.type}; drawn floating.`);
     }
     if(it.type===MCC || it.type===PUMP)
@@ -3309,8 +3409,9 @@ function draw(info, rows, { dxf = false, check = false, view = null } = {}) {
  * row's values and the page writes them into the table. Only that row, only
  * at that moment: afterwards it is an ordinary row and every cell is edited
  * as usual. Nothing here reads or changes connectivity (constitution §2): the
- * supply is the drop target or the neighbour's supply, the voltage is a label
- * inferred from that supply's label, the protection the usual device.
+ * supply is the drop target, else the best supply on the sheet for that Type
+ * (supplies.js), else the neighbour's; the voltage is a label inferred from
+ * that supply's label, the protection the usual device.
  *
  *   proposeRow(items, order, { type, targetId, sibling })
  *     → { id, type, desc, rating, voltage, prot, from, notes, proposed: [field…] }
@@ -3416,13 +3517,19 @@ function proposeProt(type, supply) {
  * Propose a whole row. `items`/`order` is the current model (buildModel of the
  * rows on the sheet); `type` the Type label chosen (may be ""); `targetId` the
  * supply the item was dropped on (""); `sibling` the row above, whose supply
- * is proposed when there is no target.
+ * is proposed when there is no target and no Type to reason from.
  */
 function proposeRow(items, order, { type = "", targetId = "", sibling = null } = {}) {
   const row = { id: "", type, desc: "", rating: "", voltage: "", prot: "", from: "", notes: "", proposed: [] };
   const mark = f => { if (row[f] && !row.proposed.includes(f)) row.proposed.push(f); };
 
-  row.from = targetId || (sibling && sibling.from ? sibling.from.trim() : "");
+  const canon = ALIASES[String(type).trim().toLowerCase().replace(/\s+/g, " ")] || null;
+  /* the drop target if there was one; else the best supply on the sheet for
+     this Type, so the new row lands where it belongs; else, with no Type to
+     reason from, the row above's supply */
+  row.from = targetId
+    || (canon ? defaultSupply(items, order, canon) : "")
+    || (sibling && sibling.from ? sibling.from.trim() : "");
   mark("from");
   const supplyId = row.from.split(",").map(s => s.trim()).filter(Boolean)[0] || "";
   const supply = supplyId && items[supplyId] ? items[supplyId] : null;
@@ -3755,9 +3862,12 @@ function proposedRow(type, targetId, sibling){
    blank row: only empty cells and cells still marked stay the engine's */
 function refillProposal(row){
   const [items,order]=currentModel();
-  const p=proposeRow(items,order,{type:row.type,targetId:row.from.trim()});
   const marks=new Set(row._p||[]);
-  for(const f of ["id","prot","voltage"]){
+  /* a supply the surveyor typed is kept and everything follows it; one still
+     marked is re-proposed for the Type just chosen */
+  const kept=row.from.trim() && !marks.has("from") ? row.from.trim() : "";
+  const p=proposeRow(items,order,{type:row.type,targetId:kept});
+  for(const f of ["from","id","prot","voltage"]){
     if(!p[f]) continue;
     if(row[f].trim() && !marks.has(f)) continue;    /* the surveyor typed it: leave it */
     if(f==="id" && row.id.trim() && !marks.has("id")) continue;
@@ -3864,24 +3974,41 @@ function quickRating(type){
   if(type==="Feeder") return QUICK.rating.feeder;
   return QUICK.rating.board.concat(QUICK.rating.tx);
 }
+/* values are plain strings, or {value,label} when the option says what it is */
 function fillList(id, values){
-  $("#"+id).innerHTML=values.map(v=>`<option value="${esc(v)}"></option>`).join("");
+  $("#"+id).innerHTML=values.map(v=>typeof v==="string"
+    ? `<option value="${esc(v)}"></option>`
+    : `<option value="${esc(v.value)}" label="${esc(v.label)}"></option>`).join("");
 }
-/* the Feeds from picker: every ID on the sheet except the row's own; typing
-   "BB1, " then offers "BB1, <id>" for the second supply */
+/* the Feeds from picker: every ID on the sheet except the row's own, ordered
+   by what can feed this row's Type — the usual supplies first, then what is
+   merely possible, then what cannot (supplies.js). Nothing is hidden; the
+   order and the labels are the advice. Typing "BB1, " then offers
+   "BB1, <id>" for the second supply, preferring another board of the same
+   kind (the far end of a coupler, the second link of a ring). */
 let idListFor=null;
 function refreshIdList(input){
   const ids=state.rows.map(r=>r.id.trim()).filter(Boolean);
-  let own="", prefix="";
+  let own="", prefix="", type="";
   if(input){
-    const tr=input.closest("tr"); own=(state.rows[+tr.dataset.i]||{}).id.trim();
+    const tr=input.closest("tr"), row=state.rows[+tr.dataset.i]||{};
+    own=(row.id||"").trim(); type=(row.type||"").trim();
     const v=input.value; const k=v.lastIndexOf(",");
     if(k>=0) prefix=v.slice(0,k+1).replace(/\s*$/," ");
   }
-  const key=prefix+"|"+own+"|"+ids.join("|");
+  const key=type+"|"+prefix+"|"+own+"|"+ids.join("|");
   if(key===idListFor) return;
   idListFor=key;
-  fillList("idlist", ids.filter(i=>i!==own && !prefix.split(",").map(s=>s.trim()).includes(i)).map(i=>prefix+i));
+  const taken=prefix.split(",").map(s=>s.trim()).filter(Boolean);
+  const canon=ALIASES[type.toLowerCase().replace(/\s+/g," ")]||null;
+  if(!canon){   /* no Type yet, or the whole list for the drawing: plain IDs */
+    fillList("idlist", ids.filter(i=>i!==own && !taken.includes(i)).map(i=>prefix+i));
+    return;
+  }
+  const [items,order]=currentModel();
+  const first=taken.length&&items[taken[0]]?items[taken[0]].type:null;
+  fillList("idlist", supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
+    .map(c=>({value:prefix+c.id, label:c.label})));
 }
 eqbody.addEventListener("focusin",e=>{
   const f=e.target.dataset.f; if(!f) return;
@@ -3896,7 +4023,7 @@ eqbody.addEventListener("change",e=>{
   if(!row) return;
   /* choosing the Type of a row that is still a proposal fills the rest of it */
   refillProposal(row);
-  for(const f of ["id","prot","voltage"]){
+  for(const f of ["from","id","prot","voltage"]){
     const el=tr.querySelector(`[data-f="${f}"]`);
     if(el && el.value!==row[f]) el.value=row[f];
     if(el) el.classList.toggle("proposed",(row._p||[]).includes(f));
