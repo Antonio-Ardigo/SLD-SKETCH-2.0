@@ -1,0 +1,80 @@
+{
+  "T1_five_feeders": {
+    "actions": 10,
+    "drawing": "fresh",
+    "export": true,
+    "feedersOnBB1": 9
+  },
+  "T2_ten_rows_from_excel": {
+    "actions": 5,
+    "drawing": "fresh",
+    "export": true,
+    "rowsBrought": 10,
+    "tableKept": false
+  },
+  "T3_rename_board_with_ways": {
+    "actions": 1,
+    "drawing": "fresh",
+    "export": true,
+    "ways": 5,
+    "drawingWhileRenamed": "fresh"
+  },
+  "T4_fix_typo_supply": {
+    "actions": 1,
+    "drawing": "fresh",
+    "export": true,
+    "drawingWhileWrong": "fresh",
+    "exportWhileWrong": true,
+    "suggestion": true
+  },
+  "T5_move_feeder": {
+    "actions": 1,
+    "drawing": "fresh",
+    "export": true,
+    "movedTo": "BB2",
+    "byGesture": true
+  },
+  "T6_coupler_second_end": {
+    "actions": 2,
+    "drawing": "fresh",
+    "export": true,
+    "from": "BB1, BB2",
+    "typoProof": false
+  },
+  "W1_delete_board_with_ways": {
+    "outcome": {
+      "ways": 5,
+      "errors": 5,
+      "drawing": "fresh",
+      "export": true,
+      "orphansStillDrawn": false
+    }
+  },
+  "W2_case_mismatch_bb1": {
+    "outcome": {
+      "errors": 1,
+      "drawing": "fresh",
+      "export": true,
+      "suggestion": true
+    }
+  },
+  "W3_enter_x6_ids_only": {
+    "outcome": {
+      "rowsFedFromBB1WithNoType": 0,
+      "rowsTypedLikeTheOneAbove": 6,
+      "warnings": 0,
+      "errors": 0,
+      "drawing": "fresh"
+    }
+  },
+  "W4_drop_feeder_on_pump": {
+    "outcome": {
+      "written": "P1",
+      "refused": false,
+      "warnings": 1,
+      "errors": 0,
+      "drawing": "fresh",
+      "impossible": true
+    }
+  }
+}

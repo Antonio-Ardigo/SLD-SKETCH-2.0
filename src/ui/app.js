@@ -10,6 +10,8 @@ import { SVG } from "../core/svg.js";
 import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
 import { supplyCandidates } from "../core/supplies.js";
+import { renameReferences, canFollowRename } from "../core/edit.js";
+import { diagFromMessage, makeDiag } from "../core/diagnostics.js";
 import { R, PRESETS } from "./presets.generated.js";
 
 /* ------------------------------------------------ UI wiring */
@@ -71,20 +73,43 @@ function messageRow(msg){
   }
   return -1;
 }
-function showProblems(errors, warnings){
+/* the problems box: errors first, then warnings, each pointing at its row;
+   a diagnostic that carries a fix (an unknown supply with a likely ID) gets a
+   button that applies it — one click, and only that click, changes the table */
+function showProblems(diagnostics){
   const probs=$("#problems");
-  const line=(msg,cls)=>{
-    const i=messageRow(msg);
-    return `<div class="${cls}"${i>=0?` data-row="${i}"`:""}>${esc(msg)}</div>`;
+  const rowOf=d=>d.row!==undefined?d.row-1:messageRow(d.message);
+  const line=d=>{
+    const i=rowOf(d), cls=d.level==="error"?"err":"warn";
+    const fix=d.fix?` <button type="button" class="fix" data-fix="${esc(JSON.stringify(d.fix))}" title="Write ${esc(d.fix.to)} into the Feeds from of ${esc(d.fix.id)}">use ${esc(d.fix.to)}</button>`:"";
+    return `<div class="${cls}"${i>=0?` data-row="${i}"`:""}>${esc(d.message)}${fix}</div>`;
   };
-  probs.innerHTML=errors.map(e=>line(e,"err")).concat(warnings.map(w=>line(w,"warn"))).join("");
-  probs.hidden=!(errors.length||warnings.length);
+  const ordered=diagnostics.filter(d=>d.level==="error").concat(diagnostics.filter(d=>d.level!=="error"));
+  probs.innerHTML=ordered.map(line).join("");
+  probs.hidden=!ordered.length;
   for(const tr of eqbody.querySelectorAll("tr")) tr.classList.remove("err","warn");
-  const mark=(msgs,cls)=>{ for(const m of msgs){ const i=messageRow(m); const tr=eqbody.querySelector(`tr[data-i="${i}"]`); if(tr) tr.classList.add(cls); } };
-  mark(warnings,"warn"); mark(errors,"err");
+  for(const d of ordered){ const tr=eqbody.querySelector(`tr[data-i="${rowOf(d)}"]`); if(tr) tr.classList.add(d.level==="error"?"err":"warn"); }
+}
+$("#problems").addEventListener("click",e=>{
+  const b=e.target.closest("button.fix"); if(!b) return;
+  e.stopPropagation();
+  const fix=JSON.parse(b.dataset.fix), i=rowIndexOf(fix.id); if(i<0) return;
+  snapshot(true);
+  const row=state.rows[i];
+  row[fix.field]=row[fix.field].split(",").map(s=>s.trim()).filter(Boolean).map(t=>t===fix.from?fix.to:t).join(", ");
+  clearMark(row,fix.field);
+  const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="${fix.field}"]`); if(el){ el.value=row[fix.field]; el.classList.remove("proposed"); }
+  redraw(); persist();
+});
+/* a stamp of what the drawing was made from, so a test can tell a fresh
+   drawing from a stale one without guessing (the baseline reads it) */
+function modelRev(){
+  let h=5381; const s=JSON.stringify(state.rows.map(r=>[r.id,r.type,r.desc,r.rating,r.voltage,r.prot,r.from,r.notes]))+JSON.stringify(view_);
+  for(let i=0;i<s.length;i++) h=((h*33)^s.charCodeAt(i))>>>0;
+  return h.toString(36);
 }
 function redraw(){
-  const {items,order,errors,warnings}=buildModel(state.rows);
+  const {items,order,warnings,diagnostics}=buildModel(state.rows);
   refreshIdList();
   if(!order.length){
     $("#sheet").innerHTML="";
@@ -95,12 +120,17 @@ function redraw(){
     syncView();
     return;
   }
-  showProblems(errors, warnings);
-  if(errors.length) return; /* keep the last good drawing on screen */
+  /* an error never withholds the drawing: the row it names floats or is
+     dropped, and the message says so (constitution §6) */
   applyView(view_);
   const width=layout(items,order);
+  const said=warnings.length;
   const svgStr=render(state.info,items,order,width,warnings);
+  /* what the drawing itself had to say (a coupler it could not place) joins the box */
+  for(const msg of warnings.slice(said)) diagnostics.push(diagFromMessage(msg)||makeDiag("COUPLER_INVALID",[],msg));
+  showProblems(diagnostics);
   $("#sheet").innerHTML=svgStr;
+  $("#sheet").dataset.rev=modelRev();
   decorateSheet();
   syncView();
 }
@@ -134,7 +164,10 @@ function selectId(id){
 }
 /* what a drop lands on by preference: the things a row can feed from */
 const DROP_TARGETS=["lv busbar","mv busbar","rmu","mcc","transformer","feeder","generator","mv incomer"];
-function symbolAt(clientX,clientY){
+/* when the point is where something will be fed FROM, a bar beats the way
+   that leaves it at that very point (a feeder's dot sits on its board) */
+const SUPPLY_ORDER=["lv busbar","mv busbar","rmu","mcc","transformer","generator","mv incomer","feeder"];
+function symbolAt(clientX,clientY,asSupply){
   /* the groups under the point, topmost first; prefer one whose symbol
      itself (not just its padded hit area) contains the point, then a
      supply-side kind, then the topmost */
@@ -154,7 +187,9 @@ function symbolAt(clientX,clientY){
   };
   /* the smallest symbol containing the point wins: a bar over the MCC
      whose enclosure starts at that bar */
-  const hits=groups.filter(inside).sort((a,b)=>{ const A=box(a), B=box(b); return (A.w+8)*(A.h+8)-(B.w+8)*(B.h+8); });
+  const area=g=>{ const A=box(g); return (A.w+8)*(A.h+8); };
+  const pref=g=>{ const i=SUPPLY_ORDER.indexOf(g.dataset.kind); return i<0?SUPPLY_ORDER.length:i; };
+  const hits=groups.filter(inside).sort((a,b)=>(asSupply?pref(a)-pref(b):0) || area(a)-area(b));
   return hits[0] || groups.find(g=>DROP_TARGETS.includes(g.dataset.kind)) || groups[0];
 }
 function rowIndexOf(id){ return state.rows.findIndex(r=>r.id.trim()===id); }
@@ -191,8 +226,13 @@ function refillProposal(row){
   const kept=row.from.trim() && !marks.has("from") ? row.from.trim() : "";
   const p=proposeRow(items,order,{type:row.type,targetId:kept});
   for(const f of ["from","id","prot","voltage"]){
-    if(!p[f]) continue;
     if(row[f].trim() && !marks.has(f)) continue;    /* the surveyor typed it: leave it */
+    if(!p[f]){                    /* the new Type proposes nothing here: an
+                                     earlier proposal must not be left behind
+                                     (a generator has no supply and no device) */
+      if(f!=="id" && marks.has(f)){ row[f]=""; marks.delete(f); }
+      continue;
+    }
     if(f==="id" && row.id.trim() && !marks.has("id")) continue;
     row[f]=p[f]; marks.add(f);
   }
@@ -247,14 +287,14 @@ function buildPalette(){
   vp.addEventListener("dragover",e=>{
     if(!isChip(e)) return;
     e.preventDefault(); e.dataTransfer.dropEffect="copy";
-    setOver(symbolAt(e.clientX,e.clientY));
+    setOver(symbolAt(e.clientX,e.clientY,true));
   });
   vp.addEventListener("dragleave",e=>{ if(e.target===vp){ vp.classList.remove("dropping"); setOver(null); } });
   vp.addEventListener("drop",e=>{
     if(!isChip(e)) return;
     e.preventDefault();
     const type=e.dataTransfer.getData("text/sld-type");
-    const g=symbolAt(e.clientX,e.clientY);
+    const g=symbolAt(e.clientX,e.clientY,true);
     vp.classList.remove("dropping"); setOver(null);
     addRowFor(type, g?g.dataset.id:"");
   });
@@ -352,8 +392,24 @@ function refreshIdList(input){
   fillList("idlist", supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
     .map(c=>({value:prefix+c.id, label:c.label})));
 }
+/* renaming an ID: the name it had when the cell was entered, so that on
+   commit every Feeds From that named it can follow (src/core/edit.js) */
+let idBefore="";
+eqbody.addEventListener("change",e=>{
+  if(e.target.dataset.f!=="id") return;
+  const i=+e.target.closest("tr").dataset.i, row=state.rows[i]; if(!row) return;
+  const before=idBefore.trim(), after=row.id.trim(); idBefore=after;
+  if(!before || before===after) return;
+  if(!canFollowRename(state.rows,i,after)) return;   /* another row owns that ID: nothing follows */
+  /* no snapshot of its own: the typing that changed the ID already took one,
+     so a single undo brings back the old name and its references together */
+  if(!renameReferences(state.rows,before,after)) return;
+  for(const [k,r] of state.rows.entries()){ const el=eqbody.querySelector(`tr[data-i="${k}"] [data-f="from"]`); if(el && el.value!==r.from) el.value=r.from; }
+  redraw(); persist();
+});
 eqbody.addEventListener("focusin",e=>{
   const f=e.target.dataset.f; if(!f) return;
+  if(f==="id") idBefore=(state.rows[+e.target.closest("tr").dataset.i]||{}).id||"";
   const type=(state.rows[+e.target.closest("tr").dataset.i]||{}).type||"";
   if(f==="voltage") fillList("voltlist", quickVolt(type));
   else if(f==="rating") fillList("ratinglist", quickRating(type));
@@ -379,7 +435,7 @@ eqbody.addEventListener("keydown",e=>{
   const tr=e.target.closest("tr"), i=+tr.dataset.i;
   if(e.key==="Enter" && !e.altKey && !e.ctrlKey && !e.metaKey){
     e.preventDefault();
-    if(i===state.rows.length-1){ addRow(); focusCell(state.rows.length-1, f==="notes"?"id":f); }
+    if(i===state.rows.length-1){ addRow(true); focusCell(state.rows.length-1, f==="notes"?"id":f); }
     else focusCell(i+1, f);
   } else if(e.altKey && (e.key==="ArrowUp"||e.key==="ArrowDown")){
     e.preventDefault();
@@ -496,14 +552,41 @@ function syncView(){
     view.sl=view.st=null;
   }
 }
+/* re-wire a row from the drawing: its Feeds From becomes the target (or,
+   with `also`, gains it as a further supply). The one column that carries
+   topology is the one written — nothing else moves (constitution §1). */
+function rewire(id, targetId, also){
+  const i=rowIndexOf(id); if(i<0 || !targetId || targetId===id) return false;
+  const row=state.rows[i];
+  const have=row.from.split(",").map(s=>s.trim()).filter(Boolean);
+  const next=also ? (have.includes(targetId)?have:have.concat([targetId])) : [targetId];
+  if(next.join(", ")===have.join(", ")) return false;
+  snapshot(true);
+  row.from=next.join(", ");
+  clearMark(row,"from");
+  const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="from"]`); if(el){ el.value=row.from; el.classList.remove("proposed"); }
+  redraw(); persist(); selectId(id);
+  return true;
+}
 (function bindViewer(){
   const pointers=new Map();
   const onScrollbar=e=>e.offsetX>viewport.clientWidth || e.offsetY>viewport.clientHeight;
+  /* a drag that starts on a symbol moves its connection, not the sheet:
+     the symbol under the pointer while dragging is the supply it will be
+     fed from; panning starts on empty canvas */
+  let over=null;
+  const setOver=g=>{ if(over===g) return; if(over) over.classList.remove("over"); over=g; if(over) over.classList.add("over"); };
+  const endWire=p=>{
+    setOver(null); viewport.classList.remove("wiring");
+    if(p && p.grab){ const g=document.querySelector(`#sheet svg g[data-id="${CSS.escape(p.grab)}"]`); if(g) g.classList.remove("moving"); }
+  };
   viewport.addEventListener("pointerdown",e=>{
     if(e.button!==0 || onScrollbar(e)) return;
     e.preventDefault();
     try{ viewport.setPointerCapture(e.pointerId); }catch(err){}   /* synthetic events have no pointer to capture */
-    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY});
+    const g=symbolAt(e.clientX,e.clientY);
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,grab:g?g.dataset.id:null,mode:null});
+    if(pointers.size>1) for(const q of pointers.values()){ if(q.mode==="wire") endWire(q); q.mode="pan"; }   /* two fingers: a pinch, never a wire */
     viewport.classList.add("dragging");
     viewport.focus({preventScroll:true});
   });
@@ -511,8 +594,17 @@ function syncView(){
     const p=pointers.get(e.pointerId);
     if(!p) return;
     if(pointers.size===1){
-      viewport.scrollLeft-=e.clientX-p.x; viewport.scrollTop-=e.clientY-p.y;
-      view.fitted=false;
+      if(!p.mode && Math.hypot(e.clientX-p.x0,e.clientY-p.y0)>=6){
+        p.mode=p.grab?"wire":"pan";
+        if(p.mode==="wire"){ viewport.classList.add("wiring"); const g=document.querySelector(`#sheet svg g[data-id="${CSS.escape(p.grab)}"]`); if(g) g.classList.add("moving"); }
+      }
+      if(p.mode==="wire"){
+        const g=symbolAt(e.clientX,e.clientY,true);
+        setOver(g && g.dataset.id!==p.grab ? g : null);
+      } else if(p.mode==="pan"){
+        viewport.scrollLeft-=e.clientX-p.x; viewport.scrollTop-=e.clientY-p.y;
+        view.fitted=false;
+      }
     } else if(pointers.size===2){    /* pinch */
       const [a,b]=[...pointers.values()];
       const before=Math.hypot(a.x-b.x,a.y-b.y);
@@ -528,6 +620,12 @@ function syncView(){
     const p=pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
     if(!pointers.size) viewport.classList.remove("dragging");
+    if(p && p.mode==="wire"){
+      const g=e.type==="pointerup" ? symbolAt(e.clientX,e.clientY,true) : null;
+      endWire(p);
+      if(g && g.dataset.id!==p.grab) rewire(p.grab, g.dataset.id, e.shiftKey);   /* released on nothing: nothing happens */
+      return;
+    }
     /* a press that did not pan is a click: select the symbol under it */
     if(e.type==="pointerup" && p && Math.hypot(e.clientX-p.x0,e.clientY-p.y0)<4){
       const g=symbolAt(e.clientX,e.clientY);
@@ -605,10 +703,16 @@ function replaceState(s){
   state=s; view.fitted=true;
   writeInfoInputs(); rebuildTable(); redraw(); persist();
 }
-function addRow(){
+/* a new row at the end. From the keyboard (Enter on the last row) it repeats
+   the row above — same Type, same supply, the engine's ID, device and
+   voltage, all tinted — because a run of feeders on one board or pumps on
+   one MCC is what a survey mostly is. The + Add row button keeps the blank
+   row, for a deliberately different item. */
+function addRow(repeat){
   snapshot(true);
   const sibling=state.rows.length?state.rows[state.rows.length-1]:null;
-  state.rows.push(proposedRow("","",sibling));
+  const again=repeat && sibling && sibling.type.trim();
+  state.rows.push(again ? proposedRow(sibling.type.trim(), sibling.from.trim(), null) : proposedRow("","",sibling));
   rebuildTable(); redraw(); persist();
 }
 
@@ -695,8 +799,7 @@ function loadXlsx(){
   });
 }
 async function importFile(file){
-  const name=file.name.toLowerCase(), out=$("#copystate");
-  const say=m=>{ out.textContent=m; setTimeout(()=>{ out.textContent=""; },8000); };
+  const name=file.name.toLowerCase();
   try{
     let info={site:"",date:"",by:"",notes:""}, rows;
     if(name.endsWith(".json")){
@@ -731,6 +834,14 @@ const eqPanel=eqbody.closest("section")||eqbody;
 eqPanel.addEventListener("dragover",e=>{ if([...e.dataTransfer.types].includes("Files")){ e.preventDefault(); } });
 eqPanel.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f){ e.preventDefault(); importFile(f); } });
 /* ------------------------------------------------ getting it out */
+/* the one status line, under the drawing's bar: imports and exports report
+   here. Only the timer that wrote the current message may clear it, so an
+   earlier message's timeout never wipes a later one */
+let sayN=0;
+function say(m, keep){
+  const out=$("#copystate"), n=++sayN; out.textContent=m;
+  if(!keep) setTimeout(()=>{ if(n===sayN) out.textContent=""; },8000);
+}
 /* Four files, each written from the table by the engine. Inside the
    claude.ai viewer a page cannot download by itself and the viewer's save
    prompt does it; opened as a file, the browser's own download does. */
@@ -738,8 +849,6 @@ function fileName(ext){
   return ((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+"."+ext;
 }
 async function saveFile(name, text, mime, note){
-  const out=$("#copystate");
-  const say=(m,keep)=>{ out.textContent=m; if(!keep) setTimeout(()=>{ out.textContent=""; },8000); };
   const dl=(window.claude && typeof window.claude.use==="function") ? await window.claude.use("downloads") : null;
   if(dl){
     try{ await dl.save({filename:name, data:text}); say(`${name} saved${note?" — "+note:""}.`); }
@@ -759,14 +868,14 @@ async function saveFile(name, text, mime, note){
 }
 /* the model, laid out, ready for an exporter — or null when the table cannot be drawn */
 function currentSheet(){
-  const {items,order,errors}=buildModel(state.rows);
-  if(!order.length || errors.length) return null;
+  const {items,order}=buildModel(state.rows);
+  if(!order.length) return null;
   applyView(view_);
   return [items,order,layout(items,order)];
 }
 function exportSheet(ext, mime, note, make){
   const sheet=currentSheet();
-  if(!sheet){ $("#copystate").textContent="Nothing to export yet — fix the table first."; return; }
+  if(!sheet){ say("Nothing to export yet — add a row with an ID first."); return; }
   saveFile(fileName(ext), make(state.info,...sheet), mime, note);
 }
 $("#csv").addEventListener("click",()=>{

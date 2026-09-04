@@ -56,16 +56,48 @@ table by the engine, never copied off the screen.
 
 **A new row comes pre-filled.** However you add it — a drop, a palette chip,
 **+ Add row**, `Enter` on the last row — the engine proposes what it can and
-writes it into the table: the ID (numbered from the type: `TX3`, `F12`), the
+writes it into the table. `Enter` on the last row **repeats the row above**:
+same Type, same supply, the next ID, the usual device and the voltage, all
+tinted — a run of feeders on one board or pumps on one MCC is one `Enter` and
+a description per row. **+ Add row** gives a blank row for a different item.
+The proposal writes: the ID (numbered from the type: `TX3`, `F12`), the
 supply (the drop target, else the best supply on the sheet for that Type — the
 last LV board for a feeder, the last MV board for a transformer — so the item
 lands where it belongs instead of at the edge of the drawing), the usual
 protection, and the voltage read off that supply (a transformer on an 11 kV
 board gets `11/0.4 kV`, a feeder on a 400 V board `400 V`, a board under a
-`33/11 kV` transformer `11 kV`). Proposed cells are tinted; the tint goes as
+`33/11 kV` transformer `11 kV`). A **source** — an MV Incomer, a Generator and its
+variants — is added with no supply at all, whatever it was dropped on: it is
+fed from off the sheet, and what it feeds is named in *that* item's `Feeds
+From`. Its own cell stays there and stays editable, and leaving it empty is
+never a warning. Proposed cells are tinted; the tint goes as
 soon as you type in one, so you can see what came from the engine and what
 you entered. Choosing a Type on a blank row fills the rest the same way.
 Nothing is proposed once the row exists: from then on every cell is yours.
+
+**Re-wire by dragging the symbol.** Drag a symbol on the drawing onto the
+board, RMU, transformer or MCC that feeds it and its `Feeds From` becomes
+that item — one gesture, no ID typed. Hold **Shift** to *add* the target as a
+further supply (a changeover's second board, a ring's second link) instead of
+replacing. Releasing on nothing does nothing. Panning still starts on empty
+canvas; a drag that begins on a symbol moves its connection, not the sheet.
+Whatever the reader thinks of the new supply, it says so in the problems box
+as it does for a typed one — the gesture writes the same cell.
+
+**Renaming an ID renames every reference to it.** Change a board's ID and,
+when you leave the cell, every `Feeds From` that named the old ID names the
+new one — one edit, one undo step, the same drawing under a new name. If the
+new ID is already another row's, nothing follows: the reader reports the
+duplicate and the references that now dangle, each with the ID it thinks
+they meant.
+
+**An error never takes the drawing away.** A `Feeds From` that names an ID
+not on the sheet, or two rows with one ID, is an error in the problems box —
+but the sheet still draws: the row in question floats (or, for a duplicate,
+the second row is left out) and the message says so. Exports work too. An
+unknown supply that is within a slip of an existing ID — `bb1`, `BB!`,
+`MCC 1` — is named in the message with a **use BB1** button; that click, and
+only that click, writes it into the cell.
 
 **View options** sit in the drawing's toolbar: spacing (compact / normal /
 wide), the legend and the title block on or off, and **Focus drawing**, which
@@ -336,9 +368,21 @@ src/core/     the engine, as ES modules: types, supplies (which supply can feed
 src/io/       csv and xlsx (SheetJS) ⇄ table rows
 src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js
 src/cli/      sld.js — draw | dxf
-tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page
+tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page, usage-baseline
+testdata/usage/  the entry baseline: actions per task, outcomes when the topology is wrong
 testdata/     the cases; test/ the node --test suites
 ```
+
+**The entry baseline.** `testdata/usage/baseline.json` is what the page costs
+a surveyor, measured: `node tools/usage-baseline.mjs` replays the common
+data-entry tasks in the page under headless Chromium — five feeders on a
+board, ten rows from a spreadsheet, a board renamed, a typo'd supply fixed, a
+feeder moved, a coupler drawn — and counts every click, key, drop and value
+entered, recording too whether the drawing on screen was fresh or stale and
+whether an export was possible. The `W*` entries record what the page does when
+the topology goes wrong. `--check` fails on any difference, so an improvement
+lands with the lower number it earned and a regression cannot land quietly.
+`testdata/usage/README.md` states the counting rule.
 
 `sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
 the modules into the page's single `<script>` (browsers refuse `import` from

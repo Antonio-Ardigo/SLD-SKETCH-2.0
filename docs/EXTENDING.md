@@ -73,7 +73,10 @@ model, called only when a row is added.
   child type. `USUAL_SUPPLIES[childType]` is the child's usual supplies, best
   first; anything else that is not impossible is merely possible; `ROOT_TYPES`
   are the types proposed with no supply at all. A new *type* needs its row in
-  `USUAL_SUPPLIES` — `test/supplies.test.js` fails until it has one. Nothing
+  `USUAL_SUPPLIES` — `test/supplies.test.js` fails until it has one, and a new
+  *source* type joins `ROOT_TYPES` beside it: a root is proposed with no
+  supply whatever it was dropped on, and the reader lets it stand with an
+  empty `Feeds From`. Nothing
   else: `defaultSupply` feeds `proposeRow`, `supplyCandidates` feeds the page's
   Feeds from picker, and `canSupply` is the reader's own IMPOSSIBLE_SUPPLY
   predicate, so the advice and the diagnostic can never drift. Changing rank 0

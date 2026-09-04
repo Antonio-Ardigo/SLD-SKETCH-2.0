@@ -6,14 +6,15 @@
  * at that moment: afterwards it is an ordinary row and every cell is edited
  * as usual. Nothing here reads or changes connectivity (constitution §2): the
  * supply is the drop target, else the best supply on the sheet for that Type
- * (supplies.js), else the neighbour's; the voltage is a label inferred from
- * that supply's label, the protection the usual device.
+ * (supplies.js), else the neighbour's — and nothing at all for a source; the
+ * voltage is a label inferred from that supply's label, the protection the
+ * usual device.
  *
  *   proposeRow(items, order, { type, targetId, sibling })
  *     → { id, type, desc, rating, voltage, prot, from, notes, proposed: [field…] }
  */
 import { MV_INCOMER, MV_BUSBAR, RMU, TRANSFORMER, LV_BUSBAR, MCC, FEEDER, GENERATOR, ALIASES } from "./types.js";
-import { defaultSupply } from "./supplies.js";
+import { defaultSupply, isRoot } from "./supplies.js";
 
 /* the prefix of an auto-numbered ID, per Type label */
 export const TYPE_PREFIX = {
@@ -122,15 +123,22 @@ export function proposeRow(items, order, { type = "", targetId = "", sibling = n
   const mark = f => { if (row[f] && !row.proposed.includes(f)) row.proposed.push(f); };
 
   const canon = ALIASES[String(type).trim().toLowerCase().replace(/\s+/g, " ")] || null;
-  /* the drop target if there was one; else the best supply on the sheet for
-     this Type, so the new row lands where it belongs; else, with no Type to
-     reason from, the row above's supply */
-  row.from = targetId
-    || (canon ? defaultSupply(items, order, canon) : "")
-    || (sibling && sibling.from ? sibling.from.trim() : "");
+  /* a source starts with no supply, whatever it was dropped on and whatever
+     the row above says: an incomer or a generator is fed from off the sheet,
+     and what it feeds is named in that item's own Feeds From. Otherwise the
+     drop target if there was one; else the best supply on the sheet for this
+     Type, so the new row lands where it belongs; else, with no Type to reason
+     from, the row above's supply */
+  row.from = isRoot(canon) ? ""
+    : (targetId
+       || (canon ? defaultSupply(items, order, canon) : "")
+       || (sibling && sibling.from ? sibling.from.trim() : ""));
   mark("from");
-  const supplyId = row.from.split(",").map(s => s.trim()).filter(Boolean)[0] || "";
-  const supply = supplyId && items[supplyId] ? items[supplyId] : null;
+  /* the label side may still read the item the row was dropped on: a source
+     takes its voltage from the board it will feed, though that board is not
+     its supply (constitution §2 — a voltage is a label, not a connection) */
+  const refId = (row.from || targetId).split(",").map(s => s.trim()).filter(Boolean)[0] || "";
+  const supply = refId && items[refId] ? items[refId] : null;
 
   if (type) {
     row.id = nextId(type, order); mark("id");

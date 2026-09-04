@@ -17,12 +17,42 @@ function childrenOf(items, order, pid, types){
   return out;
 }
 
-/* build items from table rows; returns {items, order, errors, warnings} */
+/* the ID on the sheet a mistyped reference most likely meant: the same
+   letters in another case or spacing, else within two edits (a slip, a
+   dropped or doubled character) — the shortest distance wins, ties to the
+   earlier row. null when nothing is near enough to suggest. */
+function nearestId(token, ids){
+  const norm=s=>String(s).toLowerCase().replace(/\s+/g,"");
+  const t=norm(token); if(!t) return null;
+  let best=null, bestD=3;
+  for(const id of ids){
+    const n=norm(id);
+    const d=n===t?0:editDistance(t,n);
+    if(d<bestD){ best=id; bestD=d; }
+  }
+  return best;
+}
+function editDistance(a,b){
+  if(Math.abs(a.length-b.length)>2) return 3;
+  const m=a.length, n=b.length; let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){
+    const cur=[i];
+    for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev=cur;
+  }
+  return prev[n];
+}
+
+/* build items from table rows; returns {items, order, errors, warnings, diagnostics}.
+   `supplies` is Feeds From as written; `parents` the ones that name a row on
+   the sheet — what the graph and the drawing use. A reference that resolves
+   to nothing is an UNKNOWN_SUPPLY error carrying, when one is near, the ID it
+   most likely meant; the row is drawn without that supply, never dropped. */
 function buildModel(rows){
   const items={}, order=[], errors=[], warnings=[], diagnostics=[];
   /* every message is also a structured diagnostic: code + the rows it names */
-  const warn=(code,ids,msg,row)=>{ warnings.push(msg); diagnostics.push(makeDiag(code,ids,msg,row)); };
-  const err=(code,ids,msg,row)=>{ errors.push(msg); diagnostics.push(makeDiag(code,ids,msg,row)); };
+  const warn=(code,ids,msg,row,extra)=>{ warnings.push(msg); diagnostics.push(makeDiag(code,ids,msg,row,extra)); };
+  const err=(code,ids,msg,row,extra)=>{ errors.push(msg); diagnostics.push(makeDiag(code,ids,msg,row,extra)); };
   rows.forEach((r,i)=>{
     const id=r.id.trim();
     if(!id){
@@ -36,12 +66,14 @@ function buildModel(rows){
     if(!type) warn("UNKNOWN_TYPE",[id],`Row "${id}": unknown type "${r.type}" — drawn as a feeder.`);
     items[id]={ id, type: type||FEEDER, desc:r.desc.trim(), rating:r.rating.trim(),
       voltage:r.voltage.trim(), notes:r.notes.trim(),
-      parents:r.from.split(",").map(s=>s.trim()).filter(Boolean),
+      supplies:r.from.split(",").map(s=>s.trim()).filter(Boolean), parents:[],
       prots:(r.prot||"").split(",").map(s=>s.trim()).filter(Boolean),
       variant:TYPE_VARIANTS[rawType]||null, label:r.type.trim(),   /* the symbol variant and the label the surveyor wrote */
       x:null, xLeft:null, xRight:null, land:{}, tee:{} };
     order.push(id);
   });
+  /* resolve the references once: everything downstream reads `parents` */
+  for(const id of order) items[id].parents=items[id].supplies.filter(p=>!!items[p]);
   for(const id of order){           /* a feeder row whose words say capacitor
                                        bank / NER / arrester is that item */
     const it=items[id];
@@ -77,8 +109,13 @@ function buildModel(rows){
   }
   for(const id of order){
     const it=items[id];
-    for(const p of it.parents)
-      if(!items[p]) err("UNKNOWN_SUPPLY",[id,p],`"${id}" feeds from unknown ID "${p}" — check the Feeds from column.`);
+    for(const p of it.supplies)
+      if(!items[p]){
+        const near=nearestId(p, order.filter(o=>o!==id));
+        err("UNKNOWN_SUPPLY",[id,p],
+          `"${id}" feeds from unknown ID "${p}"${near?` — did you mean "${near}"?`:" — check the Feeds from column."} Drawn without that supply.`,
+          undefined, near?{fix:{id,field:"from",from:p,to:near}}:undefined);
+      }
     if(it.type===TRANSFORMER){
       const up=order.map(q=>items[q]).filter(c=>c.parents.includes(it.id)
                                             && [MV_BUSBAR,RMU].includes(c.type));
@@ -87,9 +124,11 @@ function buildModel(rows){
       if(up.length && dn.length)
         warn("TX_BOTH_LEVELS",[id],`"${id}" feeds both an MV and an LV board — drawn as a step-up.`);
     }
-    if([TRANSFORMER].includes(it.type) && !it.parents.length)
+    /* "no Feeds From" means the cell is empty; a cell naming only unknown
+       IDs has already been reported once, above */
+    if([TRANSFORMER].includes(it.type) && !it.supplies.length)
       warn("TX_NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn with an open supply terminal.`);
-    else if(!it.parents.length && !isRoot(it.type))
+    else if(!it.supplies.length && !isRoot(it.type))
       warn("NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn without a supply.`);
     /* a supply that cannot feed this row: the row draws floating */
     for(const p of it.parents){
@@ -126,4 +165,4 @@ function buildModel(rows){
   return {items, order, errors, warnings, diagnostics};
 }
 
-export { esc, childrenOf, buildModel };
+export { esc, childrenOf, buildModel, nearestId, editDistance };

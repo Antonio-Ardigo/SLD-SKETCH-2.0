@@ -5,65 +5,12 @@
  *   node tools/smoke-page.mjs            # uses $CHROME, else the Playwright chromium under /opt/pw-browsers
  *
  * Exit 1 on any failed check or page error. Needs no npm packages. */
-import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { ROOT } from "./lib/cases.mjs";
+import { openPage, DRAG_JS } from "./lib/headless.mjs";
 
-function findChrome() {
-  if (process.env.CHROME) return process.env.CHROME;
-  const cands = [];
-  for (const base of ["/opt/pw-browsers", path.join(process.env.HOME || "", ".cache/ms-playwright")]) {
-    if (!fs.existsSync(base)) continue;
-    for (const d of fs.readdirSync(base)) {
-      for (const rel of ["chrome-linux/chrome", "chrome-linux64/chrome", "chrome-mac/Chromium.app/Contents/MacOS/Chromium"])
-        cands.push(path.join(base, d, rel));
-    }
-  }
-  cands.push("google-chrome", "chromium", "chromium-browser");
-  return cands.find(c => c.includes("/") ? fs.existsSync(c) : true);
-}
-
-const chrome = findChrome();
-const page = "file://" + path.join(ROOT, "sld_sketchpad.html");
-const proc = spawn(chrome, ["--headless=new", "--no-sandbox", "--disable-gpu", "--remote-debugging-port=0",
-  "--user-data-dir=" + fs.mkdtempSync(path.join(process.env.TMPDIR || "/tmp", "sld-chrome-")), "about:blank"],
-  { stdio: ["ignore", "ignore", "pipe"] });
-
-const wsUrl = await new Promise((ok, fail) => {
-  let buf = "";
-  proc.stderr.on("data", d => { buf += d; const m = /DevTools listening on (ws:\S+)/.exec(buf); if (m) ok(m[1]); });
-  proc.on("exit", c => fail(new Error("chrome exited " + c + "\n" + buf)));
-  setTimeout(() => fail(new Error("chrome did not start\n" + buf)), 15000);
-});
-
-const targets = await (await fetch(wsUrl.replace(/^ws/, "http").replace(/\/devtools\/browser\/.*$/, "/json"))).json();
-const pageWs = targets.find(t => t.type === "page").webSocketDebuggerUrl;
-const ws = new WebSocket(pageWs);
-await new Promise(ok => ws.addEventListener("open", ok));
-let seq = 0; const pending = new Map(); const errors = [];
-ws.addEventListener("message", ev => {
-  const m = JSON.parse(ev.data);
-  if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
-  if (m.method === "Runtime.exceptionThrown") errors.push(m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text);
-  if (m.method === "Runtime.consoleAPICalled" && m.params.type === "error") errors.push(m.params.args.map(a => a.value ?? a.description).join(" "));
-});
-const send = (method, params = {}) => new Promise(ok => { const id = ++seq; pending.set(id, ok); ws.send(JSON.stringify({ id, method, params })); });
-const evaluate = async (expression) => {
-  const r = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
-  if (r.result.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description || "evaluate failed");
-  return r.result.result.value;
-};
-
-await send("Runtime.enable");
-await send("Page.enable");
-/* the page links Google Fonts; offline that request would hold the script back until it times out */
-await send("Network.enable");
-await send("Network.setBlockedURLs", { urls: ["*fonts.googleapis.com*", "*fonts.gstatic.com*"] });
-const loaded = new Promise(ok => ws.addEventListener("message", ev => { if (JSON.parse(ev.data).method === "Page.loadEventFired") ok(); }));
-await send("Page.navigate", { url: page });
-await Promise.race([loaded, new Promise(ok => setTimeout(ok, 10000))]);
-await new Promise(ok => setTimeout(ok, 500));
+const { evaluate, errors, close } = await openPage();
 if (process.env.DEBUG) console.log(await evaluate(`location.href + ' ' + document.readyState + ' rows=' + document.querySelectorAll('#eqbody tr').length`), errors);
 
 let failed = 0;
@@ -106,6 +53,10 @@ try {
   await evaluate(`(function(){ const el=document.querySelector('tr[data-i="7"] [data-f="desc"]'); el.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));
      el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); })()`);
   check("Enter on last row adds a row", await evaluate(`document.querySelectorAll('#eqbody tr').length`) === 9);
+  /* Enter repeats the row above: F4 is a feeder on BB1, so the new row is a feeder on BB1, whole */
+  const again = await evaluate(`JSON.stringify(state.rows[8])`);
+  check("Enter repeats the row above — same Type, same supply, the rest proposed",
+    /"id":"F5".*"type":"Feeder".*"voltage":"400 V".*"from":"BB1".*"prot":"CB"/.test(again) && /"_p":\["from","id","prot","voltage"\]/.test(again), again);
   await evaluate(`(function(){ const s=document.querySelector('tr[data-i="8"] [data-f="type"]'); s.value='Feeder';
      s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   check("type change fills default protection", await evaluate(`document.querySelector('tr[data-i="8"] [data-f="prot"]').value`) === "CB");
@@ -116,6 +67,20 @@ try {
   await sleep(400);
   check("unknown supply marks the row", await evaluate(`document.querySelector('tr[data-i="8"]').classList.contains('err')`));
   check("problem line points at the row", await evaluate(`document.querySelector('#problems div[data-row="8"]') !== null`));
+  /* the drawing is not withheld by the error: the row is on the sheet, floating, and exports still work */
+  check("the sheet still draws with an unknown supply", await evaluate(`!!document.querySelector('#sheet svg g[data-id="F9"]')`));
+  check("exports are not blocked by the error", await evaluate(`currentSheet()!==null`));
+  check("nothing near NOPE: no suggestion offered", await evaluate(`document.querySelectorAll('#problems button.fix').length`) === 0);
+  /* a near miss is named, and one click puts it right */
+  await evaluate(`(function(){ const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='bb1'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+  await sleep(400);
+  check("a near miss offers the ID it meant", (await evaluate(`(document.querySelector('#problems button.fix')||{}).textContent`)) === "use BB1");
+  await evaluate(`document.querySelector('#problems button.fix').click()`);
+  await sleep(400);
+  check("one click writes the fix into the cell", await evaluate(`state.rows[8].from`) === "BB1" && await evaluate(`document.querySelector('tr[data-i="8"] [data-f="from"]').value`) === "BB1");
+  check("and the error is gone", await evaluate(`document.querySelectorAll('#problems .err').length`) === 0);
+  await evaluate(`(function(){ const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='NOPE'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+  await sleep(400);
 
   /* undo removes the typing and the row */
   const before = await evaluate(`document.querySelectorAll('#eqbody tr').length`);
@@ -183,6 +148,83 @@ try {
      const tr=document.querySelector('tr[data-i="'+r+'"]');
      return !tr.querySelector('[data-f="voltage"]').classList.contains('proposed') && tr.querySelector('[data-f="prot"]').classList.contains('proposed'); })()`));
 
+  /* renaming a board: every way that named it follows, in one edit */
+  const refs = id => evaluate(`state.rows.filter(r=>r.from.split(',').map(s=>s.trim()).includes(${JSON.stringify(id)})).length`);
+  const waysOfMSB = await refs("MSB");
+  await sleep(900);   /* a pause, as a person makes before a new edit: the rename is its own undo step */
+  await evaluate(`(function(){ const i=rowIndexOf('MSB'); const el=document.querySelector('tr[data-i="'+i+'"] [data-f="id"]');
+     el.dispatchEvent(new FocusEvent('focusin',{bubbles:true})); el.value='MSB1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+  check("renaming an ID renames every reference to it", waysOfMSB >= 5 && await refs("MSB1") === waysOfMSB && await refs("MSB") === 0,
+    await evaluate(`JSON.stringify(state.rows.map(r=>r.id+'<'+r.from))`));
+  check("the renamed sheet has no errors", await evaluate(`document.querySelectorAll('#problems .err').length`) === 0);
+  check("the cells on screen show the new name", await evaluate(`[...document.querySelectorAll('[data-f="from"]')].filter(e=>e.value.split(',').map(s=>s.trim()).includes('MSB1')).length`) === waysOfMSB);
+  await evaluate(`undo()`);
+  await sleep(400);
+  check("one undo brings back the old name and its references together", await evaluate(`rowIndexOf('MSB')>=0`) && await refs("MSB") === waysOfMSB && await refs("MSB1") === 0,
+    await evaluate(`JSON.stringify(state.rows.map(r=>r.id+'<'+r.from))`));
+  /* a rename onto an ID another row already has: nothing follows, and the reader says so */
+  const refsF1 = await refs("F1");
+  await sleep(900);
+  await evaluate(`(function(){ const i=rowIndexOf('F1'); const el=document.querySelector('tr[data-i="'+i+'"] [data-f="id"]');
+     el.dispatchEvent(new FocusEvent('focusin',{bubbles:true})); el.value='F2'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+  check("a rename onto an existing ID is reported, not followed", (await evaluate(`document.querySelector('#problems').textContent`)).includes('Duplicate ID "F2"') && await refs("F1") === refsF1);
+  await evaluate(`undo()`);
+  await sleep(400);
+  check("and undone", await evaluate(`state.rows.filter(r=>r.id==='F1').length`) === 1);
+
+  /* re-wiring by hand: drag a symbol onto the thing that feeds it */
+  await evaluate(`(function(){ state.rows=[R("MV1","MV Incomer","Utility","","11 kV","","",""),R("MVB1","MV Busbar","MV board","1250 A","11 kV","MV1","","CB"),
+    R("TX1","Transformer","Tx A","1000 kVA","11/0.4 kV","MVB1","","CB"),R("TX2","Transformer","Tx B","1000 kVA","11/0.4 kV","MVB1","","CB"),
+    R("BB1","LV Busbar","Board A","1600 A","400 V","TX1","","CB"),R("BB2","LV Busbar","Board B","1600 A","400 V","TX2","","CB"),
+    R("F1","Feeder","Lighting","100 A","400 V","BB1","","CB"),R("F2","Feeder","Small power","160 A","400 V","BB1","","CB"),R("F3","Feeder","HVAC","250 A","400 V","BB2","","CB"),
+    R("BC1","Bus Coupler","Tie","","400 V","BB1","","CB")]; rebuildTable(); redraw(); })()`);
+  await sleep(400);
+  const dragged = await evaluate(DRAG_JS("F1", "BB2", false));
+  await sleep(400);
+  check("dragging a symbol onto a board feeds it from that board", await evaluate(`state.rows[rowIndexOf('F1')].from`) === "BB2", dragged + " " + await evaluate(`state.rows[rowIndexOf('F1')].from`));
+  check("the cell on screen follows", await evaluate(`document.querySelector('tr[data-i="'+rowIndexOf('F1')+'"] [data-f="from"]').value`) === "BB2");
+  check("the drawing follows", await evaluate(`!!document.querySelector('#sheet svg g[data-id="F1"]') && document.querySelectorAll('#problems .err').length===0`));
+  check("the moved row stays selected", await evaluate(`document.querySelector('#sheet svg g[data-id="F1"]').classList.contains('sel')`));
+  await evaluate(DRAG_JS("F1", "BB1", true));
+  await sleep(400);
+  check("Shift-drag adds a second supply instead of replacing", await evaluate(`state.rows[rowIndexOf('F1')].from`) === "BB2, BB1", await evaluate(`state.rows[rowIndexOf('F1')].from`));
+  await evaluate(DRAG_JS("F1", "BB1", true));
+  await sleep(400);
+  check("adding a supply it already has changes nothing", await evaluate(`state.rows[rowIndexOf('F1')].from`) === "BB2, BB1");
+  check("a one-ended coupler has no symbol to drag (it is skipped, and says so)", await evaluate(`!document.querySelector('#sheet svg g[data-id="BC1"]') && /Bus coupler "BC1"/.test(document.querySelector('#problems').textContent)`));
+  const rowsBeforeDrop = await evaluate(`JSON.stringify(state.rows)`);
+  await evaluate(`(function(){ const vp=document.querySelector('#viewport'); const r=document.querySelector('#sheet svg g[data-id="F2"] rect.hit').getBoundingClientRect();
+    const ev=(t,x,y)=>vp.dispatchEvent(new PointerEvent(t,{pointerId:8,pointerType:'mouse',button:0,buttons:t==='pointerup'?0:1,clientX:x,clientY:y,bubbles:true}));
+    const x=r.left+r.width/2, y=r.top+r.height/2; ev('pointerdown',x,y); ev('pointermove',x+40,y+300); ev('pointermove',x+60,y+320); ev('pointerup',x+60,y+320); })()`);
+  await sleep(300);
+  check("released on nothing, nothing happens", await evaluate(`JSON.stringify(state.rows)`) === rowsBeforeDrop);
+  check("no highlight is left behind", await evaluate(`document.querySelectorAll('#sheet svg .over, #sheet svg .moving').length===0 && !document.querySelector('#viewport').classList.contains('wiring')`));
+  await evaluate(`(function(){ const vp=document.querySelector('#viewport'); const svg=document.querySelector('#sheet svg'); const r=svg.getBoundingClientRect(); vp.scrollLeft=0; vp.scrollTop=0;
+    const x=r.right-8, y=r.bottom-8;   /* empty canvas, bottom-right corner of the sheet */
+    const ev=(t,cx,cy)=>vp.dispatchEvent(new PointerEvent(t,{pointerId:9,pointerType:'mouse',button:0,buttons:t==='pointerup'?0:1,clientX:cx,clientY:cy,bubbles:true}));
+    ev('pointerdown',x,y); ev('pointermove',x-30,y-30); ev('pointermove',x-60,y-60); ev('pointerup',x-60,y-60); })()`);
+  check("a drag on empty canvas still pans", await evaluate(`document.querySelector('#viewport').scrollLeft>0 || document.querySelector('#viewport').scrollTop>0 || document.querySelector('#viewport').scrollWidth<=document.querySelector('#viewport').clientWidth`));
+  check("a click still selects", await evaluate(`(function(){ const vp=document.querySelector('#viewport'); const r=document.querySelector('#sheet svg g[data-id="F3"] rect.hit'); r.scrollIntoView({block:'center',inline:'center'}); const b=r.getBoundingClientRect(); const x=b.left+b.width/2, y=b.top+b.height/2;
+    const ev=(t)=>vp.dispatchEvent(new PointerEvent(t,{pointerId:10,pointerType:'mouse',button:0,buttons:t==='pointerup'?0:1,clientX:x,clientY:y,bubbles:true}));
+    ev('pointerdown'); ev('pointerup'); return document.querySelector('#sheet svg g[data-id="F3"]').classList.contains('sel'); })()`));
+  await evaluate(`(function(){ const p=document.querySelector('#preset'); p.value='7'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+
+  /* a source is added with no supply: the drop names where the row goes, not
+     what feeds it, and the board it was dropped on is left alone */
+  const msbBefore = await evaluate(`(state.rows.find(r=>r.id==='MSB')||{}).from`);
+  await evaluate(`addRowFor('Generator','MSB')`);
+  await sleep(400);
+  const gen = await evaluate(`JSON.stringify(state.rows.find(r=>r.type==='Generator')||null)`);
+  check("a dropped generator has no supply", /"from":""/.test(gen) && /"id":"G\d+"/.test(gen), gen);
+  check("its voltage still follows the board it was dropped on", /"voltage":"400 V"/.test(gen), gen);
+  check("the board it was dropped on is untouched", await evaluate(`(state.rows.find(r=>r.id==='MSB')||{}).from`) === msbBefore);
+  check("the generator says it feeds nothing", (await evaluate(`document.querySelector('#problems').textContent`)).includes("feeds nothing"));
+  await evaluate(`undo()`);
+  await sleep(400);
+
   /* + Add row proposes the supply of the row above; choosing a Type fills the rest */
   await evaluate(`document.querySelector('#addrow').click()`);
   await sleep(400);
@@ -193,6 +235,19 @@ try {
   const typed = await evaluate(`JSON.stringify(state.rows[state.rows.length-1])`);
   /* the Type moves the row to where it belongs: a transformer sits on the MV
      gear, not on the LV board the row above happened to name */
+  /* and choosing a source on a row that already carries a proposed supply clears it */
+  await evaluate(`(function(){ const i=state.rows.length-1; const s=document.querySelector('tr[data-i="'+i+'"] [data-f="type"]');
+     s.value='Generator'; s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+  const asGen = await evaluate(`JSON.stringify(state.rows[state.rows.length-1])`);
+  const g = JSON.parse(asGen);
+  check("choosing Generator clears the transformer's proposed supply, device and ratio",
+    g.type === "Generator" && g.from === "" && g.prot === "" && g.voltage === "" && /^G\d+$/.test(g.id), asGen);
+  check("the cleared cells are cleared on screen too",
+    await evaluate(`['from','prot','voltage'].every(f=>document.querySelector('tr[data-i="'+(state.rows.length-1)+'"] [data-f="'+f+'"]').value==="")`));
+  await evaluate(`(function(){ const i=state.rows.length-1; const s=document.querySelector('tr[data-i="'+i+'"] [data-f="type"]');
+     s.value='Transformer'; s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
   check("choosing a Type proposes the supply, ID, protection and voltage",
     /"id":"TX\d+".*"voltage":"11\/0.4 kV".*"from":"RMU1".*"prot":"Fuse-switch"/.test(typed), typed);
   check("the proposal never leaves the page", !(await evaluate(`rowsToCsv(state.rows)`)).includes("_p"));
@@ -224,6 +279,7 @@ try {
     await evaluate(`document.querySelector('#${id}').click()`);
     await sleep(300);
     const saved = await evaluate(`JSON.stringify(window.__saved[window.__saved.length-1]||null)`);
+    for (let i = 0; i < 20 && !(await evaluate(`document.querySelector('#copystate').textContent`)).includes(ext); i++) await sleep(100);
     const got = JSON.parse(saved) || {};
     check(`Download ${id.toUpperCase()} saves a file`, got.type === mime && (got.name || "").endsWith(ext) && got.size > 500, saved);
     check(`Download ${id.toUpperCase()} says so`, (await evaluate(`document.querySelector('#copystate').textContent`)).includes(ext), saved);
@@ -241,7 +297,7 @@ try {
 } catch (e) {
   console.error("smoke test crashed:", e.message); failed++;
 } finally {
-  ws.close(); proc.kill();
+  close();
 }
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");
 process.exit(failed ? 1 : 0);

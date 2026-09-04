@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { buildModel } from "../src/core/model.js";
 import { normalizeRows } from "../src/core/pipeline.js";
 import { proposeRow, nextId, parseVoltage, formatVoltage, formatRatio, usualLvVolts, proposeVoltage } from "../src/core/propose.js";
+import { normalizeView } from "../src/core/views.js";
+import { draw } from "../src/core/pipeline.js";
 
 const SHEET = [
   { id: "MV1", type: "MV Incomer", voltage: "11 kV", from: "" },
@@ -101,6 +103,37 @@ test("nothing is proposed for a row with no type yet, except the sibling's suppl
   assert.deepEqual(r.proposed, ["from"]);
   /* with no type to reason from and no row above, nothing at all */
   assert.deepEqual(propose(SHEET, {}).proposed, []);
+});
+
+test("a source is added with no supply, whatever it was dropped on", () => {
+  /* a generator is fed from off the sheet; what it feeds is named in that
+     item's own Feeds From, so nothing is written here (constitution §1) */
+  for (const type of ["Generator", "Battery", "Inverter", "MV Incomer"]) {
+    for (const opts of [{ targetId: "BB1" }, { targetId: "MVB1" }, {}, { sibling: { from: "BB1" } }]) {
+      const r = propose(SHEET, { type, ...opts });
+      assert.equal(r.from, "", `${type} ${JSON.stringify(opts)}`);
+      assert.ok(!r.proposed.includes("from"), `${type} ${JSON.stringify(opts)}: from marked`);
+      assert.equal(r.prot, "", `${type}: a source has no supply-side device`);
+    }
+  }
+  /* the rest of the row still follows the item it was dropped on: the board a
+     generator will feed decides its voltage, though it is not its supply */
+  assert.deepEqual(propose(SHEET, { type: "Generator", targetId: "BB1" }).voltage, "400 V");
+  assert.deepEqual(propose(SHEET, { type: "Generator", targetId: "MVB1" }).voltage, "11 kV");
+  assert.deepEqual(propose(SHEET, { type: "Generator" }).voltage, "");
+  assert.match(propose(SHEET, { type: "Generator", targetId: "BB1" }).id, /^G\d+$/);
+});
+
+test("a generator with no Feeds From is never warned about", () => {
+  const rows = [
+    { id: "G1", type: "Generator", desc: "Standby set", rating: "500 kVA", voltage: "400 V", from: "" },
+    { id: "BB1", type: "LV Busbar", desc: "Main board", voltage: "400 V", from: "G1", prot: "CB" },
+    { id: "F1", type: "Feeder", desc: "Lighting", voltage: "400 V", from: "BB1", prot: "CB" },
+  ];
+  const out = draw({ site: "gen" }, rows, { view: normalizeView({}) });
+  assert.deepEqual(out.errors, []);
+  assert.deepEqual(out.warnings, [], "a source with an empty Feeds From must say nothing");
+  assert.deepEqual(out.diagnostics.map(d => d.code), []);
 });
 
 test("an unreadable or absent supply voltage proposes nothing", () => {

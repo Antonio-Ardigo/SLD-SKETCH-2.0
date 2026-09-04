@@ -1,7 +1,7 @@
 {
   "name": "unknown_feeds_from",
   "group": "warnings",
-  "description": "Feeds From names an ID that is not on the sheet: an error, no drawing",
+  "description": "Feeds From names an ID that is not on the sheet: an error, the row drawn without that supply, the sheet still drawn",
   "info": {
     "site": "Warning path: unknown feeds from",
     "date": "",
@@ -12,11 +12,17 @@
     "diagnostics": [
       "UNKNOWN_SUPPLY:BB1"
     ],
-    "golden": false,
+    "golden": true,
     "legacy": {
       "items": 3,
       "errors": 1,
       "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
     }
   }
 }

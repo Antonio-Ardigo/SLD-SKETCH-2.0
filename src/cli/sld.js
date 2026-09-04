@@ -36,10 +36,11 @@ function checkMany(files, json) {
     const name = path.basename(file.replace(/[\\/]+$/, ""));
     if (!res.check) { reports.push({ name, errors: res.errors }); bad++; if (!json) console.log(`${name.padEnd(28)} no drawing: ${res.errors.join(" | ")}`); continue; }
     const k = res.check;
-    reports.push({ name, ...k });
-    if (!k.clean) bad++;
+    reports.push({ name, errors: res.errors, ...k });
+    if (!k.clean || res.errors.length) bad++;
     if (!json) {
-      console.log(`${name.padEnd(28)} ${formatCheck(k)}`);
+      console.log(`${name.padEnd(28)} ${formatCheck(k)}${res.errors.length ? `  table errors ${res.errors.length}` : ""}`);
+      for (const e of res.errors) console.log(`    error        ${e}`);
       for (const m of k.items.missing) console.log(`    missing      ${m}`);
       for (const e of k.edges.via) console.log(`    via other    ${e}`);
       for (const e of k.edges.disconnected) console.log(`    disconnected ${e}`);
@@ -84,7 +85,7 @@ function main(argv) {
   const { info, rows } = loadTable(file);
   const res = draw(info, rows, { dxf, pdf });
   for (const w of res.warnings) console.error(`warning: ${w}`);
-  if (res.errors.length) { for (const e of res.errors) console.error(`error: ${e}`); process.exit(1); }
+  for (const e of res.errors) console.error(`error: ${e}`);   /* the drawing is still written; exit 1 says it has faults */
   if (!res.svg) { console.error("error: the table has no rows"); process.exit(1); }
 
   const stem = file.replace(/\.(xlsx|xlsm|csv)$/i, "").replace(/[\\/]+$/, "");
@@ -102,6 +103,7 @@ function main(argv) {
     fs.writeFileSync(d, res.dxf);
     console.error(`wrote ${d}`);
   }
+  if (res.errors.length) process.exitCode = 1;
   if (dxf && checkText) {
     const k = checkDxf(res.dxf);
     console.error(`dxf text: ${k.texts} entities, ${k.overlaps.length} overlapping pair(s), ${k.crossings.length} crossing a table rule`);

@@ -132,6 +132,7 @@
   .tbl-foot { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
   .hint { color: var(--muted); font-size: 12.5px; margin-left: auto; }
 
+  #problems button.fix { margin-left: 8px; padding: 0 8px; font-size: 12px; line-height: 20px; vertical-align: baseline; }
   .problems { margin: 0 0 18px; }
   .problems div {
     color: var(--danger); font: 500 13px "IBM Plex Mono", monospace;
@@ -177,6 +178,8 @@
   #sheet svg [data-id].over rect.hit { fill: rgba(11, 94, 215, .2); stroke: var(--accent); stroke-width: 2; }
   #sheet svg [data-id] { cursor: pointer; }
   .viewport.dropping { outline: 2px dashed var(--accent); outline-offset: -2px; }
+  .viewport.wiring { cursor: alias; }
+  #sheet svg [data-id].moving rect.hit { fill: rgba(11, 94, 215, .08); stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 2 3; }
   button:disabled { opacity: .45; cursor: default; }
   button:disabled:hover { border-color: var(--border); color: var(--ink); }
 
@@ -576,8 +579,9 @@ const PROT_ALIASES = {
 function protFor(item, parentId){
   if(!item.prots || !item.prots.length) return ["", null];
   let raw=item.prots[0];
-  if(parentId!=null && item.prots.length>1 && item.parents.includes(parentId)){
-    const i=item.parents.indexOf(parentId);
+  const named=item.supplies||item.parents;   /* the list the devices were written against */
+  if(parentId!=null && item.prots.length>1 && named.includes(parentId)){
+    const i=named.indexOf(parentId);
     if(i<item.prots.length) raw=item.prots[i];
   }
   return [raw, PROT_ALIASES[raw.toLowerCase().split(/\s+/).join(" ")]||null];
@@ -590,13 +594,17 @@ function protFor(item, parentId){
  *
  * `message` is the sentence shown to the surveyor (the page, the CLI). Tests
  * assert on `code` and `ids`, never on the wording, so the wording can improve
- * freely. An "error" stops the drawing (the table cannot be read as one
- * network); a "warning" still draws, with the row floating, open or marked. */
+ * freely. An "error" is a fault in the table itself (two rows with one ID, a
+ * supply that is not on the sheet); a "warning" is a network the reader could
+ * read but doubts. Both still draw (constitution §6): the row in question
+ * floats, stands open or is marked, and the message says why. A diagnostic
+ * may carry a `fix` — `{ id, field, from, to }` — a one-click correction the
+ * page can offer; it is never applied on its own. */
 
 const DIAG = {
   /* reader: the table itself */
   DUP_ID:            { level: "error",   about: "two rows share an ID" },
-  UNKNOWN_SUPPLY:    { level: "error",   about: "Feeds From names an ID that is not on the sheet" },
+  UNKNOWN_SUPPLY:    { level: "error",   about: "Feeds From names an ID that is not on the sheet; drawn without that supply" },
   ROW_NO_ID:         { level: "warning", about: "a row has data but no ID; it is ignored" },
   UNKNOWN_TYPE:      { level: "warning", about: "Type is not one of the known types; drawn as a feeder" },
   UNKNOWN_PROT:      { level: "warning", about: "Protection is not a known device; the default symbol is drawn" },
@@ -620,11 +628,12 @@ const DIAG = {
   RANK_CYCLE:        { level: "warning", about: "two rows each demand to sit below the other; the rank solver dropped one demand" },
 };
 
-function makeDiag(code, ids, message, row) {
+function makeDiag(code, ids, message, row, extra) {
   const def = DIAG[code];
   if (!def) throw new Error(`unknown diagnostic code ${code}`);
   const d = { code, level: def.level, ids: ids.filter(Boolean), message };
   if (row !== undefined) d.row = row;
+  if (extra) Object.assign(d, extra);
   return d;
 }
 
@@ -1206,12 +1215,42 @@ function childrenOf(items, order, pid, types){
   return out;
 }
 
-/* build items from table rows; returns {items, order, errors, warnings} */
+/* the ID on the sheet a mistyped reference most likely meant: the same
+   letters in another case or spacing, else within two edits (a slip, a
+   dropped or doubled character) — the shortest distance wins, ties to the
+   earlier row. null when nothing is near enough to suggest. */
+function nearestId(token, ids){
+  const norm=s=>String(s).toLowerCase().replace(/\s+/g,"");
+  const t=norm(token); if(!t) return null;
+  let best=null, bestD=3;
+  for(const id of ids){
+    const n=norm(id);
+    const d=n===t?0:editDistance(t,n);
+    if(d<bestD){ best=id; bestD=d; }
+  }
+  return best;
+}
+function editDistance(a,b){
+  if(Math.abs(a.length-b.length)>2) return 3;
+  const m=a.length, n=b.length; let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){
+    const cur=[i];
+    for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev=cur;
+  }
+  return prev[n];
+}
+
+/* build items from table rows; returns {items, order, errors, warnings, diagnostics}.
+   `supplies` is Feeds From as written; `parents` the ones that name a row on
+   the sheet — what the graph and the drawing use. A reference that resolves
+   to nothing is an UNKNOWN_SUPPLY error carrying, when one is near, the ID it
+   most likely meant; the row is drawn without that supply, never dropped. */
 function buildModel(rows){
   const items={}, order=[], errors=[], warnings=[], diagnostics=[];
   /* every message is also a structured diagnostic: code + the rows it names */
-  const warn=(code,ids,msg,row)=>{ warnings.push(msg); diagnostics.push(makeDiag(code,ids,msg,row)); };
-  const err=(code,ids,msg,row)=>{ errors.push(msg); diagnostics.push(makeDiag(code,ids,msg,row)); };
+  const warn=(code,ids,msg,row,extra)=>{ warnings.push(msg); diagnostics.push(makeDiag(code,ids,msg,row,extra)); };
+  const err=(code,ids,msg,row,extra)=>{ errors.push(msg); diagnostics.push(makeDiag(code,ids,msg,row,extra)); };
   rows.forEach((r,i)=>{
     const id=r.id.trim();
     if(!id){
@@ -1225,12 +1264,14 @@ function buildModel(rows){
     if(!type) warn("UNKNOWN_TYPE",[id],`Row "${id}": unknown type "${r.type}" — drawn as a feeder.`);
     items[id]={ id, type: type||FEEDER, desc:r.desc.trim(), rating:r.rating.trim(),
       voltage:r.voltage.trim(), notes:r.notes.trim(),
-      parents:r.from.split(",").map(s=>s.trim()).filter(Boolean),
+      supplies:r.from.split(",").map(s=>s.trim()).filter(Boolean), parents:[],
       prots:(r.prot||"").split(",").map(s=>s.trim()).filter(Boolean),
       variant:TYPE_VARIANTS[rawType]||null, label:r.type.trim(),   /* the symbol variant and the label the surveyor wrote */
       x:null, xLeft:null, xRight:null, land:{}, tee:{} };
     order.push(id);
   });
+  /* resolve the references once: everything downstream reads `parents` */
+  for(const id of order) items[id].parents=items[id].supplies.filter(p=>!!items[p]);
   for(const id of order){           /* a feeder row whose words say capacitor
                                        bank / NER / arrester is that item */
     const it=items[id];
@@ -1266,8 +1307,13 @@ function buildModel(rows){
   }
   for(const id of order){
     const it=items[id];
-    for(const p of it.parents)
-      if(!items[p]) err("UNKNOWN_SUPPLY",[id,p],`"${id}" feeds from unknown ID "${p}" — check the Feeds from column.`);
+    for(const p of it.supplies)
+      if(!items[p]){
+        const near=nearestId(p, order.filter(o=>o!==id));
+        err("UNKNOWN_SUPPLY",[id,p],
+          `"${id}" feeds from unknown ID "${p}"${near?` — did you mean "${near}"?`:" — check the Feeds from column."} Drawn without that supply.`,
+          undefined, near?{fix:{id,field:"from",from:p,to:near}}:undefined);
+      }
     if(it.type===TRANSFORMER){
       const up=order.map(q=>items[q]).filter(c=>c.parents.includes(it.id)
                                             && [MV_BUSBAR,RMU].includes(c.type));
@@ -1276,9 +1322,11 @@ function buildModel(rows){
       if(up.length && dn.length)
         warn("TX_BOTH_LEVELS",[id],`"${id}" feeds both an MV and an LV board — drawn as a step-up.`);
     }
-    if([TRANSFORMER].includes(it.type) && !it.parents.length)
+    /* "no Feeds From" means the cell is empty; a cell naming only unknown
+       IDs has already been reported once, above */
+    if([TRANSFORMER].includes(it.type) && !it.supplies.length)
       warn("TX_NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn with an open supply terminal.`);
-    else if(!it.parents.length && !isRoot(it.type))
+    else if(!it.supplies.length && !isRoot(it.type))
       warn("NO_SUPPLY",[id],`"${id}" has no Feeds From — drawn without a supply.`);
     /* a supply that cannot feed this row: the row draws floating */
     for(const p of it.parents){
@@ -3168,7 +3216,7 @@ function drawEquipmentTable(svg, table, xLeft, yTop, { wrap, textWidth }){
   y+=6;
   const heads=EQ_HEADS;
   const rows=order.map(i=>{ const it=items[i];
-    return [it.id,eqTypeLabel(it),it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>wrap(v)); });
+    return [it.id,eqTypeLabel(it),it.desc,it.rating,it.voltage,it.prots.join(", "),(it.supplies||it.parents).join(", "),it.notes].map(v=>wrap(v)); });
   const cols=heads.map((h,i)=>Math.max(textWidth(h,size),...rows.flatMap(r=>r[i].map(l=>textWidth(l,size))))*1.15+2*pad);
   const x1=x0+cols.reduce((a,b)=>a+b,0), yHead=y;
   svg.line(x0,y,x1,y,1.2);
@@ -3610,7 +3658,7 @@ function graphSignature(g) {
  *   const out = draw(info, rows, { dxf: true });
  *   out.errors / out.warnings   messages from the reader (buildModel)
  *   out.items / out.order       the model
- *   out.svg                     the SVG document, or null when errors stop the drawing
+ *   out.svg                     the SVG document (null only for an empty table)
  *   out.dxf                     the R12 DXF text when asked for
  *   out.pdf                     the one-page A3 PDF when asked for
  *
@@ -3635,7 +3683,8 @@ function draw(info, rows, { dxf = false, pdf = false, check = false, view = null
   const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, facts: null, svg: null, dxf: null, pdf: null };
   if (!order.length) { out.diagnostics.push(makeDiag("EMPTY_SHEET", [], "The table has no rows with an ID.")); return out; }
   out.graph = buildGraph(items, order);
-  if (errors.length) return out;
+  /* errors do not withhold the drawing (constitution §6): a duplicate row was
+     dropped and named, an unknown supply left the row floating and named */
   out.facts = buildFacts(items, order, out.graph);
   for (const d of out.facts.dropped)
     out.diagnostics.push(makeDiag("RANK_CYCLE", [d.a, d.b], `"${d.a}" and "${d.b}" cannot both be below each other — one of them is drawn on the row above the other.`));
@@ -3665,8 +3714,9 @@ function draw(info, rows, { dxf = false, pdf = false, check = false, view = null
  * at that moment: afterwards it is an ordinary row and every cell is edited
  * as usual. Nothing here reads or changes connectivity (constitution §2): the
  * supply is the drop target, else the best supply on the sheet for that Type
- * (supplies.js), else the neighbour's; the voltage is a label inferred from
- * that supply's label, the protection the usual device.
+ * (supplies.js), else the neighbour's — and nothing at all for a source; the
+ * voltage is a label inferred from that supply's label, the protection the
+ * usual device.
  *
  *   proposeRow(items, order, { type, targetId, sibling })
  *     → { id, type, desc, rating, voltage, prot, from, notes, proposed: [field…] }
@@ -3779,15 +3829,22 @@ function proposeRow(items, order, { type = "", targetId = "", sibling = null } =
   const mark = f => { if (row[f] && !row.proposed.includes(f)) row.proposed.push(f); };
 
   const canon = ALIASES[String(type).trim().toLowerCase().replace(/\s+/g, " ")] || null;
-  /* the drop target if there was one; else the best supply on the sheet for
-     this Type, so the new row lands where it belongs; else, with no Type to
-     reason from, the row above's supply */
-  row.from = targetId
-    || (canon ? defaultSupply(items, order, canon) : "")
-    || (sibling && sibling.from ? sibling.from.trim() : "");
+  /* a source starts with no supply, whatever it was dropped on and whatever
+     the row above says: an incomer or a generator is fed from off the sheet,
+     and what it feeds is named in that item's own Feeds From. Otherwise the
+     drop target if there was one; else the best supply on the sheet for this
+     Type, so the new row lands where it belongs; else, with no Type to reason
+     from, the row above's supply */
+  row.from = isRoot(canon) ? ""
+    : (targetId
+       || (canon ? defaultSupply(items, order, canon) : "")
+       || (sibling && sibling.from ? sibling.from.trim() : ""));
   mark("from");
-  const supplyId = row.from.split(",").map(s => s.trim()).filter(Boolean)[0] || "";
-  const supply = supplyId && items[supplyId] ? items[supplyId] : null;
+  /* the label side may still read the item the row was dropped on: a source
+     takes its voltage from the board it will feed, though that board is not
+     its supply (constitution §2 — a voltage is a label, not a connection) */
+  const refId = (row.from || targetId).split(",").map(s => s.trim()).filter(Boolean)[0] || "";
+  const supply = refId && items[refId] ? items[refId] : null;
 
   if (type) {
     row.id = nextId(type, order); mark("id");
@@ -3797,6 +3854,38 @@ function proposeRow(items, order, { type = "", targetId = "", sibling = null } =
     row.voltage = proposeVoltage(items, order, type, supply); mark("voltage");
   }
   return row;
+}
+
+/* Edits to the table that keep its meaning — the page's one place for them.
+ *
+ * A survey is edited far more than it is written, and the edit that most
+ * often breaks a sheet is a rename: an ID other rows name in their Feeds From
+ * changes, and every one of those references dangles. Renaming is a spelling
+ * change, not a topology change (constitution §3: the same edges under a new
+ * name), so the references follow.
+ *
+ *   renameReferences(rows, oldId, newId) → rows changed
+ *   canFollowRename(rows, rowIndex, newId) → false when another row already
+ *     carries newId: then nothing follows, because moving the references would
+ *     re-attach them to a row the surveyor did not mean; the reader reports
+ *     the dangling references with the fix it suggests, and the duplicate.
+ */
+function renameReferences(rows, oldId, newId){
+  const o=String(oldId||"").trim(), n=String(newId||"").trim();
+  if(!o || !n || o===n) return 0;
+  let changed=0;
+  for(const r of rows){
+    const toks=String(r.from||"").split(",").map(t=>t.trim());
+    if(!toks.includes(o)) continue;
+    r.from=toks.filter(Boolean).map(t=>t===o?n:t).join(", ");
+    changed++;
+  }
+  return changed;
+}
+
+function canFollowRename(rows, rowIndex, newId){
+  const n=String(newId||"").trim();
+  return !!n && !rows.some((r,i)=>i!==rowIndex && String(r.id||"").trim()===n);
 }
 
 /* ------------------------------------------------ presets — GENERATED by tools/gen-fixtures.mjs from testdata/, do not edit */
@@ -4009,20 +4098,43 @@ function messageRow(msg){
   }
   return -1;
 }
-function showProblems(errors, warnings){
+/* the problems box: errors first, then warnings, each pointing at its row;
+   a diagnostic that carries a fix (an unknown supply with a likely ID) gets a
+   button that applies it — one click, and only that click, changes the table */
+function showProblems(diagnostics){
   const probs=$("#problems");
-  const line=(msg,cls)=>{
-    const i=messageRow(msg);
-    return `<div class="${cls}"${i>=0?` data-row="${i}"`:""}>${esc(msg)}</div>`;
+  const rowOf=d=>d.row!==undefined?d.row-1:messageRow(d.message);
+  const line=d=>{
+    const i=rowOf(d), cls=d.level==="error"?"err":"warn";
+    const fix=d.fix?` <button type="button" class="fix" data-fix="${esc(JSON.stringify(d.fix))}" title="Write ${esc(d.fix.to)} into the Feeds from of ${esc(d.fix.id)}">use ${esc(d.fix.to)}</button>`:"";
+    return `<div class="${cls}"${i>=0?` data-row="${i}"`:""}>${esc(d.message)}${fix}</div>`;
   };
-  probs.innerHTML=errors.map(e=>line(e,"err")).concat(warnings.map(w=>line(w,"warn"))).join("");
-  probs.hidden=!(errors.length||warnings.length);
+  const ordered=diagnostics.filter(d=>d.level==="error").concat(diagnostics.filter(d=>d.level!=="error"));
+  probs.innerHTML=ordered.map(line).join("");
+  probs.hidden=!ordered.length;
   for(const tr of eqbody.querySelectorAll("tr")) tr.classList.remove("err","warn");
-  const mark=(msgs,cls)=>{ for(const m of msgs){ const i=messageRow(m); const tr=eqbody.querySelector(`tr[data-i="${i}"]`); if(tr) tr.classList.add(cls); } };
-  mark(warnings,"warn"); mark(errors,"err");
+  for(const d of ordered){ const tr=eqbody.querySelector(`tr[data-i="${rowOf(d)}"]`); if(tr) tr.classList.add(d.level==="error"?"err":"warn"); }
+}
+$("#problems").addEventListener("click",e=>{
+  const b=e.target.closest("button.fix"); if(!b) return;
+  e.stopPropagation();
+  const fix=JSON.parse(b.dataset.fix), i=rowIndexOf(fix.id); if(i<0) return;
+  snapshot(true);
+  const row=state.rows[i];
+  row[fix.field]=row[fix.field].split(",").map(s=>s.trim()).filter(Boolean).map(t=>t===fix.from?fix.to:t).join(", ");
+  clearMark(row,fix.field);
+  const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="${fix.field}"]`); if(el){ el.value=row[fix.field]; el.classList.remove("proposed"); }
+  redraw(); persist();
+});
+/* a stamp of what the drawing was made from, so a test can tell a fresh
+   drawing from a stale one without guessing (the baseline reads it) */
+function modelRev(){
+  let h=5381; const s=JSON.stringify(state.rows.map(r=>[r.id,r.type,r.desc,r.rating,r.voltage,r.prot,r.from,r.notes]))+JSON.stringify(view_);
+  for(let i=0;i<s.length;i++) h=((h*33)^s.charCodeAt(i))>>>0;
+  return h.toString(36);
 }
 function redraw(){
-  const {items,order,errors,warnings}=buildModel(state.rows);
+  const {items,order,warnings,diagnostics}=buildModel(state.rows);
   refreshIdList();
   if(!order.length){
     $("#sheet").innerHTML="";
@@ -4033,12 +4145,17 @@ function redraw(){
     syncView();
     return;
   }
-  showProblems(errors, warnings);
-  if(errors.length) return; /* keep the last good drawing on screen */
+  /* an error never withholds the drawing: the row it names floats or is
+     dropped, and the message says so (constitution §6) */
   applyView(view_);
   const width=layout(items,order);
+  const said=warnings.length;
   const svgStr=render(state.info,items,order,width,warnings);
+  /* what the drawing itself had to say (a coupler it could not place) joins the box */
+  for(const msg of warnings.slice(said)) diagnostics.push(diagFromMessage(msg)||makeDiag("COUPLER_INVALID",[],msg));
+  showProblems(diagnostics);
   $("#sheet").innerHTML=svgStr;
+  $("#sheet").dataset.rev=modelRev();
   decorateSheet();
   syncView();
 }
@@ -4072,7 +4189,10 @@ function selectId(id){
 }
 /* what a drop lands on by preference: the things a row can feed from */
 const DROP_TARGETS=["lv busbar","mv busbar","rmu","mcc","transformer","feeder","generator","mv incomer"];
-function symbolAt(clientX,clientY){
+/* when the point is where something will be fed FROM, a bar beats the way
+   that leaves it at that very point (a feeder's dot sits on its board) */
+const SUPPLY_ORDER=["lv busbar","mv busbar","rmu","mcc","transformer","generator","mv incomer","feeder"];
+function symbolAt(clientX,clientY,asSupply){
   /* the groups under the point, topmost first; prefer one whose symbol
      itself (not just its padded hit area) contains the point, then a
      supply-side kind, then the topmost */
@@ -4092,7 +4212,9 @@ function symbolAt(clientX,clientY){
   };
   /* the smallest symbol containing the point wins: a bar over the MCC
      whose enclosure starts at that bar */
-  const hits=groups.filter(inside).sort((a,b)=>{ const A=box(a), B=box(b); return (A.w+8)*(A.h+8)-(B.w+8)*(B.h+8); });
+  const area=g=>{ const A=box(g); return (A.w+8)*(A.h+8); };
+  const pref=g=>{ const i=SUPPLY_ORDER.indexOf(g.dataset.kind); return i<0?SUPPLY_ORDER.length:i; };
+  const hits=groups.filter(inside).sort((a,b)=>(asSupply?pref(a)-pref(b):0) || area(a)-area(b));
   return hits[0] || groups.find(g=>DROP_TARGETS.includes(g.dataset.kind)) || groups[0];
 }
 function rowIndexOf(id){ return state.rows.findIndex(r=>r.id.trim()===id); }
@@ -4129,8 +4251,13 @@ function refillProposal(row){
   const kept=row.from.trim() && !marks.has("from") ? row.from.trim() : "";
   const p=proposeRow(items,order,{type:row.type,targetId:kept});
   for(const f of ["from","id","prot","voltage"]){
-    if(!p[f]) continue;
     if(row[f].trim() && !marks.has(f)) continue;    /* the surveyor typed it: leave it */
+    if(!p[f]){                    /* the new Type proposes nothing here: an
+                                     earlier proposal must not be left behind
+                                     (a generator has no supply and no device) */
+      if(f!=="id" && marks.has(f)){ row[f]=""; marks.delete(f); }
+      continue;
+    }
     if(f==="id" && row.id.trim() && !marks.has("id")) continue;
     row[f]=p[f]; marks.add(f);
   }
@@ -4185,14 +4312,14 @@ function buildPalette(){
   vp.addEventListener("dragover",e=>{
     if(!isChip(e)) return;
     e.preventDefault(); e.dataTransfer.dropEffect="copy";
-    setOver(symbolAt(e.clientX,e.clientY));
+    setOver(symbolAt(e.clientX,e.clientY,true));
   });
   vp.addEventListener("dragleave",e=>{ if(e.target===vp){ vp.classList.remove("dropping"); setOver(null); } });
   vp.addEventListener("drop",e=>{
     if(!isChip(e)) return;
     e.preventDefault();
     const type=e.dataTransfer.getData("text/sld-type");
-    const g=symbolAt(e.clientX,e.clientY);
+    const g=symbolAt(e.clientX,e.clientY,true);
     vp.classList.remove("dropping"); setOver(null);
     addRowFor(type, g?g.dataset.id:"");
   });
@@ -4290,8 +4417,24 @@ function refreshIdList(input){
   fillList("idlist", supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
     .map(c=>({value:prefix+c.id, label:c.label})));
 }
+/* renaming an ID: the name it had when the cell was entered, so that on
+   commit every Feeds From that named it can follow (src/core/edit.js) */
+let idBefore="";
+eqbody.addEventListener("change",e=>{
+  if(e.target.dataset.f!=="id") return;
+  const i=+e.target.closest("tr").dataset.i, row=state.rows[i]; if(!row) return;
+  const before=idBefore.trim(), after=row.id.trim(); idBefore=after;
+  if(!before || before===after) return;
+  if(!canFollowRename(state.rows,i,after)) return;   /* another row owns that ID: nothing follows */
+  /* no snapshot of its own: the typing that changed the ID already took one,
+     so a single undo brings back the old name and its references together */
+  if(!renameReferences(state.rows,before,after)) return;
+  for(const [k,r] of state.rows.entries()){ const el=eqbody.querySelector(`tr[data-i="${k}"] [data-f="from"]`); if(el && el.value!==r.from) el.value=r.from; }
+  redraw(); persist();
+});
 eqbody.addEventListener("focusin",e=>{
   const f=e.target.dataset.f; if(!f) return;
+  if(f==="id") idBefore=(state.rows[+e.target.closest("tr").dataset.i]||{}).id||"";
   const type=(state.rows[+e.target.closest("tr").dataset.i]||{}).type||"";
   if(f==="voltage") fillList("voltlist", quickVolt(type));
   else if(f==="rating") fillList("ratinglist", quickRating(type));
@@ -4317,7 +4460,7 @@ eqbody.addEventListener("keydown",e=>{
   const tr=e.target.closest("tr"), i=+tr.dataset.i;
   if(e.key==="Enter" && !e.altKey && !e.ctrlKey && !e.metaKey){
     e.preventDefault();
-    if(i===state.rows.length-1){ addRow(); focusCell(state.rows.length-1, f==="notes"?"id":f); }
+    if(i===state.rows.length-1){ addRow(true); focusCell(state.rows.length-1, f==="notes"?"id":f); }
     else focusCell(i+1, f);
   } else if(e.altKey && (e.key==="ArrowUp"||e.key==="ArrowDown")){
     e.preventDefault();
@@ -4434,14 +4577,41 @@ function syncView(){
     view.sl=view.st=null;
   }
 }
+/* re-wire a row from the drawing: its Feeds From becomes the target (or,
+   with `also`, gains it as a further supply). The one column that carries
+   topology is the one written — nothing else moves (constitution §1). */
+function rewire(id, targetId, also){
+  const i=rowIndexOf(id); if(i<0 || !targetId || targetId===id) return false;
+  const row=state.rows[i];
+  const have=row.from.split(",").map(s=>s.trim()).filter(Boolean);
+  const next=also ? (have.includes(targetId)?have:have.concat([targetId])) : [targetId];
+  if(next.join(", ")===have.join(", ")) return false;
+  snapshot(true);
+  row.from=next.join(", ");
+  clearMark(row,"from");
+  const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="from"]`); if(el){ el.value=row.from; el.classList.remove("proposed"); }
+  redraw(); persist(); selectId(id);
+  return true;
+}
 (function bindViewer(){
   const pointers=new Map();
   const onScrollbar=e=>e.offsetX>viewport.clientWidth || e.offsetY>viewport.clientHeight;
+  /* a drag that starts on a symbol moves its connection, not the sheet:
+     the symbol under the pointer while dragging is the supply it will be
+     fed from; panning starts on empty canvas */
+  let over=null;
+  const setOver=g=>{ if(over===g) return; if(over) over.classList.remove("over"); over=g; if(over) over.classList.add("over"); };
+  const endWire=p=>{
+    setOver(null); viewport.classList.remove("wiring");
+    if(p && p.grab){ const g=document.querySelector(`#sheet svg g[data-id="${CSS.escape(p.grab)}"]`); if(g) g.classList.remove("moving"); }
+  };
   viewport.addEventListener("pointerdown",e=>{
     if(e.button!==0 || onScrollbar(e)) return;
     e.preventDefault();
     try{ viewport.setPointerCapture(e.pointerId); }catch(err){}   /* synthetic events have no pointer to capture */
-    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY});
+    const g=symbolAt(e.clientX,e.clientY);
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,grab:g?g.dataset.id:null,mode:null});
+    if(pointers.size>1) for(const q of pointers.values()){ if(q.mode==="wire") endWire(q); q.mode="pan"; }   /* two fingers: a pinch, never a wire */
     viewport.classList.add("dragging");
     viewport.focus({preventScroll:true});
   });
@@ -4449,8 +4619,17 @@ function syncView(){
     const p=pointers.get(e.pointerId);
     if(!p) return;
     if(pointers.size===1){
-      viewport.scrollLeft-=e.clientX-p.x; viewport.scrollTop-=e.clientY-p.y;
-      view.fitted=false;
+      if(!p.mode && Math.hypot(e.clientX-p.x0,e.clientY-p.y0)>=6){
+        p.mode=p.grab?"wire":"pan";
+        if(p.mode==="wire"){ viewport.classList.add("wiring"); const g=document.querySelector(`#sheet svg g[data-id="${CSS.escape(p.grab)}"]`); if(g) g.classList.add("moving"); }
+      }
+      if(p.mode==="wire"){
+        const g=symbolAt(e.clientX,e.clientY,true);
+        setOver(g && g.dataset.id!==p.grab ? g : null);
+      } else if(p.mode==="pan"){
+        viewport.scrollLeft-=e.clientX-p.x; viewport.scrollTop-=e.clientY-p.y;
+        view.fitted=false;
+      }
     } else if(pointers.size===2){    /* pinch */
       const [a,b]=[...pointers.values()];
       const before=Math.hypot(a.x-b.x,a.y-b.y);
@@ -4466,6 +4645,12 @@ function syncView(){
     const p=pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
     if(!pointers.size) viewport.classList.remove("dragging");
+    if(p && p.mode==="wire"){
+      const g=e.type==="pointerup" ? symbolAt(e.clientX,e.clientY,true) : null;
+      endWire(p);
+      if(g && g.dataset.id!==p.grab) rewire(p.grab, g.dataset.id, e.shiftKey);   /* released on nothing: nothing happens */
+      return;
+    }
     /* a press that did not pan is a click: select the symbol under it */
     if(e.type==="pointerup" && p && Math.hypot(e.clientX-p.x0,e.clientY-p.y0)<4){
       const g=symbolAt(e.clientX,e.clientY);
@@ -4543,10 +4728,16 @@ function replaceState(s){
   state=s; view.fitted=true;
   writeInfoInputs(); rebuildTable(); redraw(); persist();
 }
-function addRow(){
+/* a new row at the end. From the keyboard (Enter on the last row) it repeats
+   the row above — same Type, same supply, the engine's ID, device and
+   voltage, all tinted — because a run of feeders on one board or pumps on
+   one MCC is what a survey mostly is. The + Add row button keeps the blank
+   row, for a deliberately different item. */
+function addRow(repeat){
   snapshot(true);
   const sibling=state.rows.length?state.rows[state.rows.length-1]:null;
-  state.rows.push(proposedRow("","",sibling));
+  const again=repeat && sibling && sibling.type.trim();
+  state.rows.push(again ? proposedRow(sibling.type.trim(), sibling.from.trim(), null) : proposedRow("","",sibling));
   rebuildTable(); redraw(); persist();
 }
 
@@ -4633,8 +4824,7 @@ function loadXlsx(){
   });
 }
 async function importFile(file){
-  const name=file.name.toLowerCase(), out=$("#copystate");
-  const say=m=>{ out.textContent=m; setTimeout(()=>{ out.textContent=""; },8000); };
+  const name=file.name.toLowerCase();
   try{
     let info={site:"",date:"",by:"",notes:""}, rows;
     if(name.endsWith(".json")){
@@ -4669,6 +4859,14 @@ const eqPanel=eqbody.closest("section")||eqbody;
 eqPanel.addEventListener("dragover",e=>{ if([...e.dataTransfer.types].includes("Files")){ e.preventDefault(); } });
 eqPanel.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f){ e.preventDefault(); importFile(f); } });
 /* ------------------------------------------------ getting it out */
+/* the one status line, under the drawing's bar: imports and exports report
+   here. Only the timer that wrote the current message may clear it, so an
+   earlier message's timeout never wipes a later one */
+let sayN=0;
+function say(m, keep){
+  const out=$("#copystate"), n=++sayN; out.textContent=m;
+  if(!keep) setTimeout(()=>{ if(n===sayN) out.textContent=""; },8000);
+}
 /* Four files, each written from the table by the engine. Inside the
    claude.ai viewer a page cannot download by itself and the viewer's save
    prompt does it; opened as a file, the browser's own download does. */
@@ -4676,8 +4874,6 @@ function fileName(ext){
   return ((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+"."+ext;
 }
 async function saveFile(name, text, mime, note){
-  const out=$("#copystate");
-  const say=(m,keep)=>{ out.textContent=m; if(!keep) setTimeout(()=>{ out.textContent=""; },8000); };
   const dl=(window.claude && typeof window.claude.use==="function") ? await window.claude.use("downloads") : null;
   if(dl){
     try{ await dl.save({filename:name, data:text}); say(`${name} saved${note?" — "+note:""}.`); }
@@ -4697,14 +4893,14 @@ async function saveFile(name, text, mime, note){
 }
 /* the model, laid out, ready for an exporter — or null when the table cannot be drawn */
 function currentSheet(){
-  const {items,order,errors}=buildModel(state.rows);
-  if(!order.length || errors.length) return null;
+  const {items,order}=buildModel(state.rows);
+  if(!order.length) return null;
   applyView(view_);
   return [items,order,layout(items,order)];
 }
 function exportSheet(ext, mime, note, make){
   const sheet=currentSheet();
-  if(!sheet){ $("#copystate").textContent="Nothing to export yet — fix the table first."; return; }
+  if(!sheet){ say("Nothing to export yet — add a row with an ID first."); return; }
   saveFile(fileName(ext), make(state.info,...sheet), mime, note);
 }
 $("#csv").addEventListener("click",()=>{
