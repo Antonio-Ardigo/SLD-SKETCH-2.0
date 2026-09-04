@@ -484,6 +484,14 @@ const MV_INCOMER="mv incomer", RMU="rmu", MV_BUSBAR="mv busbar",
 const TERMINALS=[CAPACITOR,EARTHING,ARRESTER];   /* loads with no outgoing */
 const LV_LOADS=[FEEDER,MCC,PUMP].concat(TERMINALS);
 
+/* An ID as identity. A survey is typed by hand, often over days and by more
+   than one person, so "BB1", "bb1" and "BB 1" are one board — and every part
+   of the app must agree about that, or it contradicts itself: the reader used
+   to call "bb1" an unknown ID while the proposal refused to hand out "BB1"
+   because it considered "bb1" to be holding it. Matching is still exact
+   first; this is what a miss falls back to. */
+const idKey = s => String(s==null?"":s).trim().toLowerCase().replace(/\s+/g,"");
+
 const TYPE_LABELS = [
   ["MV Incomer", MV_INCOMER], ["MV Busbar", MV_BUSBAR], ["RMU", RMU],
   ["Generator", GENERATOR], ["Transformer", TRANSFORMER],
@@ -606,6 +614,8 @@ const DIAG = {
   DUP_ID:            { level: "error",   about: "two rows share an ID" },
   UNKNOWN_SUPPLY:    { level: "error",   about: "Feeds From names an ID that is not on the sheet; drawn without that supply" },
   ROW_NO_ID:         { level: "warning", about: "a row has data but no ID; it is ignored" },
+  SUPPLY_CASE:       { level: "warning", about: "Feeds From names an ID in another case or spacing; read as the row it matches" },
+  ID_CASE_CLASH:     { level: "warning", about: "two rows whose IDs differ only in case or spacing; references go to the first" },
   UNKNOWN_TYPE:      { level: "warning", about: "Type is not one of the known types; drawn as a feeder" },
   UNKNOWN_PROT:      { level: "warning", about: "Protection is not a known device; the default symbol is drawn" },
   PROT_ON_INCOMER:   { level: "warning", about: "protection on an MV incomer is the utility's and is not drawn" },
@@ -1240,7 +1250,12 @@ function editDistance(a,b){
    to nothing is an UNKNOWN_SUPPLY error carrying, when one is near, the ID it
    most likely meant; the row is drawn without that supply, never dropped. */
 function buildModel(rows){
-  const items={}, order=[], errors=[], warnings=[], diagnostics=[];
+  /* no prototype: the rows are keyed by whatever the surveyor typed, and on a
+     plain {} a Feeds From of "constructor", "toString" or "__proto__" finds an
+     inherited function, is taken for a row that exists, and kills the drawing
+     for the whole sheet with nothing on screen to say which cell did it */
+  const items=Object.create(null);
+  const order=[], errors=[], warnings=[], diagnostics=[];
   /* every message is also a structured diagnostic: code + the rows it names */
   const warn=(code,ids,msg,row,extra)=>{ warnings.push(msg); diagnostics.push(makeDiag(code,ids,msg,row,extra)); };
   const err=(code,ids,msg,row,extra)=>{ errors.push(msg); diagnostics.push(makeDiag(code,ids,msg,row,extra)); };
@@ -1263,8 +1278,30 @@ function buildModel(rows){
       x:null, xLeft:null, xRight:null, land:{}, tee:{} };
     order.push(id);
   });
-  /* resolve the references once: everything downstream reads `parents` */
-  for(const id of order) items[id].parents=items[id].supplies.filter(p=>!!items[p]);
+  /* Resolve the references once: everything downstream reads `parents`.
+     Exact spelling first, then the same letters in another case or spacing —
+     "bb1" and "BB 1" are the board called "BB1", and reading them as such is
+     the whole of the fix, so the surveyor is told what was read rather than
+     asked to correct it. Two rows whose IDs differ only that way are not
+     refused (both draw, and DUP_ID stays exact); the references go to the
+     first, and that is said out loud. */
+  const byKey=Object.create(null);
+  for(const id of order){
+    const k=idKey(id);
+    if(byKey[k]===undefined) byKey[k]=id;
+    else warn("ID_CASE_CLASH",[byKey[k],id],
+      `"${id}" and "${byKey[k]}" are the same ID written two ways — Feeds From that names either is read as "${byKey[k]}".`);
+  }
+  for(const id of order){
+    const it=items[id];
+    for(const p of it.supplies){
+      if(items[p]){ it.parents.push(p); continue; }
+      const hit=byKey[idKey(p)];
+      if(hit===undefined) continue;                 /* unknown: reported below */
+      it.parents.push(hit);
+      warn("SUPPLY_CASE",[id,hit],`"${id}" feeds from "${p}" — read as "${hit}".`);
+    }
+  }
   for(const id of order){           /* a feeder row whose words say capacitor
                                        bank / NER / arrester is that item */
     const it=items[id];
@@ -1301,8 +1338,9 @@ function buildModel(rows){
   for(const id of order){
     const it=items[id];
     for(const p of it.supplies)
-      if(!items[p]){
-        const near=nearestId(p, order.filter(o=>o!==id));
+      if(!items[p] && byKey[idKey(p)]===undefined){
+        /* the row's own name, however spelled, is never the answer */
+        const near=nearestId(p, order.filter(o=>idKey(o)!==idKey(id)));
         err("UNKNOWN_SUPPLY",[id,p],
           `"${id}" feeds from unknown ID "${p}"${near?` — did you mean "${near}"?`:" — check the Feeds from column."} Drawn without that supply.`,
           undefined, near?{fix:{id,field:"from",from:p,to:near}}:undefined);
@@ -4017,15 +4055,23 @@ function proposeRow(items, order, { type = "", targetId = "", sibling = null } =
  *     carries newId: then nothing follows, because moving the references would
  *     re-attach them to a row the surveyor did not mean; the reader reports
  *     the dangling references with the fix it suggests, and the duplicate.
+ *
+ * Both judge identity by `idKey`, the same rule the reader resolves Feeds From
+ * by, so a rename cannot leave the table meaning something the drawing reads
+ * differently: a reference written "bb1" follows a rename of "BB1", and a
+ * rename onto "tx1" beside an existing "TX1" does not carry references to a
+ * name that would now be ambiguous.
  */
+
 function renameReferences(rows, oldId, newId){
   const o=String(oldId||"").trim(), n=String(newId||"").trim();
   if(!o || !n || o===n) return 0;
+  const k=idKey(o);
   let changed=0;
   for(const r of rows){
     const toks=String(r.from||"").split(",").map(t=>t.trim());
-    if(!toks.includes(o)) continue;
-    r.from=toks.filter(Boolean).map(t=>t===o?n:t).join(", ");
+    if(!toks.some(t=>idKey(t)===k)) continue;
+    r.from=toks.filter(Boolean).map(t=>idKey(t)===k?n:t).join(", ");
     changed++;
   }
   return changed;
@@ -4033,7 +4079,7 @@ function renameReferences(rows, oldId, newId){
 
 function canFollowRename(rows, rowIndex, newId){
   const n=String(newId||"").trim();
-  return !!n && !rows.some((r,i)=>i!==rowIndex && String(r.id||"").trim()===n);
+  return !!n && !rows.some((r,i)=>i!==rowIndex && idKey(r.id)===idKey(n));
 }
 
 /* ------------------------------------------------ presets — GENERATED by tools/gen-fixtures.mjs from testdata/, do not edit */

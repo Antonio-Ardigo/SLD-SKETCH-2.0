@@ -64,3 +64,23 @@ test("a rename onto an ID another row already has does not follow", () => {
   assert.equal(canFollowRename(rows, i, "  F9 "), true);
   assert.equal(canFollowRename(rows, i, ""), false);
 });
+
+test("a reference follows a rename however it was spelled", () => {
+  const rows = sheet();
+  rows.push({ id: "F9", type: "Feeder", from: "bb1" });      /* the same board, quietly */
+  rows.push({ id: "F10", type: "Feeder", from: "BB 1" });    /* and with a stray space */
+  const n = renameReferences(rows, "BB1", "MSB");
+  assert.equal(n, 5, "BC1, F1, F2, F9 and F10 all name BB1");
+  assert.equal(rows.find(r => r.id === "F9").from, "MSB");
+  assert.equal(rows.find(r => r.id === "F10").from, "MSB");
+  assert.equal(rows.find(r => r.id === "BB10").from, "TX1", "a longer ID that starts the same is still not touched");
+});
+
+test("a rename onto an ID another row already carries in any case does not follow", () => {
+  const rows = sheet();
+  const i = rows.findIndex(r => r.id === "F1");
+  assert.equal(canFollowRename(rows, i, "f2"), false, "F2 exists, however it is spelled");
+  assert.equal(canFollowRename(rows, i, "B B 1"), false, "so does BB1");
+  assert.equal(canFollowRename(rows, i, "f1"), true, "its own name is fine");
+  assert.equal(canFollowRename(rows, i, "F9"), true);
+});

@@ -52,10 +52,10 @@
   },
   "W2_case_mismatch_bb1": {
     "outcome": {
-      "errors": 1,
+      "errors": 0,
       "drawing": "fresh",
       "export": true,
-      "suggestion": true
+      "suggestion": false
     }
   },
   "W3_enter_x6_ids_only": {

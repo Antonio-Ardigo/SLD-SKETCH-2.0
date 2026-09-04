@@ -17,6 +17,8 @@ export const DIAG = {
   DUP_ID:            { level: "error",   about: "two rows share an ID" },
   UNKNOWN_SUPPLY:    { level: "error",   about: "Feeds From names an ID that is not on the sheet; drawn without that supply" },
   ROW_NO_ID:         { level: "warning", about: "a row has data but no ID; it is ignored" },
+  SUPPLY_CASE:       { level: "warning", about: "Feeds From names an ID in another case or spacing; read as the row it matches" },
+  ID_CASE_CLASH:     { level: "warning", about: "two rows whose IDs differ only in case or spacing; references go to the first" },
   UNKNOWN_TYPE:      { level: "warning", about: "Type is not one of the known types; drawn as a feeder" },
   UNKNOWN_PROT:      { level: "warning", about: "Protection is not a known device; the default symbol is drawn" },
   PROT_ON_INCOMER:   { level: "warning", about: "protection on an MV incomer is the utility's and is not drawn" },

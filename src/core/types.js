@@ -9,6 +9,14 @@ const MV_INCOMER="mv incomer", RMU="rmu", MV_BUSBAR="mv busbar",
 const TERMINALS=[CAPACITOR,EARTHING,ARRESTER];   /* loads with no outgoing */
 const LV_LOADS=[FEEDER,MCC,PUMP].concat(TERMINALS);
 
+/* An ID as identity. A survey is typed by hand, often over days and by more
+   than one person, so "BB1", "bb1" and "BB 1" are one board — and every part
+   of the app must agree about that, or it contradicts itself: the reader used
+   to call "bb1" an unknown ID while the proposal refused to hand out "BB1"
+   because it considered "bb1" to be holding it. Matching is still exact
+   first; this is what a miss falls back to. */
+const idKey = s => String(s==null?"":s).trim().toLowerCase().replace(/\s+/g,"");
+
 const TYPE_LABELS = [
   ["MV Incomer", MV_INCOMER], ["MV Busbar", MV_BUSBAR], ["RMU", RMU],
   ["Generator", GENERATOR], ["Transformer", TRANSFORMER],
@@ -112,4 +120,4 @@ function protFor(item, parentId){
   return [raw, PROT_ALIASES[raw.toLowerCase().split(/\s+/).join(" ")]||null];
 }
 
-export { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, LV_LOADS, TYPE_LABELS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, stateWords, PROT_ALIASES, protFor, TYPE_VARIANTS };
+export { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, LV_LOADS, TYPE_LABELS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, stateWords, PROT_ALIASES, protFor, TYPE_VARIANTS, idKey };

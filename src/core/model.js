@@ -1,4 +1,4 @@
-import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, PROT_ALIASES, TYPE_VARIANTS } from "./types.js";
+import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, PROT_ALIASES, TYPE_VARIANTS, idKey } from "./types.js";
 import { genFeeds } from "./geometry.js";
 import { canSupply, isRoot } from "./supplies.js";
 import { txBoard } from "./layout.js";
@@ -49,7 +49,12 @@ function editDistance(a,b){
    to nothing is an UNKNOWN_SUPPLY error carrying, when one is near, the ID it
    most likely meant; the row is drawn without that supply, never dropped. */
 function buildModel(rows){
-  const items={}, order=[], errors=[], warnings=[], diagnostics=[];
+  /* no prototype: the rows are keyed by whatever the surveyor typed, and on a
+     plain {} a Feeds From of "constructor", "toString" or "__proto__" finds an
+     inherited function, is taken for a row that exists, and kills the drawing
+     for the whole sheet with nothing on screen to say which cell did it */
+  const items=Object.create(null);
+  const order=[], errors=[], warnings=[], diagnostics=[];
   /* every message is also a structured diagnostic: code + the rows it names */
   const warn=(code,ids,msg,row,extra)=>{ warnings.push(msg); diagnostics.push(makeDiag(code,ids,msg,row,extra)); };
   const err=(code,ids,msg,row,extra)=>{ errors.push(msg); diagnostics.push(makeDiag(code,ids,msg,row,extra)); };
@@ -72,8 +77,30 @@ function buildModel(rows){
       x:null, xLeft:null, xRight:null, land:{}, tee:{} };
     order.push(id);
   });
-  /* resolve the references once: everything downstream reads `parents` */
-  for(const id of order) items[id].parents=items[id].supplies.filter(p=>!!items[p]);
+  /* Resolve the references once: everything downstream reads `parents`.
+     Exact spelling first, then the same letters in another case or spacing —
+     "bb1" and "BB 1" are the board called "BB1", and reading them as such is
+     the whole of the fix, so the surveyor is told what was read rather than
+     asked to correct it. Two rows whose IDs differ only that way are not
+     refused (both draw, and DUP_ID stays exact); the references go to the
+     first, and that is said out loud. */
+  const byKey=Object.create(null);
+  for(const id of order){
+    const k=idKey(id);
+    if(byKey[k]===undefined) byKey[k]=id;
+    else warn("ID_CASE_CLASH",[byKey[k],id],
+      `"${id}" and "${byKey[k]}" are the same ID written two ways — Feeds From that names either is read as "${byKey[k]}".`);
+  }
+  for(const id of order){
+    const it=items[id];
+    for(const p of it.supplies){
+      if(items[p]){ it.parents.push(p); continue; }
+      const hit=byKey[idKey(p)];
+      if(hit===undefined) continue;                 /* unknown: reported below */
+      it.parents.push(hit);
+      warn("SUPPLY_CASE",[id,hit],`"${id}" feeds from "${p}" — read as "${hit}".`);
+    }
+  }
   for(const id of order){           /* a feeder row whose words say capacitor
                                        bank / NER / arrester is that item */
     const it=items[id];
@@ -110,8 +137,9 @@ function buildModel(rows){
   for(const id of order){
     const it=items[id];
     for(const p of it.supplies)
-      if(!items[p]){
-        const near=nearestId(p, order.filter(o=>o!==id));
+      if(!items[p] && byKey[idKey(p)]===undefined){
+        /* the row's own name, however spelled, is never the answer */
+        const near=nearestId(p, order.filter(o=>idKey(o)!==idKey(id)));
         err("UNKNOWN_SUPPLY",[id,p],
           `"${id}" feeds from unknown ID "${p}"${near?` — did you mean "${near}"?`:" — check the Feeds from column."} Drawn without that supply.`,
           undefined, near?{fix:{id,field:"from",from:p,to:near}}:undefined);

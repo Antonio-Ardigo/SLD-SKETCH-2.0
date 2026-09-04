@@ -71,8 +71,15 @@ try {
   check("the sheet still draws with an unknown supply", await evaluate(`!!document.querySelector('#sheet svg g[data-id="F9"]')`));
   check("exports are not blocked by the error", await evaluate(`currentSheet()!==null`));
   check("nothing near NOPE: no suggestion offered", await evaluate(`document.querySelectorAll('#problems button.fix').length`) === 0);
-  /* a near miss is named, and one click puts it right */
+  /* the same ID in another case is not a miss at all: it is read, and said */
   await evaluate(`(function(){ const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='bb1'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+  await sleep(400);
+  check("another case is read as the board it names", await evaluate(`document.querySelectorAll('#problems .err').length`) === 0
+    && await evaluate(`/read as "BB1"/.test(document.querySelector('#problems').textContent)`));
+  check("and the cell is left as the surveyor wrote it", await evaluate(`state.rows[8].from`) === "bb1");
+  check("the row is drawn on its board, not floating", await evaluate(`!!document.querySelector('#sheet svg g[data-id="F9"]')`));
+  /* a real slip is still a near miss, and one click puts it right */
+  await evaluate(`(function(){ const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='BB!'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);
   await sleep(400);
   check("a near miss offers the ID it meant", (await evaluate(`(document.querySelector('#problems button.fix')||{}).textContent`)) === "use BB1");
   await evaluate(`document.querySelector('#problems button.fix').click()`);
