@@ -39,7 +39,7 @@
     "drawing": "fresh",
     "export": true,
     "from": "BB1, BB2",
-    "typoProof": false
+    "typoProof": true
   },
   "W1_delete_board_with_ways": {
     "outcome": {
@@ -47,7 +47,7 @@
       "errors": 5,
       "drawing": "fresh",
       "export": true,
-      "orphansStillDrawn": false
+      "orphansStillDrawn": true
     }
   },
   "W2_case_mismatch_bb1": {

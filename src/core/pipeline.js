@@ -15,7 +15,8 @@ import { renderDxf } from "./dxf.js";
 import { renderPdf } from "./pdf.js";
 import { buildGraph } from "./graph.js";
 import { buildFacts } from "./facts.js";
-import { diagFromMessage, makeDiag } from "./diagnostics.js";
+import { makeDiag } from "./diagnostics.js";
+import { couplerDiagnostics } from "./couplers.js";
 import { SceneCanvas } from "./scene.js";
 import { checkScene } from "./check.js";
 import { applyView } from "./geometry.js";
@@ -43,19 +44,16 @@ export function draw(info, rows, { dxf = false, pdf = false, check = false, view
   /* errors do not withhold the drawing (constitution §6): a duplicate row was
      dropped and named, an unknown supply left the row floating and named */
   out.facts = buildFacts(items, order, out.graph);
+  /* the couplers, judged once and said once — the drawing no longer words
+     these and the reader no longer recovers the code from the wording */
+  for (const d of couplerDiagnostics(items, order)) { out.diagnostics.push(d); warnings.push(d.message); }
   for (const d of out.facts.dropped)
     out.diagnostics.push(makeDiag("RANK_CYCLE", [d.a, d.b], `"${d.a}" and "${d.b}" cannot both be below each other — one of them is drawn on the row above the other.`));
   const width = layout(items, order);
-  const drawn = warnings.slice();
   const canvas = new SceneCanvas();
-  out.svg = render(site, items, order, width, drawn, canvas);
+  out.svg = render(site, items, order, width, canvas);
   out.scene = canvas.scene();
   if (check) out.check = checkScene(out.scene, items, order);
-  /* the drawing may add its own warnings (couplers); keep them structured too */
-  for (const msg of drawn.slice(warnings.length)) {
-    warnings.push(msg);
-    out.diagnostics.push(diagFromMessage(msg) || makeDiag("COUPLER_INVALID", [], msg));
-  }
   /* the page re-reads the model for each export; do the same so no two share state */
   const again = () => { const m = buildModel(norm); return [m.items, m.order, layout(m.items, m.order)]; };
   if (dxf) { const [i2, o2, w2] = again(); out.dxf = renderDxf(site, i2, o2, w2); }

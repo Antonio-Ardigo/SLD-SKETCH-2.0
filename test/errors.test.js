@@ -8,6 +8,8 @@ import { draw, normalizeRows } from "../src/core/pipeline.js";
 import { buildModel, nearestId, editDistance } from "../src/core/model.js";
 import { protFor } from "../src/core/types.js";
 import { graphSignature } from "../src/core/graph.js";
+import { diagKey } from "../src/core/diagnostics.js";
+import { expectedEdges } from "../src/core/check.js";
 import { checkScene } from "../src/core/check.js";
 
 const BASE = [
@@ -104,4 +106,68 @@ test("every case draws, errors or not, and its checker still runs", () => {
     }
   }
   assert.ok(withErrors >= 3, "the error cases are in the pool");
+});
+
+/* Couplers: what a coupler is gets decided once, and a coupler that cannot be
+ * drawn as a tie is drawn from the end it has rather than dropped. */
+test("a coupler that is not a tie still reaches the sheet, and says what it is", () => {
+  const bars = [
+    { id: "MV1", type: "MV Incomer", voltage: "11 kV", from: "" },
+    { id: "MVB", type: "MV Busbar", voltage: "11 kV", from: "MV1" },
+    { id: "TX1", type: "Transformer", voltage: "11/0.4 kV", from: "MVB" },
+    { id: "TX2", type: "Transformer", voltage: "11/0.4 kV", from: "MVB" },
+    { id: "BB1", type: "LV Busbar", voltage: "400 V", from: "TX1", prot: "CB" },
+    { id: "BB2", type: "LV Busbar", voltage: "400 V", from: "TX2", prot: "CB" },
+  ];
+  const one = (from, extra = []) => draw({ site: "t" }, bars.concat(extra, [{ id: "BC1", type: "Bus Coupler", prot: "CB", from }]), { check: true });
+  for (const [from, reason, code] of [
+    ["BB1", "one-end", "COUPLER_INVALID"],
+    ["BB1, TX2", "not-two-busbars", "COUPLER_INVALID"],
+    ["BB1, MVB", "mixed-kinds", "COUPLER_INVALID"],
+    ["BB1, BB2, TX1", "extra-supply", "COUPLER_EXTRA_SUPPLY"],
+  ]) {
+    const out = one(from);
+    assert.equal(out.facts.couplers[0].reason, reason, from);
+    assert.ok(out.svg.includes(`data-id="BC1"`), `${from}: drawn`);
+    assert.deepEqual(out.check.items.missing, [], `${from}: the checker sees it`);
+    assert.deepEqual(out.diagnostics.map(d => d.code), [code], from);
+    assert.ok(!/skipped/.test(out.diagnostics[0].message), `${from}: the message must not say it was skipped`);
+  }
+  /* the extra supply is named: it used to be dropped in silence */
+  assert.match(one("BB1, BB2, TX1").diagnostics[0].message, /"TX1" is also named but is not drawn/);
+});
+
+test("a valid tie and a valid changeover draw, and only the duplicate is called one", () => {
+  const rows = [
+    { id: "MV1", type: "MV Incomer", voltage: "11 kV", from: "" },
+    { id: "TX1", type: "Transformer", voltage: "11/0.4 kV", from: "MV1" },
+    { id: "TX2", type: "Transformer", voltage: "11/0.4 kV", from: "MV1" },
+    { id: "BB1", type: "LV Busbar", voltage: "400 V", from: "TX1", prot: "CB" },
+    { id: "BB2", type: "LV Busbar", voltage: "400 V", from: "TX2", prot: "CB" },
+    { id: "G1", type: "Generator", rating: "500 kVA", voltage: "400 V", from: "" },
+    { id: "BC1", type: "Bus Coupler", prot: "CB", from: "BB1, BB2" },
+    { id: "BC2", type: "Bus Coupler", prot: "CB", from: "BB2, BB1" },
+    { id: "CO", type: "Bus Coupler", prot: "CB", from: "BB1, G1" },
+  ];
+  const out = draw({ site: "t" }, rows, { check: true });
+  assert.deepEqual(out.diagnostics.map(diagKey), ["COUPLER_DUP:BC2"], "only the second tie is a duplicate");
+  assert.match(out.diagnostics[0].message, /duplicates "BC1"/, "and it names the first, not itself");
+  /* the changeover is a row like any other: it has a group of its own */
+  for (const id of ["BC1", "BC2", "CO"]) assert.ok(out.svg.includes(`data-id="${id}"`), `${id} drawn`);
+  assert.deepEqual(out.check.items.missing, []);
+});
+
+test("the rule, the drawing and the checker agree about every coupler", () => {
+  for (const dir of listCases()) {
+    const c = loadCase(dir);
+    const out = drawCase(c, { check: true });
+    if (!out.svg) continue;
+    for (const k of out.facts.couplers) {
+      /* whatever the judgement, the row is on the sheet (constitution §6) */
+      assert.ok(out.svg.includes(`data-id="${k.id}"`), `${c.data.name}: ${k.id} (${k.reason}) is not drawn`);
+      /* and the checker expects a conductor only where the judgement found two ends */
+      const edges = expectedEdges(out.items, out.order).filter(e => e[2] === k.id);
+      assert.equal(edges.length, k.a && k.b ? 1 : 0, `${c.data.name}: ${k.id} edge disagrees with the fact`);
+    }
+  }
 });

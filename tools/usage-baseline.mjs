@@ -206,10 +206,15 @@ await task("T6_coupler_second_end", async () => {
 await scenario("W1_delete_board_with_ways", async () => {
   await loadPreset(7);
   const ways = await rowsWhere(`r.from.split(',').map(s=>s.trim()).includes('MSB')`);
+  /* the rows that will be orphaned, by name — asking whether the deleted board
+     is still drawn only ever answers "no", which is not what this measures */
+  const orphans = await evaluate(`JSON.stringify(state.rows.filter(r=>r.from.split(',').map(s=>s.trim()).includes('MSB')).map(r=>r.id.trim()))`);
   await gestures.rowButton(await rowIndex("MSB"), "del");
   await settle();
   const s = await state();
-  return { ways, errors: s.errors, drawing: s.drawing, export: s.export, orphansStillDrawn: await evaluate(`!!document.querySelector('#sheet svg g[data-id="MSB"]')`) };
+  const drawnOrphans = await evaluate(`${orphans}.filter(id=>document.querySelector('#sheet svg g[data-id='+JSON.stringify(id)+']')).length`);
+  return { ways, errors: s.errors, drawing: s.drawing, export: s.export,
+    orphansStillDrawn: drawnOrphans === JSON.parse(orphans).length };
 });
 
 /* W2 — a supply written in the wrong case */

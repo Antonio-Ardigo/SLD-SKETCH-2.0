@@ -11,7 +11,7 @@ import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
 import { supplyCandidates } from "../core/supplies.js";
 import { renameReferences, canFollowRename } from "../core/edit.js";
-import { diagFromMessage, makeDiag } from "../core/diagnostics.js";
+import { couplerDiagnostics } from "../core/couplers.js";
 import { R, PRESETS } from "./presets.generated.js";
 
 /* ------------------------------------------------ UI wiring */
@@ -124,10 +124,10 @@ function redraw(){
      dropped, and the message says so (constitution §6) */
   applyView(view_);
   const width=layout(items,order);
-  const said=warnings.length;
-  const svgStr=render(state.info,items,order,width,warnings);
-  /* what the drawing itself had to say (a coupler it could not place) joins the box */
-  for(const msg of warnings.slice(said)) diagnostics.push(diagFromMessage(msg)||makeDiag("COUPLER_INVALID",[],msg));
+  /* the couplers have their own say, from the same judgement the drawing
+     draws them by — the box no longer reads it out of the drawing's prose */
+  for(const d of couplerDiagnostics(items,order)){ diagnostics.push(d); warnings.push(d.message); }
+  const svgStr=render(state.info,items,order,width);
   showProblems(diagnostics);
   $("#sheet").innerHTML=svgStr;
   $("#sheet").dataset.rev=modelRev();
@@ -882,7 +882,7 @@ $("#csv").addEventListener("click",()=>{
   saveFile(fileName("csv"), rowsToCsv(state.rows), "text/csv", "the equipment table");
 });
 $("#svg").addEventListener("click",()=>{
-  exportSheet("svg","image/svg+xml","the drawing",(info,items,order,width)=>render(info,items,order,width,[]));
+  exportSheet("svg","image/svg+xml","the drawing",(info,items,order,width)=>render(info,items,order,width));
 });
 $("#pdf").addEventListener("click",()=>{
   exportSheet("pdf","application/pdf","one A3 landscape page, sketch and equipment table",renderPdf);

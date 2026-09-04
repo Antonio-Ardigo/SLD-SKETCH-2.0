@@ -217,7 +217,7 @@ export function pdfDocument(stream, pageW, pageH){
 
 /** The sheet and its equipment table as a one-page PDF. */
 export function renderPdf(info, items, order, width){
-  return render(info,items,order,width,[],new PDF([info,items,order]));
+  return render(info,items,order,width,new PDF([info,items,order]));
 }
 
 export { PDF_PAGE, PDF_MARGIN, PDF };

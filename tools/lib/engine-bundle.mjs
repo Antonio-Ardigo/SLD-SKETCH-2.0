@@ -27,7 +27,7 @@ export function engineSource(html = fs.readFileSync(PAGE, "utf8")) {
 
 export function loadEngine() {
   if (cached) return cached;
-  const wrapper = `"use strict";\n${engineSource()}\n;({ buildModel, layout, render, renderDxf, applyView, normalizeView })`;
+  const wrapper = `"use strict";\n${engineSource()}\n;({ buildModel, layout, render, renderDxf, applyView, normalizeView, couplerDiagnostics })`;
   cached = vm.runInContext(wrapper, vm.createContext({ console }), { filename: "sld_sketchpad.html#engine" });
   return cached;
 }
@@ -41,9 +41,8 @@ export function drawWithBundle(info, rows, { dxf = false, view = null } = {}) {
   const { items, order, errors, warnings } = E.buildModel(norm);
   const out = { errors, warnings, items, order, svg: null, dxf: null };
   if (!order.length) return out;   /* errors draw too, as the page does */
-  const drawn = warnings.slice();
-  out.svg = E.render(site, items, order, E.layout(items, order), drawn);
-  for (const msg of drawn.slice(warnings.length)) warnings.push(msg);
+  for (const d of E.couplerDiagnostics(items, order)) warnings.push(d.message);
+  out.svg = E.render(site, items, order, E.layout(items, order));
   if (dxf) { const m2 = E.buildModel(norm); out.dxf = E.renderDxf(site, m2.items, m2.order, E.layout(m2.items, m2.order)); }
   return out;
 }

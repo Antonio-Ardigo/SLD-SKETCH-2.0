@@ -152,7 +152,7 @@ class DXF extends SVG {
   }
 }
 function renderDxf(info, items, order, width){
-  return render(info,items,order,width,[],new DXF([info,items,order]));
+  return render(info,items,order,width,new DXF([info,items,order]));
 }
 
 export { DXF_LAYERS, DXF_TEXT_H, DXF_WIDTH_F, DXF_CHAR_W, DXF_WRAP_AT, DXF_SUBST, dnum, dclean, dtextW, dwrap, DXF, renderDxf };

@@ -620,8 +620,9 @@ const DIAG = {
   MCC_ON_MV:         { level: "warning", about: "an MCC fed from MV gear" },
   MCC_BAD_SUPPLY:    { level: "warning", about: "an MCC fed from something other than an LV board, an MCC or a transformer" },
   GEN_NO_LOAD:       { level: "warning", about: "a generator that feeds nothing" },
-  /* drawing */
-  COUPLER_INVALID:   { level: "warning", about: "a bus coupler not between exactly two busbars of the same kind; skipped" },
+  /* the network: couplers */
+  COUPLER_INVALID:   { level: "warning", about: "a bus coupler not between two busbars of the same kind; drawn from the end it has, the other open" },
+  COUPLER_EXTRA_SUPPLY: { level: "warning", about: "a bus coupler naming more than the two busbars it ties; the rest are not drawn" },
   COUPLER_DUP:       { level: "warning", about: "a second coupler between the same two busbars" },
   /* engine */
   EMPTY_SHEET:       { level: "warning", about: "the table has no rows with an ID" },
@@ -637,19 +638,11 @@ function makeDiag(code, ids, message, row, extra) {
   return d;
 }
 
-/* The drawing still reports its two coupler problems as sentences (render
-   appends them to the warnings list); this recognises them. */
-const RENDER_PATTERNS = [
-  [/^Bus coupler "([^"]+)" should feed from exactly two busbars/, "COUPLER_INVALID"],
-  [/^Bus coupler "([^"]+)" duplicates an earlier coupler between "([^"]+)" and "([^"]+)"/, "COUPLER_DUP"],
-];
-function diagFromMessage(message) {
-  for (const [re, code] of RENDER_PATTERNS) {
-    const m = re.exec(message);
-    if (m) return makeDiag(code, m.slice(1), message);
-  }
-  return null;
-}
+/* The drawing used to report its coupler problems as English sentences, and
+   this module recovered the code by matching the wording with a regular
+   expression — so the judgement lived in the renderer and the code depended
+   on its prose. `couplerDiagnostics` in src/core/couplers.js makes them
+   directly now (constitution §5), and the drawing says nothing at all. */
 
 /** "CODE:firstId" — the compact form fixtures assert on. */
 function diagKey(d) { return d.ids.length ? `${d.code}:${d.ids[0]}` : d.code; }
@@ -2138,6 +2131,156 @@ function drawSymbol(svg, key, cx, ytop, ybot) {
   if (e) e.draw(svg, cx, ytop, ybot);
 }
 
+/* What a bus coupler is — one judgement, read by everything that needs it.
+ *
+ * A coupler is a link between two busbars of the same kind, or a changeover
+ * between a board and a generator. Anything else cannot be drawn as a tie,
+ * and draws from the end it does have rather than being dropped
+ * (constitution §6).
+ *
+ * This used to be worked out three times over, and the three disagreed. On
+ * `RMU1, RMU2` the rule called it invalid, the drawing skipped the row
+ * without a group, and the checker expected a conductor between the two
+ * RMUs. On `BB1, BB2, TX1` the rule called it invalid and the drawing drew a
+ * perfectly ordinary tie with no message at all, silently dropping `TX1`.
+ * Now the rule records what this says, the drawing draws it, and the checker
+ * expects it (constitution §5: an inference is named once, not re-derived
+ * inside drawing code).
+ *
+ * It lives beside supplies.js rather than under rules/ because it is
+ * knowledge, not a pass: rules/couplers.js is the pass that records it. */
+
+const isBusbar = t => t === LV_BUSBAR || t === MV_BUSBAR;
+
+/**
+ * What one coupler row is:
+ *
+ *   { id, kind: "tie" | "changeover", a, b, valid, reason, extra }
+ *
+ * `a` and `b` are the ends that resolved, in Feeds From order; `b` is null
+ * when only one did, and the row still draws from `a` with its other end
+ * open. `reason` says what is wrong when it cannot be drawn as a tie:
+ *
+ *   one-end          the second end is simply not written yet
+ *   not-two-busbars  an end that is not a busbar (a transformer, a feeder)
+ *   mixed-kinds      an MV bar tied to an LV bar
+ *   rmu-end          an RMU: those are tied with interconnecting cables
+ *   extra-supply     two good bars, and further supplies that cannot be drawn
+ *   no-board         a changeover naming a generator and nothing to change over
+ *
+ * `extra` lists the supplies that resolved to a row but are not among the
+ * ends: they are not drawn, and saying so is the only way the surveyor learns
+ * they were ignored.
+ */
+function couplerOf(items, bc) {
+  const id = bc.id;
+  const ends = bc.parents.map(p => items[p]).filter(Boolean);
+  const gen = ends.find(e => e.type === GENERATOR);
+  if (gen) {
+    const board = ends.find(e => [LV_BUSBAR, MV_BUSBAR, RMU].includes(e.type));
+    const used = [board && board.id, gen.id].filter(Boolean);
+    return { id, kind: "changeover", a: board ? board.id : null, b: gen.id, valid: !!board,
+      reason: board ? null : "no-board", extra: bc.parents.filter(p => !used.includes(p)) };
+  }
+  const bars = ends.filter(e => isBusbar(e.type));
+  const pair = bars.length === 2 && bars[0].type === bars[1].type;
+  const valid = pair && bc.parents.length === 2;
+  const reason = valid ? null
+    : ends.some(e => e.type === RMU) ? "rmu-end"
+    : pair ? "extra-supply"
+    : bars.length === 1 && bc.parents.length <= 1 ? "one-end"
+    : bars.length === 2 ? "mixed-kinds"
+    : "not-two-busbars";
+  const used = bars.slice(0, 2).map(e => e.id);
+  return { id, kind: "tie", a: bars[0] ? bars[0].id : null, b: bars[1] ? bars[1].id : null,
+    valid, reason, extra: bc.parents.filter(p => !used.includes(p)) };
+}
+
+/** Every coupler row on the sheet, judged once, in table order. */
+function couplersOf(items, order) {
+  return order.filter(id => items[id].type === BUS_COUPLER).map(id => couplerOf(items, items[id]));
+}
+
+/* What the surveyor is told, per reason. Each says what was drawn, because a
+   message reading "skipped" beside a row that is on the sheet is worse than
+   no message at all. The drawing does not word these: it draws what the
+   judgement says, and the judgement says what it means. */
+const COUPLER_SAID = {
+  "one-end": k => `Bus coupler "${k.id}" names only one busbar — drawn with its other end open.`,
+  "not-two-busbars": k => `Bus coupler "${k.id}" should feed from two busbars of the same kind` +
+    (k.a ? ` — drawn from "${k.a}" with its other end open.` : " — drawn on its own, both ends open."),
+  "mixed-kinds": k => `Bus coupler "${k.id}" ties an MV busbar to an LV one — drawn, but two voltages are joined by a transformer, not a coupler.`,
+  "rmu-end": k => `Bus coupler "${k.id}" names an RMU — drawn with its ends open; RMUs are tied with interconnecting cables, so name the other RMU in Feeds from instead.`,
+  "extra-supply": k => `Bus coupler "${k.id}" ties "${k.a}" and "${k.b}"; ` +
+    `${k.extra.map(e => `"${e}"`).join(", ")} ${k.extra.length === 1 ? "is also named but is" : "are also named but are"} not drawn — a coupler joins two busbars.`,
+  "no-board": k => `Changeover "${k.id}" names generator "${k.b}" and no board to change over — drawn with its other end open.`,
+};
+
+/** The sentence for a coupler that is not a plain tie, or "" when it is one. */
+function couplerMessage(k) {
+  return k.valid || !COUPLER_SAID[k.reason] ? "" : COUPLER_SAID[k.reason](k);
+}
+
+/** The diagnostic code a coupler's `reason` belongs to. */
+function couplerCode(k) {
+  return k.reason === "extra-supply" ? "COUPLER_EXTRA_SUPPLY" : "COUPLER_INVALID";
+}
+
+/**
+ * Everything there is to say about the couplers on a sheet, structured.
+ *
+ * The drawing used to say these itself, in prose, and the reader recovered
+ * the code by matching the sentence with a regular expression. Both the page
+ * and the command line ask this instead: same judgement, same words, and a
+ * code that does not depend on the wording (constitution §5).
+ */
+function couplerDiagnostics(items, order) {
+  const out = [], seen = new Map();
+  for (const k of couplersOf(items, order)) {
+    if (!k.valid) { out.push(makeDiag(couplerCode(k), [k.id], couplerMessage(k))); continue; }
+    if (k.kind === "changeover") continue;
+    const key = [k.a, k.b].sort().join("|"), first = seen.get(key);
+    if (first === undefined) { seen.set(key, k.id); continue; }
+    out.push(makeDiag("COUPLER_DUP", [k.id, k.a, k.b],
+      `Bus coupler "${k.id}" duplicates "${first}" between "${k.a}" and "${k.b}".`));
+  }
+  return out;
+}
+
+/* A coupler that is not a tie between two placed busbars is still on the
+   sheet (constitution §6): it runs from the busbar it does have into the lane
+   above the bar row — the same clear lane a blocked tie uses — and ends open,
+   so the drawing shows exactly how far the survey got. With no placed busbar
+   at all it stands on its own in the leftover column, both ends open.
+   Successive stubs on one bar stack upwards so they never lie on each other.
+   The device glyph is what gives the group a box for the page to pick up. */
+function couplerStub(svg,bc,bar,dev,lbl,n,yBus,lvY){
+  const RUN=30, STUB=22, LANE=30;
+  svg.begin(bc.id,bc.type);
+  if(bar){
+    /* each stub leaves the bar at its own point and runs in its own lane, so
+       two of them on one board never lie on top of each other */
+    const y0=bar.type===MV_BUSBAR?yBus(bar):lvY(bar), x0=bar.xRight-n*14, y=y0-LANE-n*LANE;
+    svg.dot(x0,y0);
+    svg.line(x0,y0,x0,y,2);
+    const g=svg.deviceH(dev,x0+RUN,y);
+    svg.line(x0,y,x0+RUN-g,y,2);
+    svg.line(x0+RUN+g,y,x0+RUN+STUB,y,2);
+    svg.line(x0+RUN+STUB,y-10,x0+RUN+STUB,y+10,2);      /* the open end */
+    svg.text(x0+RUN,y-12,lbl,{size:11});
+    svg.text(x0+RUN,y-24,bc.notes,{size:10});
+  } else {
+    const y=Y_BUS-LANE-n*LANE, x=bc.x, g=svg.deviceH(dev,x,y);
+    svg.line(x-RUN,y,x-g,y,2);
+    svg.line(x+g,y,x+RUN,y,2);
+    svg.line(x-RUN,y-10,x-RUN,y+10,2);
+    svg.line(x+RUN,y-10,x+RUN,y+10,2);
+    svg.text(x,y-12,lbl,{size:11});
+    svg.text(x,y-24,bc.notes,{size:10});
+  }
+  svg.end();
+}
+
 /* ------------------------------------------------ render */
 const LEGEND_H=100;
 /* the legend is drawn from the symbol registry: the fixed entries plus the
@@ -2165,7 +2308,7 @@ function drawLegend(svg, extra, width){
   });
 }
 
-function render(info, items, order, width, warnings, canvas){
+function render(info, items, order, width, canvas){
   const svg=canvas||new SVG();
   const barLabels=[];   /* [xLeft,xRight,baseline,text]: drawn last, once
                            every conductor is on the sheet */
@@ -2613,8 +2756,13 @@ function render(info, items, order, width, warnings, canvas){
         const ym=(yg+33+yb)/2;
         const [craw,ck]=protFor(cpl);
         const extra=(craw && !ck)?craw:"";
+        /* its own group: the changeover is a row of the table like any other,
+           and without one it could not be selected, picked up, or seen by the
+           checker (constitution §6) */
+        svg.begin(cpl.id,cpl.type);
         svg.text(g.x+16,ym-2,[cpl.id,cpl.rating,extra].filter(Boolean).join(" "),{size:11,anchor:"start"});
         svg.text(g.x+16,ym+12,cpl.notes.trim().toLowerCase()===cpl.id.trim().toLowerCase()?"":cpl.notes,{size:10,anchor:"start"});
+        svg.end();
       }
     }
     svg.end();
@@ -2646,8 +2794,10 @@ function render(info, items, order, width, warnings, canvas){
         svg.dot(g.x,yTo);
         if(cpl){
           const ym=(yGen+20+yTo)/2;
+          svg.begin(cpl.id,cpl.type);   /* the changeover's own row (constitution §6) */
           svg.text(g.x+16,ym-2,[cpl.id,cpl.rating].filter(Boolean).join(" "),{size:11,anchor:"start"});
           svg.text(g.x+16,ym+12,cpl.notes.trim().toLowerCase()===cpl.id.trim().toLowerCase()?"":cpl.notes,{size:10,anchor:"start"});
+          svg.end();
         }
       } else svg.line(g.x,yGen+20,g.x,yRmu(b)[0]);   /* the RMU draws its way in */
     }
@@ -2960,30 +3110,31 @@ function render(info, items, order, width, warnings, canvas){
     }
   }
 
-  /* bus couplers / ties */
-  const seenPairs={};
+  /* bus couplers / ties. What a coupler ties is the rule's judgement, asked
+     once (constitution §5); the messages come from there too. A coupler that
+     cannot be drawn as a tie is not skipped — it draws from the end it has,
+     the other open, so the row is on the sheet and can be picked up and
+     re-wired like any other (constitution §6). */
+  const stubsOn={};
   for(const bc of couplers){
-    if(bc.parents.some(p=>items[p] && items[p].type===GENERATOR))
-      continue;                     /* a changeover: drawn with the generator */
-    const ends=bc.parents.map(p=>items[p]).filter(e=>e.type===LV_BUSBAR||e.type===MV_BUSBAR);
-    if(ends.length!==2 || ends[0].type!==ends[1].type){
-      const hint=bc.parents.some(p=>items[p] && items[p].type===RMU)
-        ? " (RMUs are tied with interconnecting cables — put the other RMU in Feeds from instead)" : "";
-      warnings.push(`Bus coupler "${bc.id}" should feed from exactly two busbars of the same kind — skipped.${hint}`);
+    const k=couplerOf(items,bc);
+    /* a changeover is drawn in its own group beside its generator — unless it
+       has no board to change over, and so no generator column to sit in */
+    if(k.kind==="changeover" && k.valid) continue;
+    const [craw,ckind]=protFor(bc);
+    const dev=ckind||"cb";
+    const cx=(craw && !ckind)?craw:"";
+    const lbl=[bc.id,bc.rating,cx].filter(Boolean).join(" ");
+    const ends=[k.a,k.b].filter(Boolean).map(id=>items[id]).filter(o=>o.xLeft!==null);
+    if(ends.length!==2){
+      const on=ends[0]?ends[0].id:"";      /* stack the stubs that share an end */
+      const n=stubsOn[on]||0; stubsOn[on]=n+1;
+      couplerStub(svg,bc,ends[0]||null,dev,lbl,n,yBus,lvY);
       continue;
     }
     const [a,b]=ends.slice().sort((u,v)=>u.x-v.x);
-    if(a.xLeft===null || b.xLeft===null) continue;
-    const pair=[a.id,b.id].sort().join("|");
-    seenPairs[pair]=(seenPairs[pair]||0)+1;
-    if(seenPairs[pair]>1)
-      warnings.push(`Bus coupler "${bc.id}" duplicates an earlier coupler between "${a.id}" and "${b.id}".`);
     const ya=a.type===MV_BUSBAR?yBus(a):lvY(a);
     const yb=b.type===MV_BUSBAR?yBus(b):lvY(b);
-    const [craw,ckind]=protFor(bc);
-    const dev=ckind||"cb";
-    const extra=(craw && !ckind)?craw:"";
-    const lbl=[bc.id,bc.rating,extra].filter(Boolean).join(" ");
     svg.begin(bc.id,bc.type);
 
     if(Math.abs(ya-yb)>1){
@@ -3387,7 +3538,7 @@ class DXF extends SVG {
   }
 }
 function renderDxf(info, items, order, width){
-  return render(info,items,order,width,[],new DXF([info,items,order]));
+  return render(info,items,order,width,new DXF([info,items,order]));
 }
 
 /* ------------------------------------------------ PDF export */
@@ -3606,7 +3757,7 @@ function pdfDocument(stream, pageW, pageH){
 
 /** The sheet and its equipment table as a one-page PDF. */
 function renderPdf(info, items, order, width){
-  return render(info,items,order,width,[],new PDF([info,items,order]));
+  return render(info,items,order,width,new PDF([info,items,order]));
 }
 
 /* The network as a graph — constitution §3: a pure function of (ID, Feeds From).
@@ -3686,19 +3837,16 @@ function draw(info, rows, { dxf = false, pdf = false, check = false, view = null
   /* errors do not withhold the drawing (constitution §6): a duplicate row was
      dropped and named, an unknown supply left the row floating and named */
   out.facts = buildFacts(items, order, out.graph);
+  /* the couplers, judged once and said once — the drawing no longer words
+     these and the reader no longer recovers the code from the wording */
+  for (const d of couplerDiagnostics(items, order)) { out.diagnostics.push(d); warnings.push(d.message); }
   for (const d of out.facts.dropped)
     out.diagnostics.push(makeDiag("RANK_CYCLE", [d.a, d.b], `"${d.a}" and "${d.b}" cannot both be below each other — one of them is drawn on the row above the other.`));
   const width = layout(items, order);
-  const drawn = warnings.slice();
   const canvas = new SceneCanvas();
-  out.svg = render(site, items, order, width, drawn, canvas);
+  out.svg = render(site, items, order, width, canvas);
   out.scene = canvas.scene();
   if (check) out.check = checkScene(out.scene, items, order);
-  /* the drawing may add its own warnings (couplers); keep them structured too */
-  for (const msg of drawn.slice(warnings.length)) {
-    warnings.push(msg);
-    out.diagnostics.push(diagFromMessage(msg) || makeDiag("COUPLER_INVALID", [], msg));
-  }
   /* the page re-reads the model for each export; do the same so no two share state */
   const again = () => { const m = buildModel(norm); return [m.items, m.order, layout(m.items, m.order)]; };
   if (dxf) { const [i2, o2, w2] = again(); out.dxf = renderDxf(site, i2, o2, w2); }
@@ -4149,10 +4297,10 @@ function redraw(){
      dropped, and the message says so (constitution §6) */
   applyView(view_);
   const width=layout(items,order);
-  const said=warnings.length;
-  const svgStr=render(state.info,items,order,width,warnings);
-  /* what the drawing itself had to say (a coupler it could not place) joins the box */
-  for(const msg of warnings.slice(said)) diagnostics.push(diagFromMessage(msg)||makeDiag("COUPLER_INVALID",[],msg));
+  /* the couplers have their own say, from the same judgement the drawing
+     draws them by — the box no longer reads it out of the drawing's prose */
+  for(const d of couplerDiagnostics(items,order)){ diagnostics.push(d); warnings.push(d.message); }
+  const svgStr=render(state.info,items,order,width);
   showProblems(diagnostics);
   $("#sheet").innerHTML=svgStr;
   $("#sheet").dataset.rev=modelRev();
@@ -4907,7 +5055,7 @@ $("#csv").addEventListener("click",()=>{
   saveFile(fileName("csv"), rowsToCsv(state.rows), "text/csv", "the equipment table");
 });
 $("#svg").addEventListener("click",()=>{
-  exportSheet("svg","image/svg+xml","the drawing",(info,items,order,width)=>render(info,items,order,width,[]));
+  exportSheet("svg","image/svg+xml","the drawing",(info,items,order,width)=>render(info,items,order,width));
 });
 $("#pdf").addEventListener("click",()=>{
   exportSheet("pdf","application/pdf","one A3 landscape page, sketch and equipment table",renderPdf);
