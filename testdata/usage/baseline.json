@@ -1,6 +1,6 @@
 {
   "T1_five_feeders": {
-    "actions": 15,
+    "actions": 10,
     "drawing": "fresh",
     "export": true,
     "feedersOnBB1": 9
@@ -59,8 +59,9 @@
   },
   "W3_enter_x6_ids_only": {
     "outcome": {
-      "rowsFedFromBB1WithNoType": 6,
-      "warnings": 6,
+      "rowsFedFromBB1WithNoType": 0,
+      "rowsTypedLikeTheOneAbove": 6,
+      "warnings": 0,
       "errors": 0,
       "drawing": "fresh"
     }

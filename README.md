@@ -56,7 +56,11 @@ table by the engine, never copied off the screen.
 
 **A new row comes pre-filled.** However you add it — a drop, a palette chip,
 **+ Add row**, `Enter` on the last row — the engine proposes what it can and
-writes it into the table: the ID (numbered from the type: `TX3`, `F12`), the
+writes it into the table. `Enter` on the last row **repeats the row above**:
+same Type, same supply, the next ID, the usual device and the voltage, all
+tinted — a run of feeders on one board or pumps on one MCC is one `Enter` and
+a description per row. **+ Add row** gives a blank row for a different item.
+The proposal writes: the ID (numbered from the type: `TX3`, `F12`), the
 supply (the drop target, else the best supply on the sheet for that Type — the
 last LV board for a feeder, the last MV board for a transformer — so the item
 lands where it belongs instead of at the edge of the drawing), the usual

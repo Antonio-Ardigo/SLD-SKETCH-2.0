@@ -116,7 +116,7 @@ await task("T1_five_feeders", async () => {
   for (let n = 0; n < 5; n++) {
     const i = await last();
     await gestures.key(i, "desc", "Enter");                  /* a new row after the last */
-    await gestures.pick(i + 1, "Feeder");                    /* its Type */
+    if (await evaluate(`state.rows[${i + 1}].type`) !== "Feeder") await gestures.pick(i + 1, "Feeder");   /* its Type, unless it came typed */
     await gestures.type(i + 1, "desc", `Feeder ${n + 1}`);   /* its description */
     await settle();
   }
@@ -215,7 +215,9 @@ await scenario("W3_enter_x6_ids_only", async () => {
   }
   await settle();
   const s = await state();
-  return { rowsFedFromBB1WithNoType: await rowsWhere(`r.type===''&&r.from==='BB1'`), warnings: s.warnings, errors: s.errors, drawing: s.drawing };
+  return { rowsFedFromBB1WithNoType: await rowsWhere(`r.type===''&&r.from==='BB1'`),
+    rowsTypedLikeTheOneAbove: await rowsWhere(`r.type==='Feeder'&&r.from==='BB1'&&/^X\\d$/.test(r.id)`),
+    warnings: s.warnings, errors: s.errors, drawing: s.drawing };
 });
 
 /* W4 — a feeder chip dropped on a pump */

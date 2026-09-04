@@ -4450,7 +4450,7 @@ eqbody.addEventListener("keydown",e=>{
   const tr=e.target.closest("tr"), i=+tr.dataset.i;
   if(e.key==="Enter" && !e.altKey && !e.ctrlKey && !e.metaKey){
     e.preventDefault();
-    if(i===state.rows.length-1){ addRow(); focusCell(state.rows.length-1, f==="notes"?"id":f); }
+    if(i===state.rows.length-1){ addRow(true); focusCell(state.rows.length-1, f==="notes"?"id":f); }
     else focusCell(i+1, f);
   } else if(e.altKey && (e.key==="ArrowUp"||e.key==="ArrowDown")){
     e.preventDefault();
@@ -4676,10 +4676,16 @@ function replaceState(s){
   state=s; view.fitted=true;
   writeInfoInputs(); rebuildTable(); redraw(); persist();
 }
-function addRow(){
+/* a new row at the end. From the keyboard (Enter on the last row) it repeats
+   the row above — same Type, same supply, the engine's ID, device and
+   voltage, all tinted — because a run of feeders on one board or pumps on
+   one MCC is what a survey mostly is. The + Add row button keeps the blank
+   row, for a deliberately different item. */
+function addRow(repeat){
   snapshot(true);
   const sibling=state.rows.length?state.rows[state.rows.length-1]:null;
-  state.rows.push(proposedRow("","",sibling));
+  const again=repeat && sibling && sibling.type.trim();
+  state.rows.push(again ? proposedRow(sibling.type.trim(), sibling.from.trim(), null) : proposedRow("","",sibling));
   rebuildTable(); redraw(); persist();
 }
 

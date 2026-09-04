@@ -53,6 +53,10 @@ try {
   await evaluate(`(function(){ const el=document.querySelector('tr[data-i="7"] [data-f="desc"]'); el.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));
      el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); })()`);
   check("Enter on last row adds a row", await evaluate(`document.querySelectorAll('#eqbody tr').length`) === 9);
+  /* Enter repeats the row above: F4 is a feeder on BB1, so the new row is a feeder on BB1, whole */
+  const again = await evaluate(`JSON.stringify(state.rows[8])`);
+  check("Enter repeats the row above — same Type, same supply, the rest proposed",
+    /"id":"F5".*"type":"Feeder".*"voltage":"400 V".*"from":"BB1".*"prot":"CB"/.test(again) && /"_p":\["from","id","prot","voltage"\]/.test(again), again);
   await evaluate(`(function(){ const s=document.querySelector('tr[data-i="8"] [data-f="type"]'); s.value='Feeder';
      s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   check("type change fills default protection", await evaluate(`document.querySelector('tr[data-i="8"] [data-f="prot"]').value`) === "CB");
