@@ -340,9 +340,21 @@ src/core/     the engine, as ES modules: types, supplies (which supply can feed
 src/io/       csv and xlsx (SheetJS) ⇄ table rows
 src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js
 src/cli/      sld.js — draw | dxf
-tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page
+tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page, usage-baseline
+testdata/usage/  the entry baseline: actions per task, outcomes when the topology is wrong
 testdata/     the cases; test/ the node --test suites
 ```
+
+**The entry baseline.** `testdata/usage/baseline.json` is what the page costs
+a surveyor, measured: `node tools/usage-baseline.mjs` replays the common
+data-entry tasks in the page under headless Chromium — five feeders on a
+board, ten rows from a spreadsheet, a board renamed, a typo'd supply fixed, a
+feeder moved, a coupler drawn — and counts every click, key, drop and value
+entered, recording too whether the drawing on screen was fresh or stale and
+whether an export was possible. The `W*` entries record what the page does when
+the topology goes wrong. `--check` fails on any difference, so an improvement
+lands with the lower number it earned and a regression cannot land quietly.
+`testdata/usage/README.md` states the counting rule.
 
 `sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
 the modules into the page's single `<script>` (browsers refuse `import` from

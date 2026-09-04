@@ -4,7 +4,9 @@
   "description": "Turn a site-survey equipment table into a single-line diagram sketch (SVG / DXF).",
   "type": "module",
   "private": true,
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "node --test",
     "import": "node tools/import-xlsx.mjs",
@@ -12,10 +14,14 @@
     "golden:update": "UPDATE_GOLDEN=1 node tools/golden.mjs",
     "gen": "node tools/gen-fixtures.mjs",
     "build": "node tools/gen-fixtures.mjs && node tools/build-page.mjs",
-    "check": "node tools/gen-fixtures.mjs --check && node tools/build-page.mjs --check && node tools/golden.mjs",
+    "check": "node tools/gen-fixtures.mjs --check && node tools/build-page.mjs --check && node tools/golden.mjs && node tools/usage-baseline.mjs --check",
     "smoke": "node tools/smoke-page.mjs",
-    "draw": "node src/cli/sld.js draw"
+    "draw": "node src/cli/sld.js draw",
+    "baseline": "node tools/usage-baseline.mjs",
+    "baseline:check": "node tools/usage-baseline.mjs --check"
   },
-  "bin": { "sld": "src/cli/sld.js" },
+  "bin": {
+    "sld": "src/cli/sld.js"
+  },
   "license": "UNLICENSED"
 }
