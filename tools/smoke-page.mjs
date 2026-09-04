@@ -183,6 +183,19 @@ try {
      const tr=document.querySelector('tr[data-i="'+r+'"]');
      return !tr.querySelector('[data-f="voltage"]').classList.contains('proposed') && tr.querySelector('[data-f="prot"]').classList.contains('proposed'); })()`));
 
+  /* a source is added with no supply: the drop names where the row goes, not
+     what feeds it, and the board it was dropped on is left alone */
+  const msbBefore = await evaluate(`(state.rows.find(r=>r.id==='MSB')||{}).from`);
+  await evaluate(`addRowFor('Generator','MSB')`);
+  await sleep(400);
+  const gen = await evaluate(`JSON.stringify(state.rows.find(r=>r.type==='Generator')||null)`);
+  check("a dropped generator has no supply", /"from":""/.test(gen) && /"id":"G\d+"/.test(gen), gen);
+  check("its voltage still follows the board it was dropped on", /"voltage":"400 V"/.test(gen), gen);
+  check("the board it was dropped on is untouched", await evaluate(`(state.rows.find(r=>r.id==='MSB')||{}).from`) === msbBefore);
+  check("the generator says it feeds nothing", (await evaluate(`document.querySelector('#problems').textContent`)).includes("feeds nothing"));
+  await evaluate(`undo()`);
+  await sleep(400);
+
   /* + Add row proposes the supply of the row above; choosing a Type fills the rest */
   await evaluate(`document.querySelector('#addrow').click()`);
   await sleep(400);
@@ -193,6 +206,19 @@ try {
   const typed = await evaluate(`JSON.stringify(state.rows[state.rows.length-1])`);
   /* the Type moves the row to where it belongs: a transformer sits on the MV
      gear, not on the LV board the row above happened to name */
+  /* and choosing a source on a row that already carries a proposed supply clears it */
+  await evaluate(`(function(){ const i=state.rows.length-1; const s=document.querySelector('tr[data-i="'+i+'"] [data-f="type"]');
+     s.value='Generator'; s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+  const asGen = await evaluate(`JSON.stringify(state.rows[state.rows.length-1])`);
+  const g = JSON.parse(asGen);
+  check("choosing Generator clears the transformer's proposed supply, device and ratio",
+    g.type === "Generator" && g.from === "" && g.prot === "" && g.voltage === "" && /^G\d+$/.test(g.id), asGen);
+  check("the cleared cells are cleared on screen too",
+    await evaluate(`['from','prot','voltage'].every(f=>document.querySelector('tr[data-i="'+(state.rows.length-1)+'"] [data-f="'+f+'"]').value==="")`));
+  await evaluate(`(function(){ const i=state.rows.length-1; const s=document.querySelector('tr[data-i="'+i+'"] [data-f="type"]');
+     s.value='Transformer'; s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
   check("choosing a Type proposes the supply, ID, protection and voltage",
     /"id":"TX\d+".*"voltage":"11\/0.4 kV".*"from":"RMU1".*"prot":"Fuse-switch"/.test(typed), typed);
   check("the proposal never leaves the page", !(await evaluate(`rowsToCsv(state.rows)`)).includes("_p"));
@@ -224,6 +250,7 @@ try {
     await evaluate(`document.querySelector('#${id}').click()`);
     await sleep(300);
     const saved = await evaluate(`JSON.stringify(window.__saved[window.__saved.length-1]||null)`);
+    for (let i = 0; i < 20 && !(await evaluate(`document.querySelector('#copystate').textContent`)).includes(ext); i++) await sleep(100);
     const got = JSON.parse(saved) || {};
     check(`Download ${id.toUpperCase()} saves a file`, got.type === mime && (got.name || "").endsWith(ext) && got.size > 500, saved);
     check(`Download ${id.toUpperCase()} says so`, (await evaluate(`document.querySelector('#copystate').textContent`)).includes(ext), saved);

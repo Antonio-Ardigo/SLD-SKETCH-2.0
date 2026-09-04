@@ -191,8 +191,13 @@ function refillProposal(row){
   const kept=row.from.trim() && !marks.has("from") ? row.from.trim() : "";
   const p=proposeRow(items,order,{type:row.type,targetId:kept});
   for(const f of ["from","id","prot","voltage"]){
-    if(!p[f]) continue;
     if(row[f].trim() && !marks.has(f)) continue;    /* the surveyor typed it: leave it */
+    if(!p[f]){                    /* the new Type proposes nothing here: an
+                                     earlier proposal must not be left behind
+                                     (a generator has no supply and no device) */
+      if(f!=="id" && marks.has(f)){ row[f]=""; marks.delete(f); }
+      continue;
+    }
     if(f==="id" && row.id.trim() && !marks.has("id")) continue;
     row[f]=p[f]; marks.add(f);
   }
@@ -737,9 +742,13 @@ eqPanel.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfe
 function fileName(ext){
   return ((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+"."+ext;
 }
+let sayN=0;
 async function saveFile(name, text, mime, note){
   const out=$("#copystate");
-  const say=(m,keep)=>{ out.textContent=m; if(!keep) setTimeout(()=>{ out.textContent=""; },8000); };
+  /* only the timer that wrote the current message may clear it, or an earlier
+     export's timeout wipes a later one's line */
+  const say=(m,keep)=>{ const n=++sayN; out.textContent=m;
+    if(!keep) setTimeout(()=>{ if(n===sayN) out.textContent=""; },8000); };
   const dl=(window.claude && typeof window.claude.use==="function") ? await window.claude.use("downloads") : null;
   if(dl){
     try{ await dl.save({filename:name, data:text}); say(`${name} saved${note?" — "+note:""}.`); }

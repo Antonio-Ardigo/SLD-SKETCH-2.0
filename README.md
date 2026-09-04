@@ -62,7 +62,11 @@ last LV board for a feeder, the last MV board for a transformer — so the item
 lands where it belongs instead of at the edge of the drawing), the usual
 protection, and the voltage read off that supply (a transformer on an 11 kV
 board gets `11/0.4 kV`, a feeder on a 400 V board `400 V`, a board under a
-`33/11 kV` transformer `11 kV`). Proposed cells are tinted; the tint goes as
+`33/11 kV` transformer `11 kV`). A **source** — an MV Incomer, a Generator and its
+variants — is added with no supply at all, whatever it was dropped on: it is
+fed from off the sheet, and what it feeds is named in *that* item's `Feeds
+From`. Its own cell stays there and stays editable, and leaving it empty is
+never a warning. Proposed cells are tinted; the tint goes as
 soon as you type in one, so you can see what came from the engine and what
 you entered. Choosing a Type on a blank row fills the rest the same way.
 Nothing is proposed once the row exists: from then on every cell is yours.
