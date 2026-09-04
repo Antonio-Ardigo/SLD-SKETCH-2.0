@@ -32,12 +32,30 @@ export function stripModuleSyntax(src) {
     .join("\n");
 }
 
+/* the vendored typefaces, as @font-face rules carrying the files inline, so
+   the page needs no network (vendor/fonts, refreshed by tools/vendor-fonts.mjs) */
+export function fontCss() {
+  const dir = path.join(ROOT, "vendor", "fonts");
+  const meta = path.join(dir, "fonts.json");
+  if (!fs.existsSync(meta)) return "";
+  const { faces } = JSON.parse(fs.readFileSync(meta, "utf8"));
+  const rules = faces.map(f => {
+    const b64 = fs.readFileSync(path.join(dir, f.file)).toString("base64");
+    return `@font-face{font-family:'${f.family}';font-style:normal;font-weight:${f.weight};` +
+      (f.stretch ? `font-stretch:${f.stretch};` : "") +
+      `font-display:swap;src:url(data:font/woff2;base64,${b64}) format('woff2');` +
+      `unicode-range:${f.unicodeRange};}`;
+  });
+  return `/* Archivo and IBM Plex Mono, embedded — SIL Open Font License 1.1, see vendor/fonts/LICENSE.md */\n` + rules.join("\n");
+}
+
 export function buildPage() {
   const parts = BUNDLE_ORDER.map(f => stripModuleSyntax(fs.readFileSync(path.join(ROOT, f), "utf8")).replace(/^\n+|\n+$/g, ""));
   const bundle = `"use strict";\n\n${parts.join("\n\n")}\n`;
   const tpl = fs.readFileSync(path.join(ROOT, TEMPLATE), "utf8");
   if (!tpl.includes("@@BUNDLE@@")) throw new Error(`${TEMPLATE} has no @@BUNDLE@@ marker`);
-  return tpl.replace("@@BUNDLE@@", () => bundle);
+  if (!tpl.includes("@@FONTS@@")) throw new Error(`${TEMPLATE} has no @@FONTS@@ marker`);
+  return tpl.replace("@@FONTS@@", () => fontCss()).replace("@@BUNDLE@@", () => bundle);
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

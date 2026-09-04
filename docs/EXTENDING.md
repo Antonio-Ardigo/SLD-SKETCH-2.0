@@ -79,3 +79,13 @@ made (`applyView` in `src/core/geometry.js` for spacing; `VIEW.*` in
 `render.js` for what is shown), expose it in the page's view bar, and let
 `test/views.test.js` prove the graph, the ranks and the checker verdict do
 not move under any of its values.
+
+## The page's fonts
+
+`vendor/fonts/` holds the `.woff2` files and `fonts.json` (each face's family,
+weight, subset and unicode range); `fontCss()` in `tools/build-page.mjs` turns
+them into `@font-face` rules with the file inline, so the built page needs no
+network. To change a family or a weight, edit the `QUERY` in
+`tools/vendor-fonts.mjs`, run it, rebuild the page, and update the CSS font
+stacks in `src/ui/page.html`. The drawing itself always uses Arial with
+Helvetica as fallback and is unaffected.

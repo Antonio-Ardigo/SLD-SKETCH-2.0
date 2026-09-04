@@ -21,9 +21,9 @@ new survey, copy `examples/template.xlsx` and fill in the yellow cells.
 retired: the JavaScript engine under `src/` draws the same picture, checks
 it the same way, and is the only implementation. See `docs/PLAN.md`.)
 
-**No Python at hand?** Open `sld_sketchpad.html` in a browser — the same layout
-engine ported to JavaScript, with an editable equipment table instead of Excel
-and the drawing rebuilding live as you type. The seven example configurations are
+**Prefer not to touch a spreadsheet?** Open `sld_sketchpad.html` in a browser —
+the same engine, with an editable equipment table instead of Excel and the
+drawing rebuilding live as you type. The seven example configurations are
 built in, and your table is kept in the browser between visits. The drawing
 sits in a window of its own with scrollbars on both axes: drag it to pan,
 Fit / 100 % / − / + (or ctrl+wheel, the keys 0, 1, −, +) to zoom, so a
@@ -62,8 +62,13 @@ gives the drawing the whole window (Esc to leave). A view changes the picture
 and never the table: the same rows draw the same network under every view
 (`test/views.test.js` proves it on every case), the view is kept beside the
 table in the browser and is never exported with it. The CLI takes none yet;
-a case can carry one in `case.json` (`"view": {"spacing": "compact"}`). Reading `.xlsx` in the page uses `vendor/xlsx.full.min.js`, so keep
-the `vendor/` folder beside the page.
+a case can carry one in `case.json` (`"view": {"spacing": "compact"}`).
+
+**The page works offline.** `sld_sketchpad.html` carries everything it needs,
+its two typefaces included, and asks the network for nothing at all: open it
+from a laptop on a site with no signal, from a USB stick, from an email
+attachment. Only importing an `.xlsx` reaches outside the file, to
+`vendor/xlsx.full.min.js` beside it; CSV and JSON import do not.
 
 ## The spreadsheet
 
@@ -298,6 +303,7 @@ the drawing obey; `docs/PLAN.md` is the roadmap.
 ## Code layout
 
 ```
+vendor/       xlsx.full.min.js (SheetJS) and fonts/ (Archivo, IBM Plex Mono)
 src/core/     the engine, as ES modules: types, diagnostics, geometry, model (the
               reader), graph, rules/ + rank + facts (what the engine infers),
               layout, svg (primitives and symbols), symbols/registry (one entry
@@ -312,8 +318,10 @@ testdata/     the cases; test/ the node --test suites
 
 `sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
 the modules into the page's single `<script>` (browsers refuse `import` from
-`file://`, and the page must open from a plain file). Edit `src/`, rebuild,
-and `npm test` fails if the page or the presets are out of step.
+`file://`, and the page must open from a plain file) and inlines the vendored
+fonts as `data:` URIs. Edit `src/`, rebuild, and `npm test` fails if the page
+or the presets are out of step. `node tools/vendor-fonts.mjs` refreshes the
+font files themselves; it is the one step that needs the network.
 
 ## What the symbols mean
 
