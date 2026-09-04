@@ -30,13 +30,22 @@ SVG / DXF would work.
 | `T4_fix_typo_supply` | corrects a supply typed as `BB!` |
 | `T5_move_feeder` | moves a feeder from one board to the other |
 | `T6_coupler_second_end` | draws a bus coupler between two boards |
+| `T7_semicolon_csv` | imports a file saved where the list separator is `;` |
 
 ## The wrong-topology scenarios
 
 `W*` entries record the outcome, not a count: what the page does when a board
 with ways is deleted, when a supply is written in the wrong case, when Enter is
-pressed six times with only IDs typed, and when a feeder chip is dropped on a
-pump.
+pressed six times with only IDs typed, when a feeder chip is dropped on a pump,
+when a coupler names a third supply it cannot tie or only one end at all, when
+a spreadsheet carries a `Building ID` column beside its `ID`, and when a supply
+is named after something every object inherits (`constructor`).
+
+A `W` entry is where a silent fault gets pinned. Four of these were found by
+measuring rather than by reading: an extra supply on a coupler was discarded
+with no message, a one-ended coupler was absent from the sheet, a decoy column
+rebound every row's identity, and `constructor` in a `Feeds From` killed the
+drawing outright. None of them raised anything a test was looking at.
 
 ## Changing the file
 

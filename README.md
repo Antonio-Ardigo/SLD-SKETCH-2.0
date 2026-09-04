@@ -95,9 +95,32 @@ they meant.
 not on the sheet, or two rows with one ID, is an error in the problems box —
 but the sheet still draws: the row in question floats (or, for a duplicate,
 the second row is left out) and the message says so. Exports work too. An
-unknown supply that is within a slip of an existing ID — `bb1`, `BB!`,
-`MCC 1` — is named in the message with a **use BB1** button; that click, and
-only that click, writes it into the cell.
+unknown supply that is within a slip of an existing ID — `BB!` for `BB1` —
+is named in the message with a **use BB1** button; that click, and only that
+click, writes it into the cell.
+
+**The same ID written two ways is one ID.** `bb1`, `BB 1` and `BB1` are the
+same board: the row is connected and the box says how the cell was read,
+rather than calling it an error and asking you to correct a spelling that
+was already understood. Your cell is left exactly as you typed it, and the
+exports print it that way. Two rows whose IDs differ only in case are not
+refused — both draw, and the box says which one references will go to.
+
+**A coupler is a row like any other.** A bus coupler with only one end
+written, or one naming something that is not a busbar, is drawn from the end
+it has with its other end open, and the message says which. So a coupler you
+have half-entered has a symbol you can grab: drop the chip on one board and
+**Shift**-drag it onto the other to finish it, without typing an ID. A
+coupler naming more supplies than the two it ties says which are not drawn —
+it used to draw an ordinary tie and discard them in silence.
+
+**Spreadsheets are read as they come.** Import sniffs the separator, so a
+workbook exported where the list separator is `;` — or a tab-separated file —
+reads like any other. Columns bind by their name before any word inside it,
+so a `Building ID` column beside `ID` cannot quietly become every row's
+identity; when a column is matched only by a word it contains, the status
+line says which column was read as what. A file that holds no equipment rows
+leaves your table alone.
 
 **View options** sit in the drawing's toolbar: spacing (compact / normal /
 wide), the legend and the title block on or off, and **Focus drawing**, which
@@ -377,12 +400,15 @@ testdata/     the cases; test/ the node --test suites
 a surveyor, measured: `node tools/usage-baseline.mjs` replays the common
 data-entry tasks in the page under headless Chromium — five feeders on a
 board, ten rows from a spreadsheet, a board renamed, a typo'd supply fixed, a
-feeder moved, a coupler drawn — and counts every click, key, drop and value
-entered, recording too whether the drawing on screen was fresh or stale and
-whether an export was possible. The `W*` entries record what the page does when
-the topology goes wrong. `--check` fails on any difference, so an improvement
-lands with the lower number it earned and a regression cannot land quietly.
-`testdata/usage/README.md` states the counting rule.
+feeder moved, a coupler drawn, a semicolon-separated file imported — and
+counts every click, key, drop and value entered, recording too whether the
+drawing on screen was fresh or stale and whether an export was possible. The
+`W*` entries record what the page does when the topology goes wrong: a board
+with ways deleted, a supply in the wrong case, a coupler with one end or with
+a supply too many, a spreadsheet with a decoy ID column. `--check` fails on
+any difference, so an improvement lands with the number it earned and a
+regression cannot land quietly. `testdata/usage/README.md` states the
+counting rule.
 
 `sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
 the modules into the page's single `<script>` (browsers refuse `import` from
