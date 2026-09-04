@@ -55,6 +55,23 @@ A rule reads the graph and says what it knows: rank constraints and facts.
    `ALIASES`), a prefix in `TYPE_PREFIX` (`src/ui/app.js`) for auto-numbered
    IDs, and a case.
 
+## A proposal rule (what a new row is pre-filled with)
+
+`src/core/propose.js` is the whole of it — a pure function of the current
+model, called only when a row is added.
+
+- **A new ID prefix**: add the Type label to `TYPE_PREFIX`.
+- **A new default protection**: add it to `TYPE_DEFAULT_PROT`, or, when it
+  depends on what the item is fed from, to `proposeProt(type, supply)`.
+- **A voltage rule**: `proposeVoltage(items, order, type, supply)` is a short
+  chain of cases on the supply's type — transformer (take the secondary), MV
+  gear (the ratio for a transformer, the level for anything else), LV gear
+  (the level). `parseVoltage` / `formatVoltage` / `formatRatio` do the
+  reading and writing; `usualLvVolts` is the LV level the sheet already uses.
+- Add the case to `test/propose.test.js`; nothing else needs to change,
+  because the page only asks for a row and marks the fields the function says
+  it filled.
+
 ## A view option
 
 Add it with its default to `src/core/views.js`, read it where the drawing is

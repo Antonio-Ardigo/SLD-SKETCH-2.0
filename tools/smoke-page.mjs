@@ -146,6 +146,37 @@ try {
   await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))`);
   check("undo removes the dropped row", await evaluate(`state.rows.length`) === rowsBefore);
 
+  /* the engine proposes the new row's values at addition, tinted until edited */
+  await evaluate(`(function(){ const p=document.querySelector('#preset'); p.value='7'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+  await evaluate(`addRowFor('Feeder','MSB')`);
+  await sleep(400);
+  const proposedFeeder = await evaluate(`JSON.stringify(state.rows.find(r=>r.type==='Feeder'&&r.from==='MSB'&&!r.desc)||null)`);
+  check("dropped feeder is proposed whole", /"id":"F\d+".*"voltage":"400 V".*"from":"MSB".*"prot":"CB"/.test(proposedFeeder), proposedFeeder);
+  check("proposed cells are tinted", await evaluate(`(function(){ const r=state.rows.findIndex(r=>r.type==='Feeder'&&r.from==='MSB'&&!r.desc);
+     return [...document.querySelectorAll('tr[data-i="'+r+'"] input.proposed')].map(e=>e.dataset.f).sort().join(','); })()`) === "from,id,prot,voltage");
+  check("a proposed cell says so", (await evaluate(`document.querySelector('input.proposed').title`)).includes("proposed by the engine"));
+  /* typing in a proposed cell confirms it */
+  await evaluate(`(function(){ const r=state.rows.findIndex(r=>r.type==='Feeder'&&r.from==='MSB'&&!r.desc);
+     const el=document.querySelector('tr[data-i="'+r+'"] [data-f="voltage"]'); el.value='690 V'; el.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+  await sleep(400);
+  check("typing clears that cell's tint", await evaluate(`(function(){ const r=state.rows.findIndex(r=>r.type==='Feeder'&&r.voltage==='690 V');
+     const tr=document.querySelector('tr[data-i="'+r+'"]');
+     return !tr.querySelector('[data-f="voltage"]').classList.contains('proposed') && tr.querySelector('[data-f="prot"]').classList.contains('proposed'); })()`));
+
+  /* + Add row proposes the supply of the row above; choosing a Type fills the rest */
+  await evaluate(`document.querySelector('#addrow').click()`);
+  await sleep(400);
+  check("added row takes the supply above", await evaluate(`state.rows[state.rows.length-1].from`) === "MSB");
+  await evaluate(`(function(){ const i=state.rows.length-1; const s=document.querySelector('tr[data-i="'+i+'"] [data-f="type"]');
+     s.value='Transformer'; s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+  const typed = await evaluate(`JSON.stringify(state.rows[state.rows.length-1])`);
+  check("choosing a Type proposes ID, protection and voltage", /"id":"TX\d+".*"prot":"CB"/.test(typed), typed);
+  check("the proposal never leaves the page", !(await evaluate(`rowsToCsv(state.rows)`)).includes("_p"));
+  await evaluate(`(function(){ const p=document.querySelector('#preset'); p.value='1'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
+
   /* view options change the picture, not the table */
   const w0 = await evaluate(`+document.querySelector('#sheet svg').getAttribute('width')`);
   const rowsJson = await evaluate(`JSON.stringify(state.rows)`);

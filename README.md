@@ -45,6 +45,17 @@ numbered for you, the usual Protection filled in). Clicking a chip adds the
 row under the selected item. The table stays the only source of truth: a
 drop writes a row, nothing else.
 
+**A new row comes pre-filled.** However you add it — a drop, a palette chip,
+**+ Add row**, `Enter` on the last row — the engine proposes what it can and
+writes it into the table: the ID (numbered from the type: `TX3`, `F12`), the
+supply (the drop target, or the supply of the row above), the usual
+protection, and the voltage read off that supply (a transformer on an 11 kV
+board gets `11/0.4 kV`, a feeder on a 400 V board `400 V`, a board under a
+`33/11 kV` transformer `11 kV`). Proposed cells are tinted; the tint goes as
+soon as you type in one, so you can see what came from the engine and what
+you entered. Choosing a Type on a blank row fills the rest the same way.
+Nothing is proposed once the row exists: from then on every cell is yours.
+
 **View options** sit in the drawing's toolbar: spacing (compact / normal /
 wide), the legend and the title block on or off, and **Focus drawing**, which
 gives the drawing the whole window (Esc to leave). A view changes the picture
