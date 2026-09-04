@@ -1,0 +1,32 @@
+{
+  "name": "rmu_feeds_board",
+  "group": "topics",
+  "description": "An MV switchboard on a way of an RMU: the board sits one tier below the enclosure, wired from the way out of it",
+  "info": {
+    "site": "Topology: RMU feeds an MV board",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "RMU1": 0,
+      "MVB1": 1,
+      "BB1": 2,
+      "BB2": 2
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    },
+    "legacy": {
+      "items": 9,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+}

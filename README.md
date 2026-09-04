@@ -36,8 +36,10 @@ merely draws, then what the reader would call impossible, each saying what it
 is and where it is a stretch. Nothing is hidden: the order is the advice.
 Type `BB1, ` and it offers the second supply, preferring another board of the
 same kind. **Voltage** and
-**Rating** offer standard values for the row's type (11 kV, 400 V, 11/0.4 kV,
-1000 kVA, 250 A, 55 kW, …); choosing a **Type** fills the usual Protection if
+**Rating** offer standard values for what the row *is*, however its Type is
+spelled — a `PFC` or a `Cap bank` is a capacitor bank and is offered kvar, a
+`Genset` kVA, a `Trafo` the transformer ratios (11 kV, 400 V, 11/0.4 kV,
+1000 kVA, 250 A, 55 kW, 300 kvar, …); choosing a **Type** fills the usual Protection if
 the cell is empty. `Enter` moves down a row (a new one after the last),
 `Alt`+`↑`/`↓` moves the row, `Ctrl`+`Z` / `Ctrl`+`Y` undo and redo. A message
 in the problems box marks the row it is about and clicking it jumps there.
@@ -48,7 +50,9 @@ the row, and drag a chip from the **symbol palette** above the drawing onto a
 busbar, RMU or transformer to add a row of that type fed from it (the ID is
 numbered for you, the usual Protection filled in). Clicking a chip adds the
 row under the selected item. The table stays the only source of truth: a
-drop writes a row, nothing else.
+drop writes a row, nothing else. The drawing's own bar carries **Download
+PDF**, **Download SVG** and **Download DXF** — three files written from the
+table by the engine, never copied off the screen.
 
 **A new row comes pre-filled.** However you add it — a drop, a palette chip,
 **+ Add row**, `Enter` on the last row — the engine proposes what it can and
@@ -122,6 +126,10 @@ load — the name is kept as an alias of `Transformer`.
 
 The last one works because a generator is never a load: a `Generator` whose
 `Feeds From` names a transformer can only be feeding *up* through it.
+
+An MV switchboard whose `Feeds From` names an **RMU** is a board on one of the
+RMU's ways: it is drawn one tier below the enclosure, wired from the way out of
+it. Two RMUs naming each other are a ring and stay level; a board never is.
 
 Because `Feeds From` only ever points *upstream*, a step-up needs to be named
 on the row of the board it supplies. Until you do that it still draws — as a
@@ -270,12 +278,19 @@ sorted onto layers so a CAD user can switch parts off: `SLD_DRAWING`
 (conductors and symbols), `SLD_BUSBAR` (the thick bars, as polylines with
 width), `SLD_TEXT`, `SLD_ENCLOSURE` (RMU boxes, dashed), `SLD_FRAME` (title
 and title block), `SLD_LEGEND` and `SLD_TABLE`. The Sketchpad page has the
-same exporter behind its **Download DXF** button, and **Copy DXF** puts the
-file text on the clipboard for places where downloads are blocked. CAD text
+same exporter behind its **Download DXF** button. CAD text
 is set with a width factor that keeps it no wider than the browser's, long
 table cells wrap, and `node src/cli/sld.js dxf <workbook> --check` reads the
 file back and reports any text that overlaps another text or crosses a table
 rule.
+
+**PDF export.** `node src/cli/sld.js pdf <workbook> -o out.pdf` writes one A3
+landscape page: the sketch with the equipment table beside it or under it,
+whichever leaves the drawing bigger, scaled to fit and centred. It is drawn
+through the same symbol primitives as the SVG and the DXF, so nothing about
+the drawing moves. The text is set in the base-14 Helvetica, so no font
+travels in the file and none is fetched, and nothing is compressed, so the
+file is plain ASCII. The page has the same exporter behind **Download PDF**.
 
 **Checking a drawing against its table.** `node src/cli/sld.js check
 <workbook>` draws the sheet and verifies, from the scene the renderer records,
@@ -315,7 +330,8 @@ src/core/     the engine, as ES modules: types, supplies (which supply can feed
               which row), diagnostics, geometry, model (the
               reader), graph, rules/ + rank + facts (what the engine infers),
               layout, svg (primitives and symbols), symbols/registry (one entry
-              per symbol: legend and palette), render, dxf, scene + check (the
+              per symbol: legend and palette), render, eqtable (the equipment
+              table beside the sheet), dxf, pdf, scene + check (the
               drawing verified against the table), pipeline (draw())
 src/io/       csv and xlsx (SheetJS) ⇄ table rows
 src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js

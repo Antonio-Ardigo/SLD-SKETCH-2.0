@@ -358,9 +358,11 @@
       </table>
 
       <h3>Getting it out</h3>
-      <p><strong>Copy SVG</strong> puts the drawing on the clipboard. <strong>Download DXF</strong> saves an R12 DXF with the
-      sketch and, to its right, the equipment table, centred so it opens in the middle of any CAD window; <strong>Copy DXF</strong>
-      gives the same file as text where downloads are blocked. Your table and your view are kept in this browser between visits.</p>
+      <p>Three files, each written from the table, not copied off the screen. <strong>Download PDF</strong> saves one A3
+      landscape page: the sketch with the equipment table beside it or under it, whichever leaves the drawing bigger — the sheet
+      to send or print. <strong>Download SVG</strong> saves the drawing itself, to open in a browser or a drawing tool.
+      <strong>Download DXF</strong> saves an R12 DXF with the sketch and, to its right, the equipment table, centred so it opens
+      in the middle of any CAD window. Your table and your view are kept in this browser between visits.</p>
     </div>
   </details>
 
@@ -418,9 +420,9 @@
     </div>
     <div class="sheet-bar">
       <h2>Drawing</h2>
-      <button id="copysvg">Copy SVG</button>
-      <button id="dxf" title="Download a DXF of the sketch with the equipment table under it">Download DXF</button>
-      <button id="copydxf" title="Copy the DXF text, to paste into a .dxf file where downloads are blocked">Copy DXF</button>
+      <button id="pdf" title="Download a one-page A3 PDF of the sketch with the equipment table">Download PDF</button>
+      <button id="svg" title="Download the drawing as an SVG">Download SVG</button>
+      <button id="dxf" title="Download a DXF of the sketch with the equipment table beside it">Download DXF</button>
       <span class="copystate" id="copystate"></span>
       <span class="viewopts" aria-label="View options: they change the drawing, never the table">
         <label title="Horizontal spacing of ways and boards">Spacing

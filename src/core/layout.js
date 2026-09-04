@@ -229,6 +229,7 @@ function mvChildren(items, order, node){
      the whole ring, which is laid out as a group */
   const types=[TRANSFORMER,PUMP].concat(LV_LOADS);
   if(node.type===MV_BUSBAR) types.push(MV_BUSBAR,RMU);
+  else if(node.type===RMU) types.push(MV_BUSBAR);   /* a switchboard on an RMU way */
   const links=levelLinks(items,order);
   const ltx=new Set(links.map(([,tx])=>tx.id));
   let kids=childrenOf(items,order,node.id,types).filter(k=>!ltx.has(k.id));
@@ -332,7 +333,7 @@ function layoutMvBoards(items, order){
   const links=levelLinks(items,order,depth);
   const lowers=new Set(links.map(([,,l])=>l.id));
   const rmus=order.map(i=>items[i]).filter(t=>t.type===RMU);
-  const roots=mvbs.filter(b=>!b.parents.some(p=>items[p].type===MV_BUSBAR)
+  const roots=mvbs.filter(b=>!b.parents.some(p=>[MV_BUSBAR,RMU].includes(items[p].type))
                              && !lowers.has(b.id))
     .concat(rmus.filter(r=>!r.parents.some(p=>[MV_BUSBAR,RMU].includes(items[p].type))
                            && !lowers.has(r.id) && r.x===null));

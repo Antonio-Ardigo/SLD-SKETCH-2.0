@@ -1,10 +1,11 @@
-import { TYPE_LABELS, ALIASES } from "../core/types.js";
+import { TYPE_LABELS, ALIASES, TYPE_VARIANTS, MV_INCOMER, MV_BUSBAR, RMU, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING } from "../core/types.js";
 import { esc, buildModel } from "../core/model.js";
 import { layout } from "../core/layout.js";
 import { applyView } from "../core/geometry.js";
 import { normalizeView, VIEW_DEFAULTS } from "../core/views.js";
 import { render } from "../core/render.js";
 import { renderDxf } from "../core/dxf.js";
+import { renderPdf } from "../core/pdf.js";
 import { SVG } from "../core/svg.js";
 import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
@@ -19,9 +20,15 @@ let view_={...VIEW_DEFAULTS};      /* the view options: stored beside the table,
 const $=s=>document.querySelector(s);
 const eqbody=$("#eqbody");
 
+/* the row's own Type label is kept as an option of its own when the sheet it
+   came from wrote it another way ("PFC", "Genset", "Trafo"): the engine reads
+   it, so the table must show it rather than an empty cell */
 function typeSelect(value){
-  const opts=['<option value=""></option>'].concat(
-    TYPE_LABELS.map(([lbl])=>`<option${lbl===value?" selected":""}>${lbl}</option>`));
+  const v=(value||"").trim();
+  const own=v && !TYPE_LABELS.some(([lbl])=>lbl===v)
+    ? [`<option selected>${esc(v)}</option>`] : [];
+  const opts=['<option value=""></option>'].concat(own,
+    TYPE_LABELS.map(([lbl])=>`<option${lbl===v?" selected":""}>${lbl}</option>`));
   return `<select data-f="type" aria-label="Type">${opts.join("")}</select>`;
 }
 const PROPOSED_TITLE="proposed by the engine — edit to confirm";
@@ -255,7 +262,7 @@ function buildPalette(){
 
 /* ------------------------------------------------ data entry helpers */
 /* standard values, by what the row is */
-const MV_TYPES=["MV Incomer","MV Busbar","RMU"], LV_TYPES=["LV Busbar","Feeder","MCC","Bus Coupler"];
+const MV_TYPES=[MV_INCOMER,MV_BUSBAR,RMU], LV_TYPES=[LV_BUSBAR,FEEDER,MCC,BUS_COUPLER];
 const QUICK={
   volt:{
     mv:["33 kV","22 kV","11 kV","6.6 kV","3.3 kV"],
@@ -263,6 +270,7 @@ const QUICK={
     tx:["33/11 kV","11/0.4 kV","11/0.69 kV","11/3.3 kV","6.6/0.4 kV","0.4/11 kV","0.4/0.4 kV","0.4/0.23 kV"],
     gen:["11 kV","400 V","690 V"],
     motor:["11 kV","3.3 kV","690 V","400 V"],
+    dc:["110 V DC","220 V DC","48 V DC","24 V DC"],
   },
   rating:{
     board:["630 A","800 A","1250 A","1600 A","2000 A","2500 A","3200 A","4000 A"],
@@ -270,24 +278,42 @@ const QUICK={
     tx:["315 kVA","500 kVA","630 kVA","800 kVA","1000 kVA","1250 kVA","1600 kVA","2000 kVA","2500 kVA"],
     motor:["11 kW","22 kW","37 kW","55 kW","75 kW","110 kW","160 kW","250 kW","315 kW","500 kW"],
     gen:["250 kVA","500 kVA","800 kVA","1000 kVA","1600 kVA","2000 kVA"],
-    cap:["100 kvar","200 kvar","300 kvar","500 kvar"],
+    cap:["50 kvar","100 kvar","150 kvar","200 kvar","300 kvar","400 kvar","500 kvar","800 kvar"],
+    ups:["10 kVA","20 kVA","40 kVA","60 kVA","100 kVA","200 kVA"],
+    battery:["100 Ah","200 Ah","300 Ah","500 Ah"],
+    ner:["10 A","25 A","50 A","100 A","200 A","400 A"],
   },
 };
+/* the quick values follow what the row *is*, not how its Type is spelled:
+   an imported "PFC" or "Cap bank" is a capacitor bank and is offered kvar */
+function canonType(type){ return ALIASES[String(type||"").trim().toLowerCase().replace(/\s+/g," ")]||null; }
+/* the symbol variants are their own kind of equipment for these lists,
+   whatever family they belong to */
+function variantOf(type){ return TYPE_VARIANTS[String(type||"").trim().toLowerCase().replace(/\s+/g," ")]||null; }
 function quickVolt(type){
-  if(type==="Transformer") return QUICK.volt.tx;
-  if(type==="Generator") return QUICK.volt.gen;
-  if(type==="Pump") return QUICK.volt.motor;
-  if(MV_TYPES.includes(type)) return QUICK.volt.mv;
-  if(LV_TYPES.includes(type)) return QUICK.volt.lv;
+  const v=variantOf(type);
+  if(v==="dc"||v==="battery") return QUICK.volt.dc;
+  if(v==="ups"||v==="inverter") return QUICK.volt.lv;
+  const c=canonType(type);
+  if(c===TRANSFORMER) return QUICK.volt.tx;
+  if(c===GENERATOR) return QUICK.volt.gen;
+  if(c===PUMP) return QUICK.volt.motor;
+  if(MV_TYPES.includes(c)) return QUICK.volt.mv;
+  if(LV_TYPES.includes(c)) return QUICK.volt.lv;
   return QUICK.volt.mv.concat(QUICK.volt.lv);
 }
 function quickRating(type){
-  if(type==="Transformer") return QUICK.rating.tx;
-  if(type==="Pump") return QUICK.rating.motor;
-  if(type==="Generator") return QUICK.rating.gen;
-  if(type==="Capacitor Bank") return QUICK.rating.cap;
-  if(["MV Busbar","LV Busbar","RMU","Bus Coupler","MCC"].includes(type)) return QUICK.rating.board;
-  if(type==="Feeder") return QUICK.rating.feeder;
+  const v=variantOf(type);
+  if(v==="ups"||v==="inverter") return QUICK.rating.ups;
+  if(v==="battery") return QUICK.rating.battery;
+  const c=canonType(type);
+  if(c===TRANSFORMER) return QUICK.rating.tx;
+  if(c===PUMP) return QUICK.rating.motor;
+  if(c===GENERATOR) return QUICK.rating.gen;
+  if(c===CAPACITOR) return QUICK.rating.cap;             /* kvar, however the Type is spelled */
+  if(c===EARTHING) return QUICK.rating.ner;
+  if([MV_BUSBAR,LV_BUSBAR,RMU,BUS_COUPLER,MCC].includes(c)) return QUICK.rating.board;
+  if(c===FEEDER) return QUICK.rating.feeder;
   return QUICK.rating.board.concat(QUICK.rating.tx);
 }
 /* values are plain strings, or {value,label} when the option says what it is */
@@ -704,72 +730,56 @@ $("#importfile").addEventListener("change",e=>{ const f=e.target.files[0]; e.tar
 const eqPanel=eqbody.closest("section")||eqbody;
 eqPanel.addEventListener("dragover",e=>{ if([...e.dataTransfer.types].includes("Files")){ e.preventDefault(); } });
 eqPanel.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f){ e.preventDefault(); importFile(f); } });
-$("#csv").addEventListener("click",()=>{
-  const text=rowsToCsv(state.rows), name=((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+".csv";
-  const url=URL.createObjectURL(new Blob([text],{type:"text/csv"}));
-  const a=document.createElement("a"); a.href=url; a.download=name;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),2000);
-});
-$("#copysvg").addEventListener("click",async ()=>{
-  const svgEl=$("#sheet svg"), el=svgEl?svgEl.outerHTML:"", out=$("#copystate");
-  if(!el){ out.textContent="Nothing to copy yet."; return; }
-  try{
-    await navigator.clipboard.writeText(el);
-    out.textContent="SVG copied — paste into a file or a drawing tool.";
-  }catch(e){
-    out.textContent="Copying is blocked here — select the drawing and use the browser's copy instead.";
-  }
-  setTimeout(()=>{ out.textContent=""; },5000);
-});
-
-function currentDxf(){
-  const {items,order,errors}=buildModel(state.rows);
-  if(!order.length || errors.length) return null;
-  applyView(view_);
-  const width=layout(items,order);
-  return renderDxf(state.info,items,order,width);
+/* ------------------------------------------------ getting it out */
+/* Four files, each written from the table by the engine. Inside the
+   claude.ai viewer a page cannot download by itself and the viewer's save
+   prompt does it; opened as a file, the browser's own download does. */
+function fileName(ext){
+  return ((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+"."+ext;
 }
-function dxfName(){
-  return ((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+".dxf";
-}
-$("#dxf").addEventListener("click",async ()=>{
-  const out=$("#copystate"), text=currentDxf();
-  if(!text){ out.textContent="Nothing to export yet — fix the table first."; return; }
+async function saveFile(name, text, mime, note){
+  const out=$("#copystate");
   const say=(m,keep)=>{ out.textContent=m; if(!keep) setTimeout(()=>{ out.textContent=""; },8000); };
-  /* inside the claude.ai viewer a page cannot download by itself: the
-     viewer's save prompt does it, when it can; opened as a file, the
-     browser's own download does */
-  const dl=(window.claude && typeof window.claude.use==="function")
-    ? await window.claude.use("downloads") : null;
+  const dl=(window.claude && typeof window.claude.use==="function") ? await window.claude.use("downloads") : null;
   if(dl){
-    try{
-      await dl.save({filename:dxfName(), data:text});
-      say(`${dxfName()} saved — R12 DXF, sketch and equipment table, 1 unit = 1 mm.`);
-    }catch(e){
+    try{ await dl.save({filename:name, data:text}); say(`${name} saved${note?" — "+note:""}.`); }
+    catch(e){
       const code=e && e.code;
       if(code==="declined") say("Save cancelled.");
       else if(code==="rate_limited") say("A save prompt is already open — answer it first.");
-      else say("This viewer cannot save .dxf files — use Copy DXF and paste into a file named .dxf, or run: node src/cli/sld.js dxf <table>.",true);
+      else say(`This viewer cannot save ${name} — open the page as a file, or run: node src/cli/sld.js <draw|dxf|pdf> <table>.`,true);
     }
     return;
   }
-  const url=URL.createObjectURL(new Blob([text],{type:"application/dxf"}));
-  const a=document.createElement("a"); a.href=url; a.download=dxfName();
+  const url=URL.createObjectURL(new Blob([text],{type:mime}));
+  const a=document.createElement("a"); a.href=url; a.download=name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),2000);
-  say(`${dxfName()} — R12 DXF, sketch and equipment table, 1 unit = 1 mm.`);
+  say(`${name}${note?" — "+note:""}.`);
+}
+/* the model, laid out, ready for an exporter — or null when the table cannot be drawn */
+function currentSheet(){
+  const {items,order,errors}=buildModel(state.rows);
+  if(!order.length || errors.length) return null;
+  applyView(view_);
+  return [items,order,layout(items,order)];
+}
+function exportSheet(ext, mime, note, make){
+  const sheet=currentSheet();
+  if(!sheet){ $("#copystate").textContent="Nothing to export yet — fix the table first."; return; }
+  saveFile(fileName(ext), make(state.info,...sheet), mime, note);
+}
+$("#csv").addEventListener("click",()=>{
+  saveFile(fileName("csv"), rowsToCsv(state.rows), "text/csv", "the equipment table");
 });
-$("#copydxf").addEventListener("click",async ()=>{
-  const out=$("#copystate"), text=currentDxf();
-  if(!text){ out.textContent="Nothing to export yet — fix the table first."; return; }
-  try{
-    await navigator.clipboard.writeText(text);
-    out.textContent="DXF copied — paste it into a new file and save it as .dxf.";
-  }catch(e){
-    out.textContent="Copying is blocked here — use Download DXF instead.";
-  }
-  setTimeout(()=>{ out.textContent=""; },6000);
+$("#svg").addEventListener("click",()=>{
+  exportSheet("svg","image/svg+xml","the drawing",(info,items,order,width)=>render(info,items,order,width,[]));
+});
+$("#pdf").addEventListener("click",()=>{
+  exportSheet("pdf","application/pdf","one A3 landscape page, sketch and equipment table",renderPdf);
+});
+$("#dxf").addEventListener("click",()=>{
+  exportSheet("dxf","application/dxf","R12 DXF, sketch and equipment table, 1 unit = 1 mm",renderDxf);
 });
 
 /* ------------------------------------------------ view options and focus mode */

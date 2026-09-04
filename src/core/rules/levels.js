@@ -1,5 +1,7 @@
 /* MV cascade: whatever feeds a board is drawn above it.
  *   board fed from an MV busbar            → one row below it
+ *   MV board fed from an RMU               → one row below it: a switchboard
+ *                                            on an RMU way is never a ring peer
  *   board fed through a transformer from MV gear → one row below that gear (a level link)
  *   RMU fed from an RMU                    → the ring rule decides (rings.js) */
 import { MV_BUSBAR, RMU, TRANSFORMER } from "../types.js";
@@ -15,7 +17,7 @@ export default {
       for (const p of it.parents) {
         const par = items[p];
         if (!par) continue;
-        if (par.type === MV_BUSBAR) { ctx.below(id, p, 1); ctx.tag(id, "cascade"); }
+        if (par.type === MV_BUSBAR || (par.type === RMU && it.type === MV_BUSBAR)) { ctx.below(id, p, 1); ctx.tag(id, "cascade"); }
         else if (par.type === TRANSFORMER) {
           for (const pp of par.parents) {
             if (items[pp] && [MV_BUSBAR, RMU].includes(items[pp].type)) {
