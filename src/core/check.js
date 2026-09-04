@@ -14,8 +14,9 @@
  * interrupts. Each item's symbol geometry (bars, circles, boxes, glyph
  * lines, arrows) claims the conductor ends that touch it, and a bar's own
  * nodes belong to the bar. Then paths are searched between items. */
-import { BUS_COUPLER, FEEDER, PUMP, MCC, LV_BUSBAR, TRANSFORMER, GENERATOR, MV_BUSBAR, RMU } from "./types.js";
+import { BUS_COUPLER, FEEDER, PUMP, MCC, LV_BUSBAR, TRANSFORMER } from "./types.js";
 import { txBoard, subBoardsOf } from "./layout.js";
+import { couplerOf } from "./couplers.js";
 
 const TOL = 1.0, TOUCH = 2.2, LONG = 20;
 const isWireWidth = w => Math.abs(w - 2) < 0.01 || Math.abs(w - 5.5) < 0.01 || Math.abs(w - 3.4) < 0.01 || Math.abs(w - 3) < 0.01;
@@ -69,8 +70,9 @@ export function expectedEdges(items, order) {
   for (const id of order) {
     const it = items[id];
     if (it.type === BUS_COUPLER) {
-      const ends = it.parents.filter(p => items[p] && [LV_BUSBAR, MV_BUSBAR, RMU, GENERATOR].includes(items[p].type));
-      if (ends.length === 2) out.push([ends[0], ends[1], id]);
+      /* what a coupler ties is the rule's judgement, not a second opinion */
+      const k = couplerOf(items, it);
+      if (k.a && k.b) out.push([k.a, k.b, id]);
       continue;
     }
     for (const p of it.parents) {
@@ -159,8 +161,17 @@ export function checkScene(scene, items, order) {
   }
   for (const [id, set] of itemNodes) for (const n of set) N.owner[n].add(id);
 
-  const drawn = symbolItems.filter(id => symbolGeom.get(id).length > 0);
-  const missing = symbolItems.filter(id => !symbolGeom.get(id).length && items[id].x !== null);
+  /* A link row draws a conductor rather than a symbol of its own, so it has no
+     symbol geometry to look for — but it must still have reached the sheet.
+     Without this, a coupler the drawing skipped was invisible to the checker
+     as well as to the surveyor, and constitution §6 had no enforcement for the
+     one kind of row that was breaking it. */
+  const grouped = new Set(scene.groups.map(g => g.id));
+  const placed = id => items[id].x !== null;
+  const linkItems = [...links].filter(placed);
+  const drawn = symbolItems.filter(id => symbolGeom.get(id).length > 0).concat(linkItems.filter(id => grouped.has(id)));
+  const missing = symbolItems.filter(id => !symbolGeom.get(id).length && placed(id))
+    .concat(linkItems.filter(id => !grouped.has(id)));
 
   /* paths */
   const search = (fromSet, toSet, forbid) => {
@@ -230,7 +241,7 @@ export function checkScene(scene, items, order) {
   }
 
   return {
-    items: { drawn: drawn.length, total: symbolItems.length, missing },
+    items: { drawn: drawn.length, total: symbolItems.length + linkItems.length, missing },
     edges, overlaps, overlapList, falseNets, falseList,
     clean: !missing.length && !edges.via.length && !edges.disconnected.length && !overlaps && !falseNets,
   };

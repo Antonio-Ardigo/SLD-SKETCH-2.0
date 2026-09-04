@@ -113,4 +113,11 @@ function main(argv) {
   }
 }
 
-main(process.argv.slice(2));
+/* a file that cannot be read is the user's problem to fix, not a stack trace
+   to decipher: say what went wrong and stop */
+try {
+  main(process.argv.slice(2));
+} catch (e) {
+  console.error(`sld: ${e.message}`);
+  process.exit(1);
+}

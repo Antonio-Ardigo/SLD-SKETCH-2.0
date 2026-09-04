@@ -79,10 +79,10 @@ for (const dir of cases) {
         const i = [...have].findIndex((ch, k) => ch !== out.svg[k]);
         assert.fail(`golden differs at offset ${i}: …${have.slice(Math.max(0, i - 40), i + 60)}… vs …${out.svg.slice(Math.max(0, i - 40), i + 60)}…`);
       }
-      /* every row with a symbol is findable on the canvas */
+      /* every row the layout placed is findable on the canvas — couplers
+         included (constitution §6: a row is never dropped silently) */
       for (const id of out.order) {
-        const it = out.items[id];
-        if (it.type === "bus coupler" || it.x === null) continue;
+        if (out.items[id].x === null) continue;
         assert.ok(out.svg.includes(`data-id="${id.replace(/&/g, "&amp;").replace(/</g, "&lt;")}"`), `no <g data-id> for ${id}`);
       }
     }

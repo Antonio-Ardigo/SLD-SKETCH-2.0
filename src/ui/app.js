@@ -11,11 +11,11 @@ import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
 import { supplyCandidates } from "../core/supplies.js";
 import { renameReferences, canFollowRename } from "../core/edit.js";
-import { diagFromMessage, makeDiag } from "../core/diagnostics.js";
+import { couplerDiagnostics } from "../core/couplers.js";
+import { HEADERS, FIELDS, rowsToCsv, readCsv, readTable } from "../io/csv.js";
 import { R, PRESETS } from "./presets.generated.js";
 
 /* ------------------------------------------------ UI wiring */
-const FIELDS=["id","type","desc","rating","voltage","prot","from","notes"];
 let state={info:{site:"",date:"",by:"",notes:""},rows:[]};
 let view_={...VIEW_DEFAULTS};      /* the view options: stored beside the table, never in it */
 
@@ -124,10 +124,10 @@ function redraw(){
      dropped, and the message says so (constitution §6) */
   applyView(view_);
   const width=layout(items,order);
-  const said=warnings.length;
-  const svgStr=render(state.info,items,order,width,warnings);
-  /* what the drawing itself had to say (a coupler it could not place) joins the box */
-  for(const msg of warnings.slice(said)) diagnostics.push(diagFromMessage(msg)||makeDiag("COUPLER_INVALID",[],msg));
+  /* the couplers have their own say, from the same judgement the drawing
+     draws them by — the box no longer reads it out of the drawing's prose */
+  for(const d of couplerDiagnostics(items,order)){ diagnostics.push(d); warnings.push(d.message); }
+  const svgStr=render(state.info,items,order,width);
   showProblems(diagnostics);
   $("#sheet").innerHTML=svgStr;
   $("#sheet").dataset.rev=modelRev();
@@ -750,42 +750,9 @@ $("#clear").addEventListener("click",()=>{
 });
 
 /* ------------------------------------------------ import / CSV */
-const HEADERS=["ID","Type","Description","Rating","Voltage","Protection","Feeds From","Notes"];
-function csvQuote(v){ const s=String(v==null?"":v); return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
-function rowsToCsv(rows){
-  return [HEADERS.map(csvQuote).join(",")].concat(rows.map(r=>FIELDS.map(f=>csvQuote(r[f])).join(","))).join("\n")+"\n";
-}
-function parseCsv(text){
-  const out=[]; let row=[], field="", i=0, inQ=false; const s=text.replace(/^﻿/,"");
-  while(i<s.length){
-    const c=s[i];
-    if(inQ){ if(c==='"'){ if(s[i+1]==='"'){ field+='"'; i+=2; continue; } inQ=false; i++; continue; } field+=c; i++; continue; }
-    if(c==='"'){ inQ=true; i++; continue; }
-    if(c===","){ row.push(field); field=""; i++; continue; }
-    if(c==="\r"){ i++; continue; }
-    if(c==="\n"){ row.push(field); out.push(row); row=[]; field=""; i++; continue; }
-    field+=c; i++;
-  }
-  if(field.length||row.length){ row.push(field); out.push(row); }
-  return out;
-}
-/* array-of-arrays with a header row (ID, Type, …) → table rows; columns are
-   found by name like the workbook reader does, blank-ID rows are dropped */
-function tableToRows(table){
-  const hi=table.findIndex(r=>{ const c=r.map(x=>String(x??"").trim().toLowerCase()); return c.includes("id")&&c.includes("type"); });
-  if(hi<0) throw new Error("no header row with ID and Type columns");
-  const headers=table[hi].map(x=>String(x??"").trim().toLowerCase());
-  const col=(...names)=>{ for(const n of names){ const j=headers.findIndex(h=>h.includes(n)); if(j>=0) return j; } return -1; };
-  const idx={id:col("id"),type:col("type"),desc:col("desc"),rating:col("rating"),voltage:col("volt"),
-             prot:col("protection","prot"),from:col("feeds from","parent","from"),notes:col("note")};
-  const cell=(r,j)=>(j<0||j>=r.length||r[j]==null)?"":String(r[j]).trim();
-  const rows=[];
-  for(const r of table.slice(hi+1)){
-    const o=R(cell(r,idx.id),cell(r,idx.type),cell(r,idx.desc),cell(r,idx.rating),cell(r,idx.voltage),cell(r,idx.from),cell(r,idx.notes),cell(r,idx.prot));
-    if(FIELDS.some(f=>o[f])) rows.push(o);   /* a row with data but no ID is kept, and warned about */
-  }
-  return rows;
-}
+/* The reader lives in src/io/csv.js and is the same one the command line and
+   the fixtures use. The page used to carry its own copy of parseCsv and
+   tableToRows that had to be kept in step by hand. */
 /* SheetJS is loaded only when an .xlsx is imported (vendor/xlsx.full.min.js beside the page) */
 let xlsxLib=null;
 function loadXlsx(){
@@ -801,13 +768,14 @@ function loadXlsx(){
 async function importFile(file){
   const name=file.name.toLowerCase();
   try{
-    let info={site:"",date:"",by:"",notes:""}, rows;
+    let info={site:"",date:"",by:"",notes:""}, read;
     if(name.endsWith(".json")){
       const s=JSON.parse(await file.text());
       if(!Array.isArray(s.rows)) throw new Error("not a saved table (no rows)");
-      info={...info,...(s.info||{})}; rows=tableToRows([HEADERS].concat(s.rows.map(r=>FIELDS.map(f=>r[f]||""))));
+      info={...info,...(s.info||{})};
+      read=readTable([HEADERS].concat(s.rows.map(r=>FIELDS.map(f=>r[f]||""))));
     } else if(name.endsWith(".csv")){
-      rows=tableToRows(parseCsv(await file.text()).filter(r=>r.some(c=>c.trim())));
+      read=readCsv(await file.text());
       info.site=file.name.replace(/\.csv$/i,"");
     } else {
       const X=await loadXlsx();
@@ -819,10 +787,15 @@ async function importFile(file){
         }
       }
       const ws=wb.Sheets["Equipment"]||wb.Sheets[wb.SheetNames[0]];
-      rows=tableToRows(X.utils.sheet_to_json(ws,{header:1,defval:"",raw:false}));
+      read=readTable(X.utils.sheet_to_json(ws,{header:1,defval:"",raw:false}));
     }
-    replaceState({info,rows});
-    say(`${file.name}: ${rows.length} row${rows.length===1?"":"s"} loaded.`);
+    /* a file that parsed but holds nothing is not a reason to throw the
+       table away: say so and leave what is on screen alone */
+    if(!read.rows.length){ say(`${file.name} has no equipment rows — the table is unchanged.`); return; }
+    replaceState({info,rows:read.rows});
+    /* which column was taken for which field, when the name was not exact —
+       said now, rather than discovered as fifty duplicate IDs */
+    say([`${file.name}: ${read.rows.length} row${read.rows.length===1?"":"s"} loaded.`].concat(read.notes).join(" "));
   }catch(e){
     say(`Could not import ${file.name}: ${e.message}`);
   }
@@ -882,7 +855,7 @@ $("#csv").addEventListener("click",()=>{
   saveFile(fileName("csv"), rowsToCsv(state.rows), "text/csv", "the equipment table");
 });
 $("#svg").addEventListener("click",()=>{
-  exportSheet("svg","image/svg+xml","the drawing",(info,items,order,width)=>render(info,items,order,width,[]));
+  exportSheet("svg","image/svg+xml","the drawing",(info,items,order,width)=>render(info,items,order,width));
 });
 $("#pdf").addEventListener("click",()=>{
   exportSheet("pdf","application/pdf","one A3 landscape page, sketch and equipment table",renderPdf);

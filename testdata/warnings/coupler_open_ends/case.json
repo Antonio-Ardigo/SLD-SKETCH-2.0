@@ -1,0 +1,61 @@
+{
+  "name": "coupler_open_ends",
+  "group": "warnings",
+  "description": "Every shape a coupler can be wrong in, each drawn rather than skipped: a good tie, a third supply named, MV tied to LV, RMU to RMU, and a changeover with no board",
+  "info": {
+    "site": "Warning path: couplers with open ends",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [
+      "COUPLER_EXTRA_SUPPLY:BC2",
+      "COUPLER_INVALID:BC3",
+      "COUPLER_INVALID:BC4",
+      "COUPLER_INVALID:BC5"
+    ],
+    "golden": true,
+    "facts": {
+      "couplers": [
+        {
+          "id": "BC1",
+          "kind": "tie",
+          "valid": true
+        },
+        {
+          "id": "BC2",
+          "kind": "tie",
+          "valid": false
+        },
+        {
+          "id": "BC3",
+          "kind": "tie",
+          "valid": false
+        },
+        {
+          "id": "BC4",
+          "kind": "tie",
+          "valid": false
+        },
+        {
+          "id": "BC5",
+          "kind": "changeover",
+          "valid": false
+        }
+      ]
+    },
+    "check": {
+      "items": "all",
+      "via": 1,
+      "disconnected": 0,
+      "overlaps": 1,
+      "falseNets": 0
+    },
+    "legacy": {
+      "items": 14,
+      "errors": 0,
+      "warnings": 4
+    }
+  }
+}

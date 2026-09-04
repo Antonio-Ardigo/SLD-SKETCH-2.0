@@ -8,6 +8,8 @@ import { draw, normalizeRows } from "../src/core/pipeline.js";
 import { buildModel, nearestId, editDistance } from "../src/core/model.js";
 import { protFor } from "../src/core/types.js";
 import { graphSignature } from "../src/core/graph.js";
+import { diagKey } from "../src/core/diagnostics.js";
+import { expectedEdges } from "../src/core/check.js";
 import { checkScene } from "../src/core/check.js";
 
 const BASE = [
@@ -34,22 +36,29 @@ test("the nearest ID: another case or spacing first, then within two edits, else
   assert.equal(editDistance("a", "abcd"), 3);           /* capped: more than two apart */
 });
 
-test("an unknown supply is an error that still draws, and says what it meant", () => {
+test("another case or spacing is the same ID; a slip is still an error that says what it meant", () => {
   const out = draw({ site: "t" }, withRows([
-    { id: "F1", type: "Feeder", from: "bb1" },
-    { id: "F2", type: "Feeder", from: "BB!" },
-    { id: "F3", type: "Feeder", from: "ZZZ" },
-    { id: "F4", type: "Feeder", from: "BB1" },
+    { id: "F1", type: "Feeder", from: "bb1" },      /* the same ID, shouted quietly */
+    { id: "F2", type: "Feeder", from: "BB!" },      /* a slip of the finger */
+    { id: "F3", type: "Feeder", from: "ZZZ" },      /* nothing like anything */
+    { id: "F4", type: "Feeder", from: "BB 1" },     /* a space that was never there */
+    { id: "F5", type: "Feeder", from: "BB1" },
   ]), { check: true });
   assert.ok(out.svg, "the sheet draws");
-  assert.equal(out.errors.length, 3);
+  /* read, and said: the row is connected, not corrected */
+  const read = out.diagnostics.filter(d => d.code === "SUPPLY_CASE");
+  assert.deepEqual(read.map(d => d.ids[0]), ["F1", "F4"]);
+  assert.deepEqual(out.items.F1.parents, ["BB1"], "bb1 is BB1");
+  assert.deepEqual(out.items.F4.parents, ["BB1"], "BB 1 is BB1");
+  assert.deepEqual(out.items.F1.supplies, ["bb1"], "what was written stays written");
+  /* still errors, and still suggesting */
   const unknown = out.diagnostics.filter(d => d.code === "UNKNOWN_SUPPLY");
-  assert.deepEqual(unknown.map(d => d.ids[0]), ["F1", "F2", "F3"]);
-  assert.deepEqual(unknown[0].fix, { id: "F1", field: "from", from: "bb1", to: "BB1" });
-  assert.deepEqual(unknown[1].fix, { id: "F2", field: "from", from: "BB!", to: "BB1" });
-  assert.equal(unknown[2].fix, undefined, "nothing near ZZZ: no suggestion");
-  /* every row is on the sheet, the good edge is drawn, the bad ones are not expected */
-  for (const id of ["F1", "F2", "F3", "F4"]) assert.ok(out.svg.includes(`data-id="${id}"`), `${id} drawn`);
+  assert.deepEqual(unknown.map(d => d.ids[0]), ["F2", "F3"]);
+  assert.equal(out.errors.length, 2);
+  assert.deepEqual(unknown[0].fix, { id: "F2", field: "from", from: "BB!", to: "BB1" });
+  assert.equal(unknown[1].fix, undefined, "nothing near ZZZ: no suggestion");
+  /* every row is on the sheet, and every edge the reader read is drawn */
+  for (const id of ["F1", "F2", "F3", "F4", "F5"]) assert.ok(out.svg.includes(`data-id="${id}"`), `${id} drawn`);
   assert.equal(out.check.items.missing.length, 0);
   assert.equal(out.check.edges.disconnected.length, 0);
   assert.equal(out.check.edges.connected, out.check.edges.total);
@@ -58,6 +67,18 @@ test("an unknown supply is an error that still draws, and says what it meant", (
   /* exports come out too */
   const both = draw({ site: "t" }, withRows([{ id: "F1", type: "Feeder", from: "bb1" }]), { dxf: true, pdf: true });
   assert.ok(both.dxf && both.pdf);
+});
+
+test("two rows whose IDs differ only in case both draw, and the clash is named", () => {
+  const out = draw({ site: "t" }, withRows([
+    { id: "F1", type: "Feeder", from: "BB1" },
+    { id: "f1", type: "Feeder", from: "BB1" },      /* not a duplicate: nothing is refused */
+    { id: "F2", type: "Feeder", from: "MCC1" },
+  ]), { check: true });
+  assert.deepEqual(out.errors, [], "DUP_ID stays exact: no sheet that was legal becomes illegal");
+  assert.deepEqual(out.diagnostics.filter(d => d.code === "ID_CASE_CLASH").map(d => d.ids), [["F1", "f1"]]);
+  for (const id of ["F1", "f1", "F2"]) assert.ok(out.svg.includes(`data-id="${id}"`), `${id} drawn`);
+  assert.deepEqual(out.check.items.missing, []);
 });
 
 test("what was written stays written: supplies is the cell, parents what resolved", () => {
@@ -104,4 +125,95 @@ test("every case draws, errors or not, and its checker still runs", () => {
     }
   }
   assert.ok(withErrors >= 3, "the error cases are in the pool");
+});
+
+/* Couplers: what a coupler is gets decided once, and a coupler that cannot be
+ * drawn as a tie is drawn from the end it has rather than dropped. */
+test("a coupler that is not a tie still reaches the sheet, and says what it is", () => {
+  const bars = [
+    { id: "MV1", type: "MV Incomer", voltage: "11 kV", from: "" },
+    { id: "MVB", type: "MV Busbar", voltage: "11 kV", from: "MV1" },
+    { id: "TX1", type: "Transformer", voltage: "11/0.4 kV", from: "MVB" },
+    { id: "TX2", type: "Transformer", voltage: "11/0.4 kV", from: "MVB" },
+    { id: "BB1", type: "LV Busbar", voltage: "400 V", from: "TX1", prot: "CB" },
+    { id: "BB2", type: "LV Busbar", voltage: "400 V", from: "TX2", prot: "CB" },
+  ];
+  const one = (from, extra = []) => draw({ site: "t" }, bars.concat(extra, [{ id: "BC1", type: "Bus Coupler", prot: "CB", from }]), { check: true });
+  for (const [from, reason, code] of [
+    ["BB1", "one-end", "COUPLER_INVALID"],
+    ["BB1, TX2", "not-two-busbars", "COUPLER_INVALID"],
+    ["BB1, MVB", "mixed-kinds", "COUPLER_INVALID"],
+    ["BB1, BB2, TX1", "extra-supply", "COUPLER_EXTRA_SUPPLY"],
+  ]) {
+    const out = one(from);
+    assert.equal(out.facts.couplers[0].reason, reason, from);
+    assert.ok(out.svg.includes(`data-id="BC1"`), `${from}: drawn`);
+    assert.deepEqual(out.check.items.missing, [], `${from}: the checker sees it`);
+    assert.deepEqual(out.diagnostics.map(d => d.code), [code], from);
+    assert.ok(!/skipped/.test(out.diagnostics[0].message), `${from}: the message must not say it was skipped`);
+  }
+  /* the extra supply is named: it used to be dropped in silence */
+  assert.match(one("BB1, BB2, TX1").diagnostics[0].message, /"TX1" is also named but is not drawn/);
+});
+
+test("a valid tie and a valid changeover draw, and only the duplicate is called one", () => {
+  const rows = [
+    { id: "MV1", type: "MV Incomer", voltage: "11 kV", from: "" },
+    { id: "TX1", type: "Transformer", voltage: "11/0.4 kV", from: "MV1" },
+    { id: "TX2", type: "Transformer", voltage: "11/0.4 kV", from: "MV1" },
+    { id: "BB1", type: "LV Busbar", voltage: "400 V", from: "TX1", prot: "CB" },
+    { id: "BB2", type: "LV Busbar", voltage: "400 V", from: "TX2", prot: "CB" },
+    { id: "G1", type: "Generator", rating: "500 kVA", voltage: "400 V", from: "" },
+    { id: "BC1", type: "Bus Coupler", prot: "CB", from: "BB1, BB2" },
+    { id: "BC2", type: "Bus Coupler", prot: "CB", from: "BB2, BB1" },
+    { id: "CO", type: "Bus Coupler", prot: "CB", from: "BB1, G1" },
+  ];
+  const out = draw({ site: "t" }, rows, { check: true });
+  assert.deepEqual(out.diagnostics.map(diagKey), ["COUPLER_DUP:BC2"], "only the second tie is a duplicate");
+  assert.match(out.diagnostics[0].message, /duplicates "BC1"/, "and it names the first, not itself");
+  /* the changeover is a row like any other: it has a group of its own */
+  for (const id of ["BC1", "BC2", "CO"]) assert.ok(out.svg.includes(`data-id="${id}"`), `${id} drawn`);
+  assert.deepEqual(out.check.items.missing, []);
+});
+
+test("the rule, the drawing and the checker agree about every coupler", () => {
+  for (const dir of listCases()) {
+    const c = loadCase(dir);
+    const out = drawCase(c, { check: true });
+    if (!out.svg) continue;
+    for (const k of out.facts.couplers) {
+      /* whatever the judgement, the row is on the sheet (constitution §6) */
+      assert.ok(out.svg.includes(`data-id="${k.id}"`), `${c.data.name}: ${k.id} (${k.reason}) is not drawn`);
+      /* and the checker expects a conductor only where the judgement found two ends */
+      const edges = expectedEdges(out.items, out.order).filter(e => e[2] === k.id);
+      assert.equal(edges.length, k.a && k.b ? 1 : 0, `${c.data.name}: ${k.id} edge disagrees with the fact`);
+    }
+  }
+});
+
+/* A supply named after something every object inherits used to resolve to a
+ * function, and the drawing died for the whole sheet with nothing on screen to
+ * say which cell did it. */
+test("a supply named constructor or __proto__ is just an unknown ID", () => {
+  const base = [
+    { id: "MV1", type: "MV Incomer", voltage: "11 kV", from: "" },
+    { id: "TX1", type: "Transformer", voltage: "11/0.4 kV", from: "MV1" },
+    { id: "BB1", type: "LV Busbar", voltage: "400 V", from: "TX1", prot: "CB" },
+  ];
+  for (const name of ["constructor", "toString", "valueOf", "hasOwnProperty", "__proto__"]) {
+    const out = draw({ site: "t" }, base.concat([{ id: "F1", type: "Feeder", from: name }]), { check: true });
+    assert.ok(out.svg, `${name}: no drawing`);
+    assert.ok(out.svg.includes(`data-id="F1"`), `${name}: the row is not on the sheet`);
+    assert.deepEqual(out.diagnostics.map(d => d.code), ["UNKNOWN_SUPPLY"], name);
+    assert.deepEqual(out.check.items.missing, [], name);
+    assert.deepEqual(out.items.F1.parents, [], `${name}: it resolved to something`);
+  }
+  /* and a row may be called one of them: it is a row like any other */
+  const out = draw({ site: "t" }, base.concat([
+    { id: "__proto__", type: "Feeder", from: "BB1" },
+    { id: "F2", type: "Feeder", from: "__proto__" },
+  ]), { check: true });
+  assert.deepEqual(out.errors, []);
+  assert.deepEqual(out.items.F2.parents, ["__proto__"]);
+  assert.deepEqual(out.check.items.missing, []);
 });

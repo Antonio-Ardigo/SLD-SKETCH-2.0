@@ -1,7 +1,7 @@
 {
   "name": "unknown_supply_suggests",
   "group": "warnings",
-  "description": "Four unknown supplies: the wrong case, a slip, a space and one nothing like any ID. Each row is drawn without its supply; the first three carry the ID they most likely meant",
+  "description": "Four supplies that do not match a row exactly: the wrong case and a space are read as the row they name and said so; a slip and one nothing like any ID stay errors, the slip carrying the ID it most likely meant",
   "info": {
     "site": "Warning path: unknown supply, suggested",
     "date": "",
@@ -10,9 +10,9 @@
   },
   "expect": {
     "diagnostics": [
-      "UNKNOWN_SUPPLY:F1",
+      "SUPPLY_CASE:F1",
+      "SUPPLY_CASE:P1",
       "UNKNOWN_SUPPLY:F2",
-      "UNKNOWN_SUPPLY:P1",
       "UNKNOWN_SUPPLY:F3"
     ],
     "golden": true,
@@ -24,8 +24,8 @@
     },
     "legacy": {
       "items": 9,
-      "errors": 4,
-      "warnings": 0
+      "errors": 2,
+      "warnings": 2
     }
   }
 }

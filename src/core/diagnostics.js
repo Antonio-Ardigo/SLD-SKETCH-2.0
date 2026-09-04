@@ -17,6 +17,8 @@ export const DIAG = {
   DUP_ID:            { level: "error",   about: "two rows share an ID" },
   UNKNOWN_SUPPLY:    { level: "error",   about: "Feeds From names an ID that is not on the sheet; drawn without that supply" },
   ROW_NO_ID:         { level: "warning", about: "a row has data but no ID; it is ignored" },
+  SUPPLY_CASE:       { level: "warning", about: "Feeds From names an ID in another case or spacing; read as the row it matches" },
+  ID_CASE_CLASH:     { level: "warning", about: "two rows whose IDs differ only in case or spacing; references go to the first" },
   UNKNOWN_TYPE:      { level: "warning", about: "Type is not one of the known types; drawn as a feeder" },
   UNKNOWN_PROT:      { level: "warning", about: "Protection is not a known device; the default symbol is drawn" },
   PROT_ON_INCOMER:   { level: "warning", about: "protection on an MV incomer is the utility's and is not drawn" },
@@ -31,8 +33,9 @@ export const DIAG = {
   MCC_ON_MV:         { level: "warning", about: "an MCC fed from MV gear" },
   MCC_BAD_SUPPLY:    { level: "warning", about: "an MCC fed from something other than an LV board, an MCC or a transformer" },
   GEN_NO_LOAD:       { level: "warning", about: "a generator that feeds nothing" },
-  /* drawing */
-  COUPLER_INVALID:   { level: "warning", about: "a bus coupler not between exactly two busbars of the same kind; skipped" },
+  /* the network: couplers */
+  COUPLER_INVALID:   { level: "warning", about: "a bus coupler not between two busbars of the same kind; drawn from the end it has, the other open" },
+  COUPLER_EXTRA_SUPPLY: { level: "warning", about: "a bus coupler naming more than the two busbars it ties; the rest are not drawn" },
   COUPLER_DUP:       { level: "warning", about: "a second coupler between the same two busbars" },
   /* engine */
   EMPTY_SHEET:       { level: "warning", about: "the table has no rows with an ID" },
@@ -48,19 +51,11 @@ export function makeDiag(code, ids, message, row, extra) {
   return d;
 }
 
-/* The drawing still reports its two coupler problems as sentences (render
-   appends them to the warnings list); this recognises them. */
-const RENDER_PATTERNS = [
-  [/^Bus coupler "([^"]+)" should feed from exactly two busbars/, "COUPLER_INVALID"],
-  [/^Bus coupler "([^"]+)" duplicates an earlier coupler between "([^"]+)" and "([^"]+)"/, "COUPLER_DUP"],
-];
-export function diagFromMessage(message) {
-  for (const [re, code] of RENDER_PATTERNS) {
-    const m = re.exec(message);
-    if (m) return makeDiag(code, m.slice(1), message);
-  }
-  return null;
-}
+/* The drawing used to report its coupler problems as English sentences, and
+   this module recovered the code by matching the wording with a regular
+   expression — so the judgement lived in the renderer and the code depended
+   on its prose. `couplerDiagnostics` in src/core/couplers.js makes them
+   directly now (constitution §5), and the drawing says nothing at all. */
 
 /** "CODE:firstId" — the compact form fixtures assert on. */
 export function diagKey(d) { return d.ids.length ? `${d.code}:${d.ids[0]}` : d.code; }

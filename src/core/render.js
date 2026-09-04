@@ -4,6 +4,41 @@ import { childrenOf } from "./model.js";
 import { mccLoads, subBoardsOf, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
 import { SVG } from "./svg.js";
 import { legendEntries, drawSymbol } from "./symbols/registry.js";
+import { couplerOf } from "./couplers.js";
+
+/* A coupler that is not a tie between two placed busbars is still on the
+   sheet (constitution §6): it runs from the busbar it does have into the lane
+   above the bar row — the same clear lane a blocked tie uses — and ends open,
+   so the drawing shows exactly how far the survey got. With no placed busbar
+   at all it stands on its own in the leftover column, both ends open.
+   Successive stubs on one bar stack upwards so they never lie on each other.
+   The device glyph is what gives the group a box for the page to pick up. */
+function couplerStub(svg,bc,bar,dev,lbl,n,yBus,lvY){
+  const RUN=30, STUB=22, LANE=30;
+  svg.begin(bc.id,bc.type);
+  if(bar){
+    /* each stub leaves the bar at its own point and runs in its own lane, so
+       two of them on one board never lie on top of each other */
+    const y0=bar.type===MV_BUSBAR?yBus(bar):lvY(bar), x0=bar.xRight-n*14, y=y0-LANE-n*LANE;
+    svg.dot(x0,y0);
+    svg.line(x0,y0,x0,y,2);
+    const g=svg.deviceH(dev,x0+RUN,y);
+    svg.line(x0,y,x0+RUN-g,y,2);
+    svg.line(x0+RUN+g,y,x0+RUN+STUB,y,2);
+    svg.line(x0+RUN+STUB,y-10,x0+RUN+STUB,y+10,2);      /* the open end */
+    svg.text(x0+RUN,y-12,lbl,{size:11});
+    svg.text(x0+RUN,y-24,bc.notes,{size:10});
+  } else {
+    const y=Y_BUS-LANE-n*LANE, x=bc.x, g=svg.deviceH(dev,x,y);
+    svg.line(x-RUN,y,x-g,y,2);
+    svg.line(x+g,y,x+RUN,y,2);
+    svg.line(x-RUN,y-10,x-RUN,y+10,2);
+    svg.line(x+RUN,y-10,x+RUN,y+10,2);
+    svg.text(x,y-12,lbl,{size:11});
+    svg.text(x,y-24,bc.notes,{size:10});
+  }
+  svg.end();
+}
 
 /* ------------------------------------------------ render */
 const LEGEND_H=100;
@@ -32,7 +67,7 @@ function drawLegend(svg, extra, width){
   });
 }
 
-function render(info, items, order, width, warnings, canvas){
+function render(info, items, order, width, canvas){
   const svg=canvas||new SVG();
   const barLabels=[];   /* [xLeft,xRight,baseline,text]: drawn last, once
                            every conductor is on the sheet */
@@ -480,8 +515,13 @@ function render(info, items, order, width, warnings, canvas){
         const ym=(yg+33+yb)/2;
         const [craw,ck]=protFor(cpl);
         const extra=(craw && !ck)?craw:"";
+        /* its own group: the changeover is a row of the table like any other,
+           and without one it could not be selected, picked up, or seen by the
+           checker (constitution §6) */
+        svg.begin(cpl.id,cpl.type);
         svg.text(g.x+16,ym-2,[cpl.id,cpl.rating,extra].filter(Boolean).join(" "),{size:11,anchor:"start"});
         svg.text(g.x+16,ym+12,cpl.notes.trim().toLowerCase()===cpl.id.trim().toLowerCase()?"":cpl.notes,{size:10,anchor:"start"});
+        svg.end();
       }
     }
     svg.end();
@@ -513,8 +553,10 @@ function render(info, items, order, width, warnings, canvas){
         svg.dot(g.x,yTo);
         if(cpl){
           const ym=(yGen+20+yTo)/2;
+          svg.begin(cpl.id,cpl.type);   /* the changeover's own row (constitution §6) */
           svg.text(g.x+16,ym-2,[cpl.id,cpl.rating].filter(Boolean).join(" "),{size:11,anchor:"start"});
           svg.text(g.x+16,ym+12,cpl.notes.trim().toLowerCase()===cpl.id.trim().toLowerCase()?"":cpl.notes,{size:10,anchor:"start"});
+          svg.end();
         }
       } else svg.line(g.x,yGen+20,g.x,yRmu(b)[0]);   /* the RMU draws its way in */
     }
@@ -827,30 +869,31 @@ function render(info, items, order, width, warnings, canvas){
     }
   }
 
-  /* bus couplers / ties */
-  const seenPairs={};
+  /* bus couplers / ties. What a coupler ties is the rule's judgement, asked
+     once (constitution §5); the messages come from there too. A coupler that
+     cannot be drawn as a tie is not skipped — it draws from the end it has,
+     the other open, so the row is on the sheet and can be picked up and
+     re-wired like any other (constitution §6). */
+  const stubsOn={};
   for(const bc of couplers){
-    if(bc.parents.some(p=>items[p] && items[p].type===GENERATOR))
-      continue;                     /* a changeover: drawn with the generator */
-    const ends=bc.parents.map(p=>items[p]).filter(e=>e.type===LV_BUSBAR||e.type===MV_BUSBAR);
-    if(ends.length!==2 || ends[0].type!==ends[1].type){
-      const hint=bc.parents.some(p=>items[p] && items[p].type===RMU)
-        ? " (RMUs are tied with interconnecting cables — put the other RMU in Feeds from instead)" : "";
-      warnings.push(`Bus coupler "${bc.id}" should feed from exactly two busbars of the same kind — skipped.${hint}`);
+    const k=couplerOf(items,bc);
+    /* a changeover is drawn in its own group beside its generator — unless it
+       has no board to change over, and so no generator column to sit in */
+    if(k.kind==="changeover" && k.valid) continue;
+    const [craw,ckind]=protFor(bc);
+    const dev=ckind||"cb";
+    const cx=(craw && !ckind)?craw:"";
+    const lbl=[bc.id,bc.rating,cx].filter(Boolean).join(" ");
+    const ends=[k.a,k.b].filter(Boolean).map(id=>items[id]).filter(o=>o.xLeft!==null);
+    if(ends.length!==2){
+      const on=ends[0]?ends[0].id:"";      /* stack the stubs that share an end */
+      const n=stubsOn[on]||0; stubsOn[on]=n+1;
+      couplerStub(svg,bc,ends[0]||null,dev,lbl,n,yBus,lvY);
       continue;
     }
     const [a,b]=ends.slice().sort((u,v)=>u.x-v.x);
-    if(a.xLeft===null || b.xLeft===null) continue;
-    const pair=[a.id,b.id].sort().join("|");
-    seenPairs[pair]=(seenPairs[pair]||0)+1;
-    if(seenPairs[pair]>1)
-      warnings.push(`Bus coupler "${bc.id}" duplicates an earlier coupler between "${a.id}" and "${b.id}".`);
     const ya=a.type===MV_BUSBAR?yBus(a):lvY(a);
     const yb=b.type===MV_BUSBAR?yBus(b):lvY(b);
-    const [craw,ckind]=protFor(bc);
-    const dev=ckind||"cb";
-    const extra=(craw && !ckind)?craw:"";
-    const lbl=[bc.id,bc.rating,extra].filter(Boolean).join(" ");
     svg.begin(bc.id,bc.type);
 
     if(Math.abs(ya-yb)>1){

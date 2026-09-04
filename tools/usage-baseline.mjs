@@ -206,10 +206,15 @@ await task("T6_coupler_second_end", async () => {
 await scenario("W1_delete_board_with_ways", async () => {
   await loadPreset(7);
   const ways = await rowsWhere(`r.from.split(',').map(s=>s.trim()).includes('MSB')`);
+  /* the rows that will be orphaned, by name — asking whether the deleted board
+     is still drawn only ever answers "no", which is not what this measures */
+  const orphans = await evaluate(`JSON.stringify(state.rows.filter(r=>r.from.split(',').map(s=>s.trim()).includes('MSB')).map(r=>r.id.trim()))`);
   await gestures.rowButton(await rowIndex("MSB"), "del");
   await settle();
   const s = await state();
-  return { ways, errors: s.errors, drawing: s.drawing, export: s.export, orphansStillDrawn: await evaluate(`!!document.querySelector('#sheet svg g[data-id="MSB"]')`) };
+  const drawnOrphans = await evaluate(`${orphans}.filter(id=>document.querySelector('#sheet svg g[data-id='+JSON.stringify(id)+']')).length`);
+  return { ways, errors: s.errors, drawing: s.drawing, export: s.export,
+    orphansStillDrawn: drawnOrphans === JSON.parse(orphans).length };
 });
 
 /* W2 — a supply written in the wrong case */
@@ -246,6 +251,67 @@ await scenario("W4_drop_feeder_on_pump", async () => {
   const row = await evaluate(`JSON.stringify((state.rows.find(r=>r.type==='Feeder'&&r.from==='P1')||{}).from||null)`);
   return { written: JSON.parse(row), refused: JSON.parse(row) === null, warnings: s.warnings, errors: s.errors, drawing: s.drawing,
     impossible: await evaluate(`/cannot supply/.test(document.querySelector('#problems').textContent)`) };
+});
+
+/* T7 — ten rows from a spreadsheet saved where the list separator is ";" */
+await task("T7_semicolon_csv", async () => {
+  const rows = ["ID;Type;Description;Rating;Voltage;Protection;Feeds From;Notes",
+    "MV1;MV Incomer;Utility;;11 kV;;;", "TX1;Transformer;A;1000 kVA;11/0.4 kV;;MV1;",
+    "BB1;LV Busbar;Board A;1600 A;400 V;CB;TX1;"];
+  for (let n = 1; n <= 6; n++) rows.push(`F${n};Feeder;Way ${n};100 A;400 V;CB;BB1;`);
+  await gestures.importCsv(rows.join("\n") + "\n", "site-eu.csv");
+  await settle();
+  return { rowsBrought: await evaluate(`state.rows.length`),
+    read: await evaluate(`state.rows.length ? state.rows[0].id : null`) === "MV1" };
+});
+
+/* W5 — a coupler naming a third supply it cannot tie */
+await scenario("W5_coupler_extra_supply", async () => {
+  await loadRows(TWIN);
+  await gestures.drop("Bus Coupler", "BB1");
+  const id = await evaluate(`state.rows.find(r=>r.type==='Bus Coupler').id`);
+  await gestures.type(await rowIndex(id), "from", "BB1, BB2, TX1");
+  await settle();
+  const s = await state();
+  return { warnings: s.warnings, errors: s.errors, drawing: s.drawing,
+    drawn: await evaluate(`!!document.querySelector('#sheet svg g[data-id=${JSON.stringify(await evaluate(`state.rows.find(r=>r.type==='Bus Coupler').id`))}]')`),
+    saysWhichIsNotDrawn: await evaluate(`/"TX1" is also named but is not drawn/.test(document.querySelector('#problems').textContent)`) };
+});
+
+/* W6 — a coupler with only one end written */
+await scenario("W6_coupler_one_end", async () => {
+  await loadRows(TWIN);
+  await gestures.drop("Bus Coupler", "BB1");
+  await settle();
+  const id = await evaluate(`state.rows.find(r=>r.type==='Bus Coupler').id`);
+  const s = await state();
+  return { warnings: s.warnings, errors: s.errors, drawing: s.drawing, export: s.export,
+    drawn: await evaluate(`!!document.querySelector('#sheet svg g[data-id=${JSON.stringify(id)}]')`),
+    grabbable: await evaluate(`!!document.querySelector('#sheet svg g[data-id=${JSON.stringify(id)}] rect.hit')`),
+    saysOpenEnded: await evaluate(`/other end open/.test(document.querySelector('#problems').textContent)`) };
+});
+
+/* W7 — a spreadsheet with a Building ID column to the left of ID */
+await scenario("W7_decoy_id_column", async () => {
+  await gestures.importCsv(
+    "Building ID,ID,Type,Description,Feeds From\n" +
+    "B7,MV1,MV Incomer,Utility,\nB7,TX1,Transformer,A,MV1\nB7,BB1,LV Busbar,Board,TX1\nB7,F1,Feeder,Way 1,BB1\n", "site.csv");
+  await settle();
+  const s = await state();
+  return { rowsBrought: await evaluate(`state.rows.length`),
+    boundToTheRightColumn: await evaluate(`JSON.stringify(state.rows.map(r=>r.id))`) === JSON.stringify(["MV1", "TX1", "BB1", "F1"]),
+    errors: s.errors, drawing: s.drawing };
+});
+
+/* W8 — a supply named after something every object inherits */
+await scenario("W8_prototype_supply", async () => {
+  await loadRows(TWIN);
+  await gestures.type(await rowIndex("F1"), "from", "constructor");
+  await settle();
+  const s = await state();
+  return { errors: s.errors, drawing: s.drawing, export: s.export,
+    rowStillDrawn: await evaluate(`!!document.querySelector('#sheet svg g[data-id="F1"]')`),
+    saysUnknown: await evaluate(`/unknown ID "constructor"/.test(document.querySelector('#problems').textContent)`) };
 });
 
 pg.close();

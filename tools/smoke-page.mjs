@@ -71,8 +71,15 @@ try {
   check("the sheet still draws with an unknown supply", await evaluate(`!!document.querySelector('#sheet svg g[data-id="F9"]')`));
   check("exports are not blocked by the error", await evaluate(`currentSheet()!==null`));
   check("nothing near NOPE: no suggestion offered", await evaluate(`document.querySelectorAll('#problems button.fix').length`) === 0);
-  /* a near miss is named, and one click puts it right */
+  /* the same ID in another case is not a miss at all: it is read, and said */
   await evaluate(`(function(){ const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='bb1'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+  await sleep(400);
+  check("another case is read as the board it names", await evaluate(`document.querySelectorAll('#problems .err').length`) === 0
+    && await evaluate(`/read as "BB1"/.test(document.querySelector('#problems').textContent)`));
+  check("and the cell is left as the surveyor wrote it", await evaluate(`state.rows[8].from`) === "bb1");
+  check("the row is drawn on its board, not floating", await evaluate(`!!document.querySelector('#sheet svg g[data-id="F9"]')`));
+  /* a real slip is still a near miss, and one click puts it right */
+  await evaluate(`(function(){ const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='BB!'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);
   await sleep(400);
   check("a near miss offers the ID it meant", (await evaluate(`(document.querySelector('#problems button.fix')||{}).textContent`)) === "use BB1");
   await evaluate(`document.querySelector('#problems button.fix').click()`);
@@ -193,7 +200,12 @@ try {
   await evaluate(DRAG_JS("F1", "BB1", true));
   await sleep(400);
   check("adding a supply it already has changes nothing", await evaluate(`state.rows[rowIndexOf('F1')].from`) === "BB2, BB1");
-  check("a one-ended coupler has no symbol to drag (it is skipped, and says so)", await evaluate(`!document.querySelector('#sheet svg g[data-id="BC1"]') && /Bus coupler "BC1"/.test(document.querySelector('#problems').textContent)`));
+  check("a one-ended coupler is drawn open-ended, and says so", await evaluate(`!!document.querySelector('#sheet svg g[data-id="BC1"]') && /Bus coupler "BC1" names only one busbar/.test(document.querySelector('#problems').textContent)`));
+  check("and so has a symbol to grab", await evaluate(`!!document.querySelector('#sheet svg g[data-id="BC1"] rect.hit')`));
+  await evaluate(DRAG_JS("BC1", "BB2", true));
+  await sleep(400);
+  check("Shift-dragging it onto the other board completes the tie", await evaluate(`state.rows[rowIndexOf('BC1')].from`) === "BB1, BB2", await evaluate(`state.rows[rowIndexOf('BC1')].from`));
+  check("and the coupler stops complaining", await evaluate(`!/Bus coupler "BC1"/.test(document.querySelector('#problems').textContent)`));
   const rowsBeforeDrop = await evaluate(`JSON.stringify(state.rows)`);
   await evaluate(`(function(){ const vp=document.querySelector('#viewport'); const r=document.querySelector('#sheet svg g[data-id="F2"] rect.hit').getBoundingClientRect();
     const ev=(t,x,y)=>vp.dispatchEvent(new PointerEvent(t,{pointerId:8,pointerType:'mouse',button:0,buttons:t==='pointerup'?0:1,clientX:x,clientY:y,bubbles:true}));
