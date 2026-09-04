@@ -1,4 +1,4 @@
-import { TYPE_LABELS } from "../core/types.js";
+import { TYPE_LABELS, ALIASES } from "../core/types.js";
 import { esc, buildModel } from "../core/model.js";
 import { layout } from "../core/layout.js";
 import { applyView } from "../core/geometry.js";
@@ -8,6 +8,7 @@ import { renderDxf } from "../core/dxf.js";
 import { SVG } from "../core/svg.js";
 import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
+import { supplyCandidates } from "../core/supplies.js";
 import { R, PRESETS } from "./presets.generated.js";
 
 /* ------------------------------------------------ UI wiring */
@@ -177,9 +178,12 @@ function proposedRow(type, targetId, sibling){
    blank row: only empty cells and cells still marked stay the engine's */
 function refillProposal(row){
   const [items,order]=currentModel();
-  const p=proposeRow(items,order,{type:row.type,targetId:row.from.trim()});
   const marks=new Set(row._p||[]);
-  for(const f of ["id","prot","voltage"]){
+  /* a supply the surveyor typed is kept and everything follows it; one still
+     marked is re-proposed for the Type just chosen */
+  const kept=row.from.trim() && !marks.has("from") ? row.from.trim() : "";
+  const p=proposeRow(items,order,{type:row.type,targetId:kept});
+  for(const f of ["from","id","prot","voltage"]){
     if(!p[f]) continue;
     if(row[f].trim() && !marks.has(f)) continue;    /* the surveyor typed it: leave it */
     if(f==="id" && row.id.trim() && !marks.has("id")) continue;
@@ -286,24 +290,41 @@ function quickRating(type){
   if(type==="Feeder") return QUICK.rating.feeder;
   return QUICK.rating.board.concat(QUICK.rating.tx);
 }
+/* values are plain strings, or {value,label} when the option says what it is */
 function fillList(id, values){
-  $("#"+id).innerHTML=values.map(v=>`<option value="${esc(v)}"></option>`).join("");
+  $("#"+id).innerHTML=values.map(v=>typeof v==="string"
+    ? `<option value="${esc(v)}"></option>`
+    : `<option value="${esc(v.value)}" label="${esc(v.label)}"></option>`).join("");
 }
-/* the Feeds from picker: every ID on the sheet except the row's own; typing
-   "BB1, " then offers "BB1, <id>" for the second supply */
+/* the Feeds from picker: every ID on the sheet except the row's own, ordered
+   by what can feed this row's Type — the usual supplies first, then what is
+   merely possible, then what cannot (supplies.js). Nothing is hidden; the
+   order and the labels are the advice. Typing "BB1, " then offers
+   "BB1, <id>" for the second supply, preferring another board of the same
+   kind (the far end of a coupler, the second link of a ring). */
 let idListFor=null;
 function refreshIdList(input){
   const ids=state.rows.map(r=>r.id.trim()).filter(Boolean);
-  let own="", prefix="";
+  let own="", prefix="", type="";
   if(input){
-    const tr=input.closest("tr"); own=(state.rows[+tr.dataset.i]||{}).id.trim();
+    const tr=input.closest("tr"), row=state.rows[+tr.dataset.i]||{};
+    own=(row.id||"").trim(); type=(row.type||"").trim();
     const v=input.value; const k=v.lastIndexOf(",");
     if(k>=0) prefix=v.slice(0,k+1).replace(/\s*$/," ");
   }
-  const key=prefix+"|"+own+"|"+ids.join("|");
+  const key=type+"|"+prefix+"|"+own+"|"+ids.join("|");
   if(key===idListFor) return;
   idListFor=key;
-  fillList("idlist", ids.filter(i=>i!==own && !prefix.split(",").map(s=>s.trim()).includes(i)).map(i=>prefix+i));
+  const taken=prefix.split(",").map(s=>s.trim()).filter(Boolean);
+  const canon=ALIASES[type.toLowerCase().replace(/\s+/g," ")]||null;
+  if(!canon){   /* no Type yet, or the whole list for the drawing: plain IDs */
+    fillList("idlist", ids.filter(i=>i!==own && !taken.includes(i)).map(i=>prefix+i));
+    return;
+  }
+  const [items,order]=currentModel();
+  const first=taken.length&&items[taken[0]]?items[taken[0]].type:null;
+  fillList("idlist", supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
+    .map(c=>({value:prefix+c.id, label:c.label})));
 }
 eqbody.addEventListener("focusin",e=>{
   const f=e.target.dataset.f; if(!f) return;
@@ -318,7 +339,7 @@ eqbody.addEventListener("change",e=>{
   if(!row) return;
   /* choosing the Type of a row that is still a proposal fills the rest of it */
   refillProposal(row);
-  for(const f of ["id","prot","voltage"]){
+  for(const f of ["from","id","prot","voltage"]){
     const el=tr.querySelector(`[data-f="${f}"]`);
     if(el && el.value!==row[f]) el.value=row[f];
     if(el) el.classList.toggle("proposed",(row._p||[]).includes(f));

@@ -81,19 +81,26 @@ test("an RMU fed from two supplies gets a device per supply", () => {
   assert.equal(propose(SHEET, { type: "RMU", targetId: "MV1" }).prot, "LBS");
 });
 
-test("with no target, the supply comes from the row above", () => {
-  const r = propose(SHEET, { type: "Feeder", sibling: { from: "BB1" } });
-  assert.equal(r.from, "BB1");
-  assert.equal(r.voltage, "400 V");
-  const none = propose(SHEET, { type: "Feeder" });
-  assert.deepEqual([none.from, none.voltage], ["", ""]);
-  assert.ok(!none.proposed.includes("from"));
+test("with no target, the supply is the best one on the sheet for the type", () => {
+  /* a feeder belongs on the LV board, a transformer on the MV gear — whatever the row above says */
+  assert.equal(propose(SHEET, { type: "Feeder", sibling: { from: "MVB1" } }).from, "BB1");
+  assert.equal(propose(SHEET, { type: "Feeder" }).voltage, "400 V");
+  assert.equal(propose(SHEET, { type: "Transformer", sibling: { from: "BB1" } }).from, "MVB1");
+  assert.equal(propose(SHEET, { type: "MCC" }).from, "BB1");
+  assert.ok(propose(SHEET, { type: "Feeder" }).proposed.includes("from"));
+  /* a root is proposed without a supply, and so is anything on an empty sheet */
+  assert.deepEqual([propose(SHEET, { type: "MV Incomer" }).from, propose(SHEET, { type: "Generator" }).from], ["", ""]);
+  const bare = propose([], { type: "Feeder" });
+  assert.deepEqual([bare.from, bare.voltage], ["", ""]);
+  assert.ok(!bare.proposed.includes("from"));
 });
 
 test("nothing is proposed for a row with no type yet, except the sibling's supply", () => {
   const r = propose(SHEET, { sibling: { from: "BB1" } });
   assert.deepEqual([r.id, r.type, r.prot, r.voltage], ["", "", "", ""]);
   assert.deepEqual(r.proposed, ["from"]);
+  /* with no type to reason from and no row above, nothing at all */
+  assert.deepEqual(propose(SHEET, {}).proposed, []);
 });
 
 test("an unreadable or absent supply voltage proposes nothing", () => {

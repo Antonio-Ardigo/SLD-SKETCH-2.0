@@ -68,6 +68,16 @@ model, called only when a row is added.
   gear (the ratio for a transformer, the level for anything else), LV gear
   (the level). `parseVoltage` / `formatVoltage` / `formatRatio` do the
   reading and writing; `usualLvVolts` is the LV level the sheet already uses.
+- **Which supply a new row lands on** is not here but in
+  `src/core/supplies.js`, the one table of which parent type can feed which
+  child type. `USUAL_SUPPLIES[childType]` is the child's usual supplies, best
+  first; anything else that is not impossible is merely possible; `ROOT_TYPES`
+  are the types proposed with no supply at all. A new *type* needs its row in
+  `USUAL_SUPPLIES` — `test/supplies.test.js` fails until it has one. Nothing
+  else: `defaultSupply` feeds `proposeRow`, `supplyCandidates` feeds the page's
+  Feeds from picker, and `canSupply` is the reader's own IMPOSSIBLE_SUPPLY
+  predicate, so the advice and the diagnostic can never drift. Changing rank 0
+  changes what the reader warns about and moves the fixtures with it.
 - Add the case to `test/propose.test.js`; nothing else needs to change,
   because the page only asks for a row and marks the fields the function says
   it filled.
