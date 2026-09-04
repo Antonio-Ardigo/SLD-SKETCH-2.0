@@ -3,6 +3,7 @@
  *
  *   node src/cli/sld.js draw <table> [-o out.svg] [--dxf [out.dxf]]
  *   node src/cli/sld.js dxf  <table> [-o out.dxf]
+ *   node src/cli/sld.js pdf  <table> [-o out.pdf]
  *
  * <table> is a survey workbook (.xlsx), a CSV of the equipment table, or a
  * testdata case directory. Warnings go to stderr; a reader error (duplicate
@@ -19,6 +20,7 @@ function usage(code = 2) {
   console.error(`usage:
   sld draw  <table.xlsx|table.csv|casedir> [-o out.svg] [--dxf [out.dxf]]
   sld dxf   <table.xlsx|table.csv|casedir> [-o out.dxf] [--check]   (--check: report text that collides in the DXF)
+  sld pdf   <table.xlsx|table.csv|casedir> [-o out.pdf]             one A3 landscape page: the sketch and the equipment table
   sld check <table|casedir>…  [--json]      drawing checked against its table; exit 1 unless clean`);
   process.exit(code);
 }
@@ -67,8 +69,8 @@ function main(argv) {
   const [cmd, ...rest] = argv;
   if (!cmd || cmd === "-h" || cmd === "--help") usage(cmd ? 0 : 2);
   if (cmd === "check") { const files = rest.filter(a => !a.startsWith("-")); if (!files.length) usage(); return checkMany(files, rest.includes("--json")); }
-  if (cmd !== "draw" && cmd !== "dxf") usage();
-  let file = null, out = null, dxf = cmd === "dxf", dxfOut = null, checkText = false;
+  if (cmd !== "draw" && cmd !== "dxf" && cmd !== "pdf") usage();
+  let file = null, out = null, dxf = cmd === "dxf", pdf = cmd === "pdf", dxfOut = null, checkText = false;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === "-o" || a === "--output") out = rest[++i];
@@ -80,7 +82,7 @@ function main(argv) {
   if (!file) usage();
 
   const { info, rows } = loadTable(file);
-  const res = draw(info, rows, { dxf });
+  const res = draw(info, rows, { dxf, pdf });
   for (const w of res.warnings) console.error(`warning: ${w}`);
   if (res.errors.length) { for (const e of res.errors) console.error(`error: ${e}`); process.exit(1); }
   if (!res.svg) { console.error("error: the table has no rows"); process.exit(1); }
@@ -91,6 +93,10 @@ function main(argv) {
     fs.writeFileSync(svgOut, res.svg);
     console.error(`wrote ${svgOut}`);
     if (dxf) { const d = dxfOut || svgOut.replace(/\.svg$/i, "") + ".dxf"; fs.writeFileSync(d, res.dxf); console.error(`wrote ${d}`); }
+  } else if (cmd === "pdf") {
+    const p = out || `${stem}.pdf`;
+    fs.writeFileSync(p, res.pdf);
+    console.error(`wrote ${p}`);
   } else {
     const d = out || `${stem}.dxf`;
     fs.writeFileSync(d, res.dxf);

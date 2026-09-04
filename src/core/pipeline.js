@@ -5,12 +5,14 @@
  *   out.items / out.order       the model
  *   out.svg                     the SVG document, or null when errors stop the drawing
  *   out.dxf                     the R12 DXF text when asked for
+ *   out.pdf                     the one-page A3 PDF when asked for
  *
  * This is the only entry point the page, the CLI and the tests use. */
 import { buildModel } from "./model.js";
 import { layout } from "./layout.js";
 import { render } from "./render.js";
 import { renderDxf } from "./dxf.js";
+import { renderPdf } from "./pdf.js";
 import { buildGraph } from "./graph.js";
 import { buildFacts } from "./facts.js";
 import { diagFromMessage, makeDiag } from "./diagnostics.js";
@@ -30,12 +32,12 @@ export function normalizeRows(rows) {
   });
 }
 
-export function draw(info, rows, { dxf = false, check = false, view = null } = {}) {
+export function draw(info, rows, { dxf = false, pdf = false, check = false, view = null } = {}) {
   const norm = normalizeRows(rows);
   applyView(normalizeView(view));       /* the view in force for this drawing (default: the historical geometry) */
   const site = { site: "", date: "", by: "", notes: "", ...(info || {}) };
   const { items, order, errors, warnings, diagnostics } = buildModel(norm);
-  const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, facts: null, svg: null, dxf: null };
+  const out = { errors, warnings, diagnostics: diagnostics.slice(), items, order, graph: null, facts: null, svg: null, dxf: null, pdf: null };
   if (!order.length) { out.diagnostics.push(makeDiag("EMPTY_SHEET", [], "The table has no rows with an ID.")); return out; }
   out.graph = buildGraph(items, order);
   if (errors.length) return out;
@@ -53,11 +55,9 @@ export function draw(info, rows, { dxf = false, check = false, view = null } = {
     warnings.push(msg);
     out.diagnostics.push(diagFromMessage(msg) || makeDiag("COUPLER_INVALID", [], msg));
   }
-  if (dxf) {
-    /* the page re-reads the model for the DXF; do the same so the two never share state */
-    const m2 = buildModel(norm);
-    const w2 = layout(m2.items, m2.order);
-    out.dxf = renderDxf(site, m2.items, m2.order, w2);
-  }
+  /* the page re-reads the model for each export; do the same so no two share state */
+  const again = () => { const m = buildModel(norm); return [m.items, m.order, layout(m.items, m.order)]; };
+  if (dxf) { const [i2, o2, w2] = again(); out.dxf = renderDxf(site, i2, o2, w2); }
+  if (pdf) { const [i2, o2, w2] = again(); out.pdf = renderPdf(site, i2, o2, w2); }
   return out;
 }

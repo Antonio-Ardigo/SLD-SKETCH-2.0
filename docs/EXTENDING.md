@@ -82,6 +82,30 @@ model, called only when a row is added.
   because the page only asks for a row and marks the fields the function says
   it filled.
 
+## An export format
+
+`src/core/dxf.js` and `src/core/pdf.js` are the two worked examples, and they
+have the same shape: a class extending `SVG` (`src/core/svg.js`) that
+overrides only the primitives — `line`, `rect`, `circle`, `dot`, `poly`,
+`text`, `path` — plus `document(width,height)`, and a one-line
+`renderX(info, items, order, width)` that calls
+`render(..., new X([info,items,order]))`. Nothing about the drawing, the
+layout or the checker moves: the renderer draws the same sheet and the new
+canvas writes it down differently.
+
+1. Write the class. `begin`/`end` are the SVG's row grouping — override them
+   to nothing. If the format carries the equipment table, call
+   `drawEquipmentTable(this, this.table, x, y, {wrap, textWidth})`
+   (`src/core/eqtable.js`) with your own text metrics.
+2. Give `draw()` a flag in `src/core/pipeline.js` (it re-reads the model per
+   export so no two share state), a verb in `src/cli/sld.js`, and a button in
+   `src/ui/page.html` wired through `exportSheet` in `src/ui/app.js`.
+3. Add the file to `BUNDLE_ORDER` in `tools/build-page.mjs`, after the
+   modules it reads. **Single-line imports only** — a wrapped `import` line
+   survives `stripModuleSyntax` and breaks the page.
+4. Test it as `test/pdf.test.js` does: the file's own structure, then that
+   every ID on the sheet is written, over every case.
+
 ## A view option
 
 Add it with its default to `src/core/views.js`, read it where the drawing is

@@ -95,8 +95,9 @@ export const HOW_TO_LINES = [
   "",
   "BACK AT THE OFFICE",
   "  Open sld_sketchpad.html and use Import to load this workbook: the",
-  "  drawing rebuilds live; Copy SVG / Download DXF export it.",
-  "  python sld_sketch.py thisfile.xlsx           -> the SVG",
-  "  python sld_sketch.py thisfile.xlsx --dxf     -> SVG + DXF with the",
+  "  drawing rebuilds live; Download PDF / SVG / DXF export it.",
+  "  node src/cli/sld.js draw thisfile.xlsx       -> the SVG",
+  "  node src/cli/sld.js pdf  thisfile.xlsx       -> one A3 page with the",
   "                                                  equipment table",
+  "  node src/cli/sld.js dxf  thisfile.xlsx       -> the DXF, same",
 ];

@@ -1,5 +1,5 @@
-import { CAPACITOR, EARTHING, ARRESTER } from "./types.js";
 import { SVG } from "./svg.js";
+import { drawEquipmentTable } from "./eqtable.js";
 import { render } from "./render.js";
 
 /* ------------------------------------------------ DXF export */
@@ -112,37 +112,7 @@ class DXF extends SVG {
     this._e([0,"ARC"],[8,this._layer()],[10,cx],[20,cy],[30,0],[40,dnum(r)],[50,dnum(start)],[51,dnum(end)]);
   }
   drawTable(xLeft,yTop){       /* the equipment table beside the sheet */
-    const [info,items,order]=this.table;
-    this.layer="table";
-    const size=11, rowH=18, pad=8, x0=xLeft; let y=yTop;
-    this.text(x0,y+14,info.site?("EQUIPMENT TABLE - "+info.site):"EQUIPMENT TABLE",{size:14,anchor:"start",bold:true});
-    y+=24;
-    for(const [k,v] of [["Site",info.site],["Date",info.date],["By",info.by],["Notes",info.notes]])
-      if(v){ this.text(x0,y+12,k+": "+v,{size:11,anchor:"start"}); y+=15; }
-    y+=6;
-    const heads=["ID","Type","Description","Rating","Voltage","Protection","Feeds From","Notes"];
-    const labels={[CAPACITOR]:"Capacitor Bank",[EARTHING]:"Earthing/NER",[ARRESTER]:"Surge Arrester"};
-    const rows=order.map(i=>{ const it=items[i];
-      const typ=labels[it.type]||it.type.replace(/\b\w/g,c=>c.toUpperCase()).replace("Mv ","MV ").replace("Lv ","LV ").replace("Rmu","RMU").replace("Mcc","MCC");
-      return [it.id,it.label||typ,it.desc,it.rating,it.voltage,it.prots.join(", "),it.parents.join(", "),it.notes].map(v=>dwrap(v)); });
-    const cols=heads.map((h,i)=>Math.max(dtextW(h,size),...rows.flatMap(r=>r[i].map(l=>dtextW(l,size))))*1.15+2*pad);
-    const x1=x0+cols.reduce((a,b)=>a+b,0), yHead=y;
-    this.line(x0,y,x1,y,1.2);
-    let cx=x0;
-    heads.forEach((h,i)=>{ this.text(cx+pad,y+13,h,{size,anchor:"start",bold:true}); cx+=cols[i]; });
-    y+=rowH;
-    this.line(x0,y,x1,y,1.2);
-    for(const r of rows){
-      cx=x0;
-      const lines=Math.max(...r.map(c=>c.length));
-      r.forEach((cell,i)=>{ cell.forEach((v,k)=>{ if(v) this.text(cx+pad,y+13+15*k,v,{size,anchor:"start"}); }); cx+=cols[i]; });
-      y+=rowH+15*(lines-1);
-      this.line(x0,y,x1,y,1);
-    }
-    cx=x0;
-    for(const cw of cols.concat([0])){ this.line(cx,yHead,cx,y,1); cx+=cw; }
-    this.layer="drawing";
-    return [x1,y];
+    return drawEquipmentTable(this,this.table,xLeft,yTop,{wrap:dwrap,textWidth:dtextW});
   }
   document(width,height){
     /* the table stands to the right of the sheet, 40 units clear; then the

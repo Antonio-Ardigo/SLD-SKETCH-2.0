@@ -48,7 +48,9 @@ the row, and drag a chip from the **symbol palette** above the drawing onto a
 busbar, RMU or transformer to add a row of that type fed from it (the ID is
 numbered for you, the usual Protection filled in). Clicking a chip adds the
 row under the selected item. The table stays the only source of truth: a
-drop writes a row, nothing else.
+drop writes a row, nothing else. The drawing's own bar carries **Download
+PDF**, **Download SVG** and **Download DXF** — three files written from the
+table by the engine, never copied off the screen.
 
 **A new row comes pre-filled.** However you add it — a drop, a palette chip,
 **+ Add row**, `Enter` on the last row — the engine proposes what it can and
@@ -270,12 +272,19 @@ sorted onto layers so a CAD user can switch parts off: `SLD_DRAWING`
 (conductors and symbols), `SLD_BUSBAR` (the thick bars, as polylines with
 width), `SLD_TEXT`, `SLD_ENCLOSURE` (RMU boxes, dashed), `SLD_FRAME` (title
 and title block), `SLD_LEGEND` and `SLD_TABLE`. The Sketchpad page has the
-same exporter behind its **Download DXF** button, and **Copy DXF** puts the
-file text on the clipboard for places where downloads are blocked. CAD text
+same exporter behind its **Download DXF** button. CAD text
 is set with a width factor that keeps it no wider than the browser's, long
 table cells wrap, and `node src/cli/sld.js dxf <workbook> --check` reads the
 file back and reports any text that overlaps another text or crosses a table
 rule.
+
+**PDF export.** `node src/cli/sld.js pdf <workbook> -o out.pdf` writes one A3
+landscape page: the sketch with the equipment table beside it or under it,
+whichever leaves the drawing bigger, scaled to fit and centred. It is drawn
+through the same symbol primitives as the SVG and the DXF, so nothing about
+the drawing moves. The text is set in the base-14 Helvetica, so no font
+travels in the file and none is fetched, and nothing is compressed, so the
+file is plain ASCII. The page has the same exporter behind **Download PDF**.
 
 **Checking a drawing against its table.** `node src/cli/sld.js check
 <workbook>` draws the sheet and verifies, from the scene the renderer records,
@@ -315,7 +324,8 @@ src/core/     the engine, as ES modules: types, supplies (which supply can feed
               which row), diagnostics, geometry, model (the
               reader), graph, rules/ + rank + facts (what the engine infers),
               layout, svg (primitives and symbols), symbols/registry (one entry
-              per symbol: legend and palette), render, dxf, scene + check (the
+              per symbol: legend and palette), render, eqtable (the equipment
+              table beside the sheet), dxf, pdf, scene + check (the
               drawing verified against the table), pipeline (draw())
 src/io/       csv and xlsx (SheetJS) ⇄ table rows
 src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js

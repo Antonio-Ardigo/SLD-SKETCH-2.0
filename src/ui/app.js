@@ -5,6 +5,7 @@ import { applyView } from "../core/geometry.js";
 import { normalizeView, VIEW_DEFAULTS } from "../core/views.js";
 import { render } from "../core/render.js";
 import { renderDxf } from "../core/dxf.js";
+import { renderPdf } from "../core/pdf.js";
 import { SVG } from "../core/svg.js";
 import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
@@ -704,72 +705,56 @@ $("#importfile").addEventListener("change",e=>{ const f=e.target.files[0]; e.tar
 const eqPanel=eqbody.closest("section")||eqbody;
 eqPanel.addEventListener("dragover",e=>{ if([...e.dataTransfer.types].includes("Files")){ e.preventDefault(); } });
 eqPanel.addEventListener("drop",e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f){ e.preventDefault(); importFile(f); } });
-$("#csv").addEventListener("click",()=>{
-  const text=rowsToCsv(state.rows), name=((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+".csv";
-  const url=URL.createObjectURL(new Blob([text],{type:"text/csv"}));
-  const a=document.createElement("a"); a.href=url; a.download=name;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),2000);
-});
-$("#copysvg").addEventListener("click",async ()=>{
-  const svgEl=$("#sheet svg"), el=svgEl?svgEl.outerHTML:"", out=$("#copystate");
-  if(!el){ out.textContent="Nothing to copy yet."; return; }
-  try{
-    await navigator.clipboard.writeText(el);
-    out.textContent="SVG copied — paste into a file or a drawing tool.";
-  }catch(e){
-    out.textContent="Copying is blocked here — select the drawing and use the browser's copy instead.";
-  }
-  setTimeout(()=>{ out.textContent=""; },5000);
-});
-
-function currentDxf(){
-  const {items,order,errors}=buildModel(state.rows);
-  if(!order.length || errors.length) return null;
-  applyView(view_);
-  const width=layout(items,order);
-  return renderDxf(state.info,items,order,width);
+/* ------------------------------------------------ getting it out */
+/* Four files, each written from the table by the engine. Inside the
+   claude.ai viewer a page cannot download by itself and the viewer's save
+   prompt does it; opened as a file, the browser's own download does. */
+function fileName(ext){
+  return ((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+"."+ext;
 }
-function dxfName(){
-  return ((state.info.site||"sld-sketch").replace(/[^\w.-]+/g,"_").replace(/^_+|_+$/g,"")||"sld-sketch")+".dxf";
-}
-$("#dxf").addEventListener("click",async ()=>{
-  const out=$("#copystate"), text=currentDxf();
-  if(!text){ out.textContent="Nothing to export yet — fix the table first."; return; }
+async function saveFile(name, text, mime, note){
+  const out=$("#copystate");
   const say=(m,keep)=>{ out.textContent=m; if(!keep) setTimeout(()=>{ out.textContent=""; },8000); };
-  /* inside the claude.ai viewer a page cannot download by itself: the
-     viewer's save prompt does it, when it can; opened as a file, the
-     browser's own download does */
-  const dl=(window.claude && typeof window.claude.use==="function")
-    ? await window.claude.use("downloads") : null;
+  const dl=(window.claude && typeof window.claude.use==="function") ? await window.claude.use("downloads") : null;
   if(dl){
-    try{
-      await dl.save({filename:dxfName(), data:text});
-      say(`${dxfName()} saved — R12 DXF, sketch and equipment table, 1 unit = 1 mm.`);
-    }catch(e){
+    try{ await dl.save({filename:name, data:text}); say(`${name} saved${note?" — "+note:""}.`); }
+    catch(e){
       const code=e && e.code;
       if(code==="declined") say("Save cancelled.");
       else if(code==="rate_limited") say("A save prompt is already open — answer it first.");
-      else say("This viewer cannot save .dxf files — use Copy DXF and paste into a file named .dxf, or run: node src/cli/sld.js dxf <table>.",true);
+      else say(`This viewer cannot save ${name} — open the page as a file, or run: node src/cli/sld.js <draw|dxf|pdf> <table>.`,true);
     }
     return;
   }
-  const url=URL.createObjectURL(new Blob([text],{type:"application/dxf"}));
-  const a=document.createElement("a"); a.href=url; a.download=dxfName();
+  const url=URL.createObjectURL(new Blob([text],{type:mime}));
+  const a=document.createElement("a"); a.href=url; a.download=name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),2000);
-  say(`${dxfName()} — R12 DXF, sketch and equipment table, 1 unit = 1 mm.`);
+  say(`${name}${note?" — "+note:""}.`);
+}
+/* the model, laid out, ready for an exporter — or null when the table cannot be drawn */
+function currentSheet(){
+  const {items,order,errors}=buildModel(state.rows);
+  if(!order.length || errors.length) return null;
+  applyView(view_);
+  return [items,order,layout(items,order)];
+}
+function exportSheet(ext, mime, note, make){
+  const sheet=currentSheet();
+  if(!sheet){ $("#copystate").textContent="Nothing to export yet — fix the table first."; return; }
+  saveFile(fileName(ext), make(state.info,...sheet), mime, note);
+}
+$("#csv").addEventListener("click",()=>{
+  saveFile(fileName("csv"), rowsToCsv(state.rows), "text/csv", "the equipment table");
 });
-$("#copydxf").addEventListener("click",async ()=>{
-  const out=$("#copystate"), text=currentDxf();
-  if(!text){ out.textContent="Nothing to export yet — fix the table first."; return; }
-  try{
-    await navigator.clipboard.writeText(text);
-    out.textContent="DXF copied — paste it into a new file and save it as .dxf.";
-  }catch(e){
-    out.textContent="Copying is blocked here — use Download DXF instead.";
-  }
-  setTimeout(()=>{ out.textContent=""; },6000);
+$("#svg").addEventListener("click",()=>{
+  exportSheet("svg","image/svg+xml","the drawing",(info,items,order,width)=>render(info,items,order,width,[]));
+});
+$("#pdf").addEventListener("click",()=>{
+  exportSheet("pdf","application/pdf","one A3 landscape page, sketch and equipment table",renderPdf);
+});
+$("#dxf").addEventListener("click",()=>{
+  exportSheet("dxf","application/dxf","R12 DXF, sketch and equipment table, 1 unit = 1 mm",renderDxf);
 });
 
 /* ------------------------------------------------ view options and focus mode */
