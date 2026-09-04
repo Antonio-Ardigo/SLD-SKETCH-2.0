@@ -7,6 +7,7 @@ import { render } from "../core/render.js";
 import { renderDxf } from "../core/dxf.js";
 import { SVG } from "../core/svg.js";
 import { symbolForType } from "../core/symbols/registry.js";
+import { proposeRow, nextId } from "../core/propose.js";
 import { R, PRESETS } from "./presets.generated.js";
 
 /* ------------------------------------------------ UI wiring */
@@ -22,20 +23,25 @@ function typeSelect(value){
     TYPE_LABELS.map(([lbl])=>`<option${lbl===value?" selected":""}>${lbl}</option>`));
   return `<select data-f="type" aria-label="Type">${opts.join("")}</select>`;
 }
+const PROPOSED_TITLE="proposed by the engine — edit to confirm";
 function rebuildTable(){
-  eqbody.innerHTML=state.rows.map((r,i)=>`<tr data-i="${i}">
-    <td><input data-f="id" value="${esc(r.id)}" aria-label="ID"></td>
+  eqbody.innerHTML=state.rows.map((r,i)=>{
+    const p=new Set(r._p||[]);
+    const mk=f=>p.has(f)?` class="proposed" title="${PROPOSED_TITLE}"`:"";
+    return `<tr data-i="${i}">
+    <td><input data-f="id" value="${esc(r.id)}" aria-label="ID"${mk("id")}></td>
     <td>${typeSelect(r.type)}</td>
-    <td><input data-f="desc" value="${esc(r.desc)}" aria-label="Description"></td>
-    <td><input data-f="rating" value="${esc(r.rating)}" aria-label="Rating" list="ratinglist"></td>
-    <td><input data-f="voltage" value="${esc(r.voltage)}" aria-label="Voltage" list="voltlist"></td>
-    <td><input data-f="prot" value="${esc(r.prot||"")}" aria-label="Protection" list="protlist"></td>
-    <td><input data-f="from" value="${esc(r.from)}" aria-label="Feeds from" list="idlist"></td>
+    <td><input data-f="desc" value="${esc(r.desc)}" aria-label="Description"${mk("desc")}></td>
+    <td><input data-f="rating" value="${esc(r.rating)}" aria-label="Rating" list="ratinglist"${mk("rating")}></td>
+    <td><input data-f="voltage" value="${esc(r.voltage)}" aria-label="Voltage" list="voltlist"${mk("voltage")}></td>
+    <td><input data-f="prot" value="${esc(r.prot||"")}" aria-label="Protection" list="protlist"${mk("prot")}></td>
+    <td><input data-f="from" value="${esc(r.from)}" aria-label="Feeds from" list="idlist"${mk("from")}></td>
     <td><input data-f="notes" value="${esc(r.notes)}" aria-label="Notes"></td>
     <td class="rowops">
       <button data-op="up" title="Move up">&uarr;</button><button data-op="down" title="Move down">&darr;</button><button data-op="del" class="del" title="Delete row">&times;</button>
     </td>
-  </tr>`).join("");
+  </tr>`;
+  }).join("");
 }
 function readInfoInputs(){
   state.info={site:$("#i-site").value,date:$("#i-date").value,
@@ -99,14 +105,6 @@ function redraw(){
    transformer: that adds a row fed from the target. The table stays the only
    source of truth — the drop only writes a row. */
 let selectedId=null;
-const TYPE_PREFIX={"MV Incomer":"MV","Generator":"G","MV Busbar":"MVB","RMU":"RMU","Transformer":"TX",
-  "Pump":"P","LV Busbar":"BB","Feeder":"F","MCC":"MCC","Bus Coupler":"BC","Capacitor Bank":"CAP",
-  "Earthing/NER":"NER","Surge Arrester":"SA","UPS":"UPS","Inverter":"INV","Battery":"BAT","DC Busbar":"DCB"};
-function nextId(type){
-  const pre=TYPE_PREFIX[type]||"X", used=new Set(state.rows.map(r=>r.id.trim().toUpperCase()));
-  let n=1; while(used.has((pre+n).toUpperCase())) n++;
-  return pre+n;
-}
 function decorateSheet(){
   const svg=$("#sheet svg"); if(!svg) return;
   for(const g of svg.querySelectorAll("g[data-id]")){
@@ -157,9 +155,47 @@ eqbody.addEventListener("focusin",e=>{
   const tr=e.target.closest("tr"); if(!tr) return;
   const row=state.rows[+tr.dataset.i]; if(row) selectId(row.id.trim());
 });
+/* ------------------------------------------------ proposals for a row being added */
+/* The engine proposes the new row's values (ID, supply, protection, voltage)
+   and they are written into the table, tinted until the surveyor edits them.
+   Only at addition: an existing row is edited as usual. `_p` lists the fields
+   still showing a proposal; it never leaves the page (not in the CSV, the
+   workbook or the drawing). */
+function currentModel(){
+  const {items,order}=buildModel(state.rows);
+  return [items,order];
+}
+/* a row object plus the marks; `sibling` is the row above when there is no target */
+function proposedRow(type, targetId, sibling){
+  const [items,order]=currentModel();
+  const p=proposeRow(items,order,{type,targetId,sibling});
+  const row=R(p.id,p.type,p.desc,p.rating,p.voltage,p.from,p.notes,p.prot);
+  row._p=p.proposed.slice();
+  return row;
+}
+/* fill a row that is still mostly a proposal — used when a Type is chosen on a
+   blank row: only empty cells and cells still marked stay the engine's */
+function refillProposal(row){
+  const [items,order]=currentModel();
+  const p=proposeRow(items,order,{type:row.type,targetId:row.from.trim()});
+  const marks=new Set(row._p||[]);
+  for(const f of ["id","prot","voltage"]){
+    if(!p[f]) continue;
+    if(row[f].trim() && !marks.has(f)) continue;    /* the surveyor typed it: leave it */
+    if(f==="id" && row.id.trim() && !marks.has("id")) continue;
+    row[f]=p[f]; marks.add(f);
+  }
+  row._p=[...marks];
+  return row;
+}
+function clearMark(row, field){
+  if(!row._p) return;
+  row._p=row._p.filter(f=>f!==field);
+  if(!row._p.length) delete row._p;
+}
 function addRowFor(type, targetId){
   snapshot(true);
-  const row=R(nextId(type),type,"","","",targetId||"","",TYPE_DEFAULT_PROT[type]||"");
+  const row=proposedRow(type,targetId,null);
   let at=state.rows.length;
   if(targetId){                       /* after the target's last way, else after the target */
     const ways=state.rows.map((r,i)=>r.from.split(",").map(s=>s.trim()).includes(targetId)?i:-1).filter(i=>i>=0);
@@ -214,9 +250,6 @@ function buildPalette(){
 })();
 
 /* ------------------------------------------------ data entry helpers */
-/* the usual device on a row's supply side, offered when Type is chosen */
-const TYPE_DEFAULT_PROT={"RMU":"LBS","Transformer":"Fuse-switch","LV Busbar":"CB",
-  "Feeder":"CB","MCC":"CB","Pump":"Contactor","MV Busbar":"CB","Bus Coupler":"CB"};
 /* standard values, by what the row is */
 const MV_TYPES=["MV Incomer","MV Busbar","RMU"], LV_TYPES=["LV Busbar","Feeder","MCC","Bus Coupler"];
 const QUICK={
@@ -282,11 +315,15 @@ eqbody.addEventListener("focusin",e=>{
 eqbody.addEventListener("change",e=>{
   if(e.target.dataset.f!=="type") return;
   const tr=e.target.closest("tr"), row=state.rows[+tr.dataset.i];
-  if(row && !row.prot.trim() && TYPE_DEFAULT_PROT[row.type]){
-    row.prot=TYPE_DEFAULT_PROT[row.type];
-    tr.querySelector('[data-f="prot"]').value=row.prot;
-    queue();
+  if(!row) return;
+  /* choosing the Type of a row that is still a proposal fills the rest of it */
+  refillProposal(row);
+  for(const f of ["id","prot","voltage"]){
+    const el=tr.querySelector(`[data-f="${f}"]`);
+    if(el && el.value!==row[f]) el.value=row[f];
+    if(el) el.classList.toggle("proposed",(row._p||[]).includes(f));
   }
+  queue();
 });
 /* keyboard flow: Enter = same column one row down (a new row after the last);
    Alt+Up/Down move the row; Ctrl+Z / Ctrl+Y undo and redo */
@@ -502,7 +539,11 @@ function loadState(){
     if(!s || !Array.isArray(s.rows) || !s.info) return null;
     if((s.v||1)>STATE_VERSION) return null;        /* from a newer page: start clean */
     const info={site:"",date:"",by:"",notes:"",...s.info};
-    const rows=s.rows.map(r=>R(r.id||"",r.type||"",r.desc||"",r.rating||"",r.voltage||"",r.from||"",r.notes||"",r.prot||""));
+    const rows=s.rows.map(r=>{
+      const row=R(r.id||"",r.type||"",r.desc||"",r.rating||"",r.voltage||"",r.from||"",r.notes||"",r.prot||"");
+      if(Array.isArray(r._p) && r._p.length) row._p=r._p.slice();   /* the cells still showing a proposal */
+      return row;
+    });
     view_=normalizeView(s.view);
     return {info, rows};
   }catch(e){ return null; }
@@ -519,7 +560,8 @@ function replaceState(s){
 }
 function addRow(){
   snapshot(true);
-  state.rows.push(R("","","","","","",""));
+  const sibling=state.rows.length?state.rows[state.rows.length-1]:null;
+  state.rows.push(proposedRow("","",sibling));
   rebuildTable(); redraw(); persist();
 }
 
@@ -527,7 +569,9 @@ eqbody.addEventListener("input",e=>{
   const tr=e.target.closest("tr"); if(!tr) return;
   const f=e.target.dataset.f; if(!f) return;
   snapshot();
-  state.rows[+tr.dataset.i][f]=e.target.value;
+  const row=state.rows[+tr.dataset.i];
+  row[f]=e.target.value;
+  clearMark(row,f); e.target.classList.remove("proposed");   /* typed: no longer a proposal */
   if(f==="from") refreshIdList(e.target);
   queue();
 });

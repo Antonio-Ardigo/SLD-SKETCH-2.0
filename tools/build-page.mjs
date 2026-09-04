@@ -20,7 +20,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const BUNDLE_ORDER = [
   "src/core/types.js", "src/core/diagnostics.js", "src/core/views.js", "src/core/geometry.js", "src/core/model.js",
   "src/core/layout.js", "src/core/svg.js", "src/core/symbols/registry.js", "src/core/render.js", "src/core/dxf.js",
-  "src/core/graph.js", "src/core/pipeline.js",
+  "src/core/graph.js", "src/core/pipeline.js", "src/core/propose.js",
   "src/ui/presets.generated.js", "src/ui/app.js",
 ];
 export const TEMPLATE = "src/ui/page.html";

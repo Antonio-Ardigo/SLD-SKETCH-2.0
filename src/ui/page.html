@@ -131,6 +131,12 @@
   table.eq tr.err td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
   table.eq tr.warn td:first-child { box-shadow: inset 3px 0 0 #d9a441; }
   table.eq tr.flash input, table.eq tr.flash select { background: var(--field); transition: background .6s; }
+  /* cells the engine proposed when the row was added; the tint goes on the first keystroke */
+  table.eq input.proposed {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  table.eq tr:hover input.proposed, table.eq input.proposed:focus { background: color-mix(in srgb, var(--accent) 18%, transparent); }
   kbd {
     font: 500 11px "IBM Plex Mono", ui-monospace, monospace; padding: 0 4px;
     border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 3px;
