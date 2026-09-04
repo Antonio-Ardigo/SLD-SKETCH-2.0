@@ -11,6 +11,7 @@ import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
 import { supplyCandidates } from "../core/supplies.js";
 import { renameReferences, canFollowRename } from "../core/edit.js";
+import { diagFromMessage, makeDiag } from "../core/diagnostics.js";
 import { R, PRESETS } from "./presets.generated.js";
 
 /* ------------------------------------------------ UI wiring */
@@ -119,12 +120,15 @@ function redraw(){
     syncView();
     return;
   }
-  showProblems(diagnostics);
   /* an error never withholds the drawing: the row it names floats or is
      dropped, and the message says so (constitution §6) */
   applyView(view_);
   const width=layout(items,order);
+  const said=warnings.length;
   const svgStr=render(state.info,items,order,width,warnings);
+  /* what the drawing itself had to say (a coupler it could not place) joins the box */
+  for(const msg of warnings.slice(said)) diagnostics.push(diagFromMessage(msg)||makeDiag("COUPLER_INVALID",[],msg));
+  showProblems(diagnostics);
   $("#sheet").innerHTML=svgStr;
   $("#sheet").dataset.rev=modelRev();
   decorateSheet();
@@ -160,7 +164,10 @@ function selectId(id){
 }
 /* what a drop lands on by preference: the things a row can feed from */
 const DROP_TARGETS=["lv busbar","mv busbar","rmu","mcc","transformer","feeder","generator","mv incomer"];
-function symbolAt(clientX,clientY){
+/* when the point is where something will be fed FROM, a bar beats the way
+   that leaves it at that very point (a feeder's dot sits on its board) */
+const SUPPLY_ORDER=["lv busbar","mv busbar","rmu","mcc","transformer","generator","mv incomer","feeder"];
+function symbolAt(clientX,clientY,asSupply){
   /* the groups under the point, topmost first; prefer one whose symbol
      itself (not just its padded hit area) contains the point, then a
      supply-side kind, then the topmost */
@@ -180,7 +187,9 @@ function symbolAt(clientX,clientY){
   };
   /* the smallest symbol containing the point wins: a bar over the MCC
      whose enclosure starts at that bar */
-  const hits=groups.filter(inside).sort((a,b)=>{ const A=box(a), B=box(b); return (A.w+8)*(A.h+8)-(B.w+8)*(B.h+8); });
+  const area=g=>{ const A=box(g); return (A.w+8)*(A.h+8); };
+  const pref=g=>{ const i=SUPPLY_ORDER.indexOf(g.dataset.kind); return i<0?SUPPLY_ORDER.length:i; };
+  const hits=groups.filter(inside).sort((a,b)=>(asSupply?pref(a)-pref(b):0) || area(a)-area(b));
   return hits[0] || groups.find(g=>DROP_TARGETS.includes(g.dataset.kind)) || groups[0];
 }
 function rowIndexOf(id){ return state.rows.findIndex(r=>r.id.trim()===id); }
@@ -278,14 +287,14 @@ function buildPalette(){
   vp.addEventListener("dragover",e=>{
     if(!isChip(e)) return;
     e.preventDefault(); e.dataTransfer.dropEffect="copy";
-    setOver(symbolAt(e.clientX,e.clientY));
+    setOver(symbolAt(e.clientX,e.clientY,true));
   });
   vp.addEventListener("dragleave",e=>{ if(e.target===vp){ vp.classList.remove("dropping"); setOver(null); } });
   vp.addEventListener("drop",e=>{
     if(!isChip(e)) return;
     e.preventDefault();
     const type=e.dataTransfer.getData("text/sld-type");
-    const g=symbolAt(e.clientX,e.clientY);
+    const g=symbolAt(e.clientX,e.clientY,true);
     vp.classList.remove("dropping"); setOver(null);
     addRowFor(type, g?g.dataset.id:"");
   });
@@ -543,14 +552,41 @@ function syncView(){
     view.sl=view.st=null;
   }
 }
+/* re-wire a row from the drawing: its Feeds From becomes the target (or,
+   with `also`, gains it as a further supply). The one column that carries
+   topology is the one written — nothing else moves (constitution §1). */
+function rewire(id, targetId, also){
+  const i=rowIndexOf(id); if(i<0 || !targetId || targetId===id) return false;
+  const row=state.rows[i];
+  const have=row.from.split(",").map(s=>s.trim()).filter(Boolean);
+  const next=also ? (have.includes(targetId)?have:have.concat([targetId])) : [targetId];
+  if(next.join(", ")===have.join(", ")) return false;
+  snapshot(true);
+  row.from=next.join(", ");
+  clearMark(row,"from");
+  const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="from"]`); if(el){ el.value=row.from; el.classList.remove("proposed"); }
+  redraw(); persist(); selectId(id);
+  return true;
+}
 (function bindViewer(){
   const pointers=new Map();
   const onScrollbar=e=>e.offsetX>viewport.clientWidth || e.offsetY>viewport.clientHeight;
+  /* a drag that starts on a symbol moves its connection, not the sheet:
+     the symbol under the pointer while dragging is the supply it will be
+     fed from; panning starts on empty canvas */
+  let over=null;
+  const setOver=g=>{ if(over===g) return; if(over) over.classList.remove("over"); over=g; if(over) over.classList.add("over"); };
+  const endWire=p=>{
+    setOver(null); viewport.classList.remove("wiring");
+    if(p && p.grab){ const g=document.querySelector(`#sheet svg g[data-id="${CSS.escape(p.grab)}"]`); if(g) g.classList.remove("moving"); }
+  };
   viewport.addEventListener("pointerdown",e=>{
     if(e.button!==0 || onScrollbar(e)) return;
     e.preventDefault();
     try{ viewport.setPointerCapture(e.pointerId); }catch(err){}   /* synthetic events have no pointer to capture */
-    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY});
+    const g=symbolAt(e.clientX,e.clientY);
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,grab:g?g.dataset.id:null,mode:null});
+    if(pointers.size>1) for(const q of pointers.values()){ if(q.mode==="wire") endWire(q); q.mode="pan"; }   /* two fingers: a pinch, never a wire */
     viewport.classList.add("dragging");
     viewport.focus({preventScroll:true});
   });
@@ -558,8 +594,17 @@ function syncView(){
     const p=pointers.get(e.pointerId);
     if(!p) return;
     if(pointers.size===1){
-      viewport.scrollLeft-=e.clientX-p.x; viewport.scrollTop-=e.clientY-p.y;
-      view.fitted=false;
+      if(!p.mode && Math.hypot(e.clientX-p.x0,e.clientY-p.y0)>=6){
+        p.mode=p.grab?"wire":"pan";
+        if(p.mode==="wire"){ viewport.classList.add("wiring"); const g=document.querySelector(`#sheet svg g[data-id="${CSS.escape(p.grab)}"]`); if(g) g.classList.add("moving"); }
+      }
+      if(p.mode==="wire"){
+        const g=symbolAt(e.clientX,e.clientY,true);
+        setOver(g && g.dataset.id!==p.grab ? g : null);
+      } else if(p.mode==="pan"){
+        viewport.scrollLeft-=e.clientX-p.x; viewport.scrollTop-=e.clientY-p.y;
+        view.fitted=false;
+      }
     } else if(pointers.size===2){    /* pinch */
       const [a,b]=[...pointers.values()];
       const before=Math.hypot(a.x-b.x,a.y-b.y);
@@ -575,6 +620,12 @@ function syncView(){
     const p=pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
     if(!pointers.size) viewport.classList.remove("dragging");
+    if(p && p.mode==="wire"){
+      const g=e.type==="pointerup" ? symbolAt(e.clientX,e.clientY,true) : null;
+      endWire(p);
+      if(g && g.dataset.id!==p.grab) rewire(p.grab, g.dataset.id, e.shiftKey);   /* released on nothing: nothing happens */
+      return;
+    }
     /* a press that did not pan is a click: select the symbol under it */
     if(e.type==="pointerup" && p && Math.hypot(e.clientX-p.x0,e.clientY-p.y0)<4){
       const g=symbolAt(e.clientX,e.clientY);

@@ -19,7 +19,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { ROOT } from "./lib/cases.mjs";
-import { openPage, sleep } from "./lib/headless.mjs";
+import { openPage, sleep, DRAG_JS } from "./lib/headless.mjs";
 
 const OUT = path.join(ROOT, "testdata", "usage", "baseline.json");
 const CHECK = process.argv.includes("--check");
@@ -50,6 +50,8 @@ const gestures = {
   drop: (type, targetId) => act(`addRowFor(${q(type)}, ${q(targetId)})`),
   /* click a symbol on the drawing (selects and focuses its row) */
   clickSymbol: (id) => act(`(function(){ selectId(${q(id)}); const i=rowIndexOf(${q(id)}); if(i>=0) flashRow(i); })()`),
+  /* drag a symbol on the drawing onto another (with shift, as a further supply) */
+  drag: (fromId, toId, shift) => act(DRAG_JS(fromId, toId, !!shift)),
   /* click a line in the problems box (jumps to its row) */
   clickProblem: (n) => act(`(function(){ const d=document.querySelectorAll('#problems div[data-row]')[${n}]; if(d) d.click(); })()`),
   /* a row's own buttons */
@@ -168,21 +170,36 @@ await task("T4_fix_typo_supply", async () => {
 /* T5 — a feeder is moved from one board to the other */
 await task("T5_move_feeder", async () => {
   await loadRows(TWIN);
-  await gestures.clickSymbol("F1");                          /* find its row from the drawing */
-  await gestures.key(await rowIndex("F1"), "id", "Tab");     /* over to the Feeds from cell */
-  await gestures.type(await rowIndex("F1"), "from", "BB2");
+  await gestures.drag("F1", "BB2");                          /* drag the feeder onto the other board */
   await settle();
-  return { movedTo: await evaluate(`state.rows[rowIndexOf('F1')].from`) };
+  let byHand = true;
+  if (await evaluate(`state.rows[rowIndexOf('F1')].from`) !== "BB2") {   /* no such gesture: the table way */
+    byHand = false;
+    await gestures.clickSymbol("F1");                        /* find its row from the drawing */
+    await gestures.key(await rowIndex("F1"), "id", "Tab");   /* over to the Feeds from cell */
+    await gestures.type(await rowIndex("F1"), "from", "BB2");
+    await settle();
+  }
+  return { movedTo: await evaluate(`state.rows[rowIndexOf('F1')].from`), byGesture: byHand };
 });
 
 /* T6 — a bus coupler between the two boards */
 await task("T6_coupler_second_end", async () => {
   await loadRows(TWIN);
   await gestures.drop("Bus Coupler", "BB1");                 /* one end by dropping the chip */
-  const i = await evaluate(`state.rows.findIndex(r=>r.type==='Bus Coupler')`);
-  await gestures.type(i, "from", "BB1, BB2");                /* the other end typed */
   await settle();
-  return { from: await evaluate(`state.rows.find(r=>r.type==='Bus Coupler').from`), typoProof: false };
+  const id = await evaluate(`state.rows.find(r=>r.type==='Bus Coupler').id`);
+  let typoProof = false;
+  if (await evaluate(`!!document.querySelector('#sheet svg g[data-id=${JSON.stringify(id)}]')`)) {
+    await gestures.drag(id, "BB2", true);                    /* the other end: Shift-drag the coupler onto it */
+    await settle();
+    typoProof = await evaluate(`state.rows.find(r=>r.type==='Bus Coupler').from`) === "BB1, BB2";
+  }
+  if (!typoProof) {                                          /* a one-ended coupler has no symbol yet: the other end is typed */
+    await gestures.type(await rowIndex(id), "from", "BB1, BB2");
+    await settle();
+  }
+  return { from: await evaluate(`state.rows.find(r=>r.type==='Bus Coupler').from`), typoProof };
 });
 
 /* W1 — a board with ways is deleted */

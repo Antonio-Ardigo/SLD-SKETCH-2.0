@@ -75,6 +75,15 @@ soon as you type in one, so you can see what came from the engine and what
 you entered. Choosing a Type on a blank row fills the rest the same way.
 Nothing is proposed once the row exists: from then on every cell is yours.
 
+**Re-wire by dragging the symbol.** Drag a symbol on the drawing onto the
+board, RMU, transformer or MCC that feeds it and its `Feeds From` becomes
+that item — one gesture, no ID typed. Hold **Shift** to *add* the target as a
+further supply (a changeover's second board, a ring's second link) instead of
+replacing. Releasing on nothing does nothing. Panning still starts on empty
+canvas; a drag that begins on a symbol moves its connection, not the sheet.
+Whatever the reader thinks of the new supply, it says so in the problems box
+as it does for a typed one — the gesture writes the same cell.
+
 **Renaming an ID renames every reference to it.** Change a board's ID and,
 when you leave the cell, every `Feeds From` that named the old ID names the
 new one — one edit, one undo step, the same drawing under a new name. If the

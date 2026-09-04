@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { ROOT } from "./lib/cases.mjs";
-import { openPage } from "./lib/headless.mjs";
+import { openPage, DRAG_JS } from "./lib/headless.mjs";
 
 const { evaluate, errors, close } = await openPage();
 if (process.env.DEBUG) console.log(await evaluate(`location.href + ' ' + document.readyState + ' rows=' + document.querySelectorAll('#eqbody tr').length`), errors);
@@ -173,6 +173,44 @@ try {
   await evaluate(`undo()`);
   await sleep(400);
   check("and undone", await evaluate(`state.rows.filter(r=>r.id==='F1').length`) === 1);
+
+  /* re-wiring by hand: drag a symbol onto the thing that feeds it */
+  await evaluate(`(function(){ state.rows=[R("MV1","MV Incomer","Utility","","11 kV","","",""),R("MVB1","MV Busbar","MV board","1250 A","11 kV","MV1","","CB"),
+    R("TX1","Transformer","Tx A","1000 kVA","11/0.4 kV","MVB1","","CB"),R("TX2","Transformer","Tx B","1000 kVA","11/0.4 kV","MVB1","","CB"),
+    R("BB1","LV Busbar","Board A","1600 A","400 V","TX1","","CB"),R("BB2","LV Busbar","Board B","1600 A","400 V","TX2","","CB"),
+    R("F1","Feeder","Lighting","100 A","400 V","BB1","","CB"),R("F2","Feeder","Small power","160 A","400 V","BB1","","CB"),R("F3","Feeder","HVAC","250 A","400 V","BB2","","CB"),
+    R("BC1","Bus Coupler","Tie","","400 V","BB1","","CB")]; rebuildTable(); redraw(); })()`);
+  await sleep(400);
+  const dragged = await evaluate(DRAG_JS("F1", "BB2", false));
+  await sleep(400);
+  check("dragging a symbol onto a board feeds it from that board", await evaluate(`state.rows[rowIndexOf('F1')].from`) === "BB2", dragged + " " + await evaluate(`state.rows[rowIndexOf('F1')].from`));
+  check("the cell on screen follows", await evaluate(`document.querySelector('tr[data-i="'+rowIndexOf('F1')+'"] [data-f="from"]').value`) === "BB2");
+  check("the drawing follows", await evaluate(`!!document.querySelector('#sheet svg g[data-id="F1"]') && document.querySelectorAll('#problems .err').length===0`));
+  check("the moved row stays selected", await evaluate(`document.querySelector('#sheet svg g[data-id="F1"]').classList.contains('sel')`));
+  await evaluate(DRAG_JS("F1", "BB1", true));
+  await sleep(400);
+  check("Shift-drag adds a second supply instead of replacing", await evaluate(`state.rows[rowIndexOf('F1')].from`) === "BB2, BB1", await evaluate(`state.rows[rowIndexOf('F1')].from`));
+  await evaluate(DRAG_JS("F1", "BB1", true));
+  await sleep(400);
+  check("adding a supply it already has changes nothing", await evaluate(`state.rows[rowIndexOf('F1')].from`) === "BB2, BB1");
+  check("a one-ended coupler has no symbol to drag (it is skipped, and says so)", await evaluate(`!document.querySelector('#sheet svg g[data-id="BC1"]') && /Bus coupler "BC1"/.test(document.querySelector('#problems').textContent)`));
+  const rowsBeforeDrop = await evaluate(`JSON.stringify(state.rows)`);
+  await evaluate(`(function(){ const vp=document.querySelector('#viewport'); const r=document.querySelector('#sheet svg g[data-id="F2"] rect.hit').getBoundingClientRect();
+    const ev=(t,x,y)=>vp.dispatchEvent(new PointerEvent(t,{pointerId:8,pointerType:'mouse',button:0,buttons:t==='pointerup'?0:1,clientX:x,clientY:y,bubbles:true}));
+    const x=r.left+r.width/2, y=r.top+r.height/2; ev('pointerdown',x,y); ev('pointermove',x+40,y+300); ev('pointermove',x+60,y+320); ev('pointerup',x+60,y+320); })()`);
+  await sleep(300);
+  check("released on nothing, nothing happens", await evaluate(`JSON.stringify(state.rows)`) === rowsBeforeDrop);
+  check("no highlight is left behind", await evaluate(`document.querySelectorAll('#sheet svg .over, #sheet svg .moving').length===0 && !document.querySelector('#viewport').classList.contains('wiring')`));
+  await evaluate(`(function(){ const vp=document.querySelector('#viewport'); const svg=document.querySelector('#sheet svg'); const r=svg.getBoundingClientRect(); vp.scrollLeft=0; vp.scrollTop=0;
+    const x=r.right-8, y=r.bottom-8;   /* empty canvas, bottom-right corner of the sheet */
+    const ev=(t,cx,cy)=>vp.dispatchEvent(new PointerEvent(t,{pointerId:9,pointerType:'mouse',button:0,buttons:t==='pointerup'?0:1,clientX:cx,clientY:cy,bubbles:true}));
+    ev('pointerdown',x,y); ev('pointermove',x-30,y-30); ev('pointermove',x-60,y-60); ev('pointerup',x-60,y-60); })()`);
+  check("a drag on empty canvas still pans", await evaluate(`document.querySelector('#viewport').scrollLeft>0 || document.querySelector('#viewport').scrollTop>0 || document.querySelector('#viewport').scrollWidth<=document.querySelector('#viewport').clientWidth`));
+  check("a click still selects", await evaluate(`(function(){ const vp=document.querySelector('#viewport'); const r=document.querySelector('#sheet svg g[data-id="F3"] rect.hit'); r.scrollIntoView({block:'center',inline:'center'}); const b=r.getBoundingClientRect(); const x=b.left+b.width/2, y=b.top+b.height/2;
+    const ev=(t)=>vp.dispatchEvent(new PointerEvent(t,{pointerId:10,pointerType:'mouse',button:0,buttons:t==='pointerup'?0:1,clientX:x,clientY:y,bubbles:true}));
+    ev('pointerdown'); ev('pointerup'); return document.querySelector('#sheet svg g[data-id="F3"]').classList.contains('sel'); })()`));
+  await evaluate(`(function(){ const p=document.querySelector('#preset'); p.value='7'; p.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(400);
 
   /* a source is added with no supply: the drop names where the row goes, not
      what feeds it, and the board it was dropped on is left alone */

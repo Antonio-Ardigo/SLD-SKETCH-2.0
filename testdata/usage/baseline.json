@@ -28,10 +28,11 @@
     "suggestion": true
   },
   "T5_move_feeder": {
-    "actions": 3,
+    "actions": 1,
     "drawing": "fresh",
     "export": true,
-    "movedTo": "BB2"
+    "movedTo": "BB2",
+    "byGesture": true
   },
   "T6_coupler_second_end": {
     "actions": 2,

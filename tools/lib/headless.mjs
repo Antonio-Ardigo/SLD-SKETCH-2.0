@@ -74,3 +74,17 @@ export async function openPage({ file = path.join(ROOT, "sld_sketchpad.html") } 
 
   return { evaluate, send, sleep, errors, close() { try { ws.close(); } catch {} proc.kill(); } };
 }
+
+/* drag the symbol `fromId` onto the symbol `toId` with real pointer events
+   (a person's hand: press, move, release); with `shift`, as a second supply */
+export const DRAG_JS = (fromId, toId, shift) => `(function(){
+  const vp=document.querySelector('#viewport');
+  const at=id=>{ const r=document.querySelector('#sheet svg g[data-id="'+id+'"] rect.hit'); if(!r) return null; r.scrollIntoView({block:'center',inline:'center'}); const b=r.getBoundingClientRect(); return {x:b.left+b.width/2,y:b.top+b.height/2}; };
+  const a=at(${JSON.stringify(fromId)}); if(!a) return 'no source';
+  const ev=(type,x,y)=>vp.dispatchEvent(new PointerEvent(type,{pointerId:7,pointerType:'mouse',button:0,buttons:type==='pointerup'?0:1,clientX:x,clientY:y,bubbles:true,shiftKey:${shift?'true':'false'}}));
+  ev('pointerdown',a.x,a.y); ev('pointermove',a.x+8,a.y+8);
+  const b=at(${JSON.stringify(toId)}); if(!b){ ev('pointerup',a.x+8,a.y+8); return 'no target'; }
+  /* the view may have scrolled to show the target: the pointer's path only has to end on it */
+  ev('pointermove',b.x-20,b.y-20); ev('pointermove',b.x,b.y); ev('pointerup',b.x,b.y);
+  return 'dropped';
+})()`;

@@ -166,6 +166,8 @@
   #sheet svg [data-id].over rect.hit { fill: rgba(11, 94, 215, .2); stroke: var(--accent); stroke-width: 2; }
   #sheet svg [data-id] { cursor: pointer; }
   .viewport.dropping { outline: 2px dashed var(--accent); outline-offset: -2px; }
+  .viewport.wiring { cursor: alias; }
+  #sheet svg [data-id].moving rect.hit { fill: rgba(11, 94, 215, .08); stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 2 3; }
   button:disabled { opacity: .45; cursor: default; }
   button:disabled:hover { border-color: var(--border); color: var(--ink); }
 
