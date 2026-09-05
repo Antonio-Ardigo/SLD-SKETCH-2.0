@@ -1623,6 +1623,22 @@ function loadSlot(items, order, k){   /* slot width of one such load */
     return lvBoardWidth(items,order,k)+2*SUB_PAD;
   return k.type===PUMP?PUMP_SLOT:FEEDER_SPACING;
 }
+/* What a way carries, laid across the way's own slot [left, left+width]. A
+   transformer takes `placeTxLoads` so its own motors follow it down; anything
+   else is one slot wide. A way carrying nothing does nothing here, which is
+   what keeps a sheet without one byte-identical. */
+function placeCarried(items, order, f, left, width){
+  const on=carriesOn(items,order,f).filter(k=>k.x===null);
+  if(!on.length) return;
+  const need=on.reduce((a,k)=>a+slotWidth(items,order,k),0);
+  let cur=left+(width-need)/2;
+  for(const k of on){
+    const w=slotWidth(items,order,k);
+    if(k.type===TRANSFORMER) placeTxLoads(items,order,k,cur,w);
+    else k.x=cur+w/2;
+    cur+=w;
+  }
+}
 function placeLoad(items, order, k, left){
   /* place one transformer load from `left`; returns the next cursor */
   const w=loadSlot(items,order,k);
@@ -1782,6 +1798,15 @@ function slotWidth(items, order, item){
       w=Math.max(w, txLoads(items,order,item).reduce((a,k)=>a+loadSlot(items,order,k),0));
     return w;
   }
+  /* a way with something on it needs room for it: the way is the way, and
+     what is on the end of it stands in the way's own slot (the same rule
+     lvKidWidth applies on the LV side) */
+  if(item.type===FEEDER){
+    const on=carriesOn(items,order,item);
+    if(on.length)
+      return Math.max(FEEDER_SPACING,
+        on.reduce((a,k)=>a+slotWidth(items,order,k),0));
+  }
   if(LV_LOADS.includes(item.type)) return FEEDER_SPACING;
   return 130;
 }
@@ -1903,6 +1928,9 @@ function placeOwn(items, order, node, left, width, depth){
     else {
       if(k.type===TRANSFORMER) placeTxLoads(items,order,k,cursor,w);
       else k.x=cursor+w/2;
+      /* a way carries its equipment across its own slot: the way's x is where
+         its device sits on the bar, and what it feeds stands under it */
+      if(k.type===FEEDER) placeCarried(items,order,k,cursor,w);
       span.push(k.x);
     }
     cursor+=w+SLOT_GAP;
