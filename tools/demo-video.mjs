@@ -10,11 +10,12 @@
  * pointer, a dragged ghost and a caption bar are drawn over the page so the
  * gesture is visible; nothing else about the page is touched.
  *
- * Each step is narrated first (espeak-ng), then played for exactly as long as
- * its narration lasts, so picture and voice stay together without a timeline.
+ * Each step is narrated first, then played for exactly as long as its
+ * narration lasts, so picture and voice stay together without a timeline.
  *
- * Needs ffmpeg and espeak-ng on PATH; they are the only things here that are
- * not already required to run the tests.
+ * Needs ffmpeg, and a voice: piper (neural, best) if a model is vendored,
+ * else espeak-ng. Those are the only things here not already required to run
+ * the tests, which is why CI does not record the film.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -33,48 +34,59 @@ const FRAMES = path.join(TMP, "frames");
 fs.mkdirSync(FRAMES, { recursive: true });
 
 const need = t => { try { execFileSync("sh", ["-c", `command -v ${t}`], { stdio: "ignore" }); } catch { console.error(`demo-video needs ${t} on PATH`); process.exit(1); } };
-need("ffmpeg"); need("ffprobe"); need("espeak-ng");
+need("ffmpeg"); need("ffprobe");
 
-/* ---------------------------------------------------------------- narration
+/* ---------------------------------------------------------------- narration */
+/* Three synthesisers, best first, because they are three different things.
  *
- * espeak-ng's own voices are formant synthesis: they sound metallic because
- * nothing in them was ever spoken. The mbrola voices are diphone synthesis —
- * fragments of recorded speech stitched together — so they are used when they
- * are installed (`apt-get install mbrola mbrola-en1`), and espeak's own voice
- * is the fallback so the tool still runs without them.
+ *   piper   a neural vocoder trained on recorded speech. It generates the
+ *           waveform continuously, so there are no seams inside a word.
+ *   mbrola  diphone synthesis: fragments of recorded speech butted together.
+ *           Warmer than formant, but you can hear the joins — which is what
+ *           makes it sound like it keeps stopping and starting.
+ *   espeak  formant synthesis. Nothing in it was ever spoken; it is the
+ *           metallic one, and it is here only so the tool always runs.
  *
- * The chain afterwards is the rest of the difference: the presence band around
- * 2.9 kHz is where synthesis sounds hard, so it comes down; a little body goes
- * in at 200 Hz; the 5 kHz sibilance comes down; then compression to even the
- * delivery, a hint of room so it is not bone dry, and a limiter for headroom.
- * Measured against plain espeak this moves 5 dB of energy out of the harsh
- * band and leaves peaks near −3.6 dBFS instead of clipping. */
-const WARMTH = [
-  "highpass=f=75",
-  "equalizer=f=2900:t=q:w=1.4:g=-4",
-  "equalizer=f=200:t=q:w=1.1:g=2.5",
-  "equalizer=f=5200:t=q:w=2:g=-3",
-  "acompressor=threshold=-18dB:ratio=3:attack=8:release=180",
-  "aecho=0.85:0.9:22:0.06",
-  "dynaudnorm=f=200:g=7:p=0.71",
-  "alimiter=level_in=1:level_out=0.8:limit=0.85",
-].join(",");
+ * piper needs `pip install piper-tts` and a voice model under vendor/piper/
+ * (gitignored, ~60 MB) — see the README. */
+const PIPER_MODEL = path.join(ROOT, "vendor", "piper", "en_GB-alba-medium.onnx");
 
 const VOICE = (() => {
   const probe = path.join(TMP, "probe.wav");
-  for (const v of ["mb-en1", "mb-us2", "mb-us1", "en-gb"]) {
+  if (fs.existsSync(PIPER_MODEL)) {
+    try {
+      execFileSync("python3", ["-m", "piper", "-m", PIPER_MODEL, "-f", probe], { input: "voice check", stdio: ["pipe", "ignore", "ignore"] });
+      if (fs.statSync(probe).size > 1000) { console.log("voice: piper (neural)"); return { kind: "piper" }; }
+    } catch { /* fall through */ }
+  }
+  for (const v of ["mb-en1", "mb-us2", "en-gb"]) {
     try {
       execFileSync("espeak-ng", ["-v", v, "-w", probe, "voice check"], { stdio: "ignore" });
-      if (fs.statSync(probe).size > 1000) { console.log(`voice: ${v}${v.startsWith("mb-") ? "" : "  (install mbrola and mbrola-en1 for a warmer one)"}`); return v; }
+      if (fs.statSync(probe).size > 1000) {
+        console.log(`voice: espeak-ng ${v} — for a better one, pip install piper-tts and fetch a model into vendor/piper/`);
+        return { kind: "espeak", v };
+      }
     } catch { /* not installed: try the next */ }
   }
-  console.error("no usable espeak-ng voice"); process.exit(1);
+  console.error("no usable voice: install piper-tts, or espeak-ng"); process.exit(1);
 })();
+
+/* Piper needs almost nothing done to it: a high-pass to clear rumble, a gentle
+   de-ess, and a level. The older synthesisers need the presence band pulled
+   down and some body put back, which would dull a neural voice. */
+const CHAIN = VOICE.kind === "piper"
+  ? "highpass=f=70,equalizer=f=6800:t=q:w=2.2:g=-2.5,acompressor=threshold=-20dB:ratio=2.4:attack=12:release=220,loudnorm=I=-17:TP=-3:LRA=9"
+  : "highpass=f=75,equalizer=f=2900:t=q:w=1.4:g=-4,equalizer=f=200:t=q:w=1.1:g=2.5,equalizer=f=5200:t=q:w=2:g=-3,"
+    + "acompressor=threshold=-18dB:ratio=3:attack=8:release=180,dynaudnorm=f=200:g=7:p=0.71,alimiter=level_in=1:level_out=0.8:limit=0.85";
 
 const say = (text, file) => {
   const raw = file.replace(/\.wav$/, ".raw.wav");
-  execFileSync("espeak-ng", ["-v", VOICE, "-s", "138", "-g", "6", "-w", raw, text]);
-  execFileSync("ffmpeg", ["-v", "error", "-y", "-i", raw, "-af", WARMTH, "-ar", "44100", "-ac", "1", file]);
+  if (VOICE.kind === "piper")
+    execFileSync("python3", ["-m", "piper", "-m", PIPER_MODEL, "-f", raw, "--length-scale", "1.04", "--sentence-silence", "0.28"],
+      { input: text, stdio: ["pipe", "ignore", "inherit"] });
+  else
+    execFileSync("espeak-ng", ["-v", VOICE.v, "-s", "138", "-g", "6", "-w", raw, text]);
+  execFileSync("ffmpeg", ["-v", "error", "-y", "-i", raw, "-af", CHAIN, "-ar", "44100", "-ac", "1", file]);
   return +execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file], { encoding: "utf8" }).trim();
 };
 
@@ -205,7 +217,7 @@ const cellOf = async (i, f) => JSON.parse(await evaluate(
     return JSON.stringify({x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)});})()`));
 
 const steps = [
-  { say: "S L D Sketch turns a survey table into a single line diagram. One row per item above, the drawing those rows make below. The table is the record: the drawing is always made from it, never the other way round.",
+  { say: "SLD-Sketch turns a survey table into a single-line diagram. One row per item above; below, the drawing those rows make. The table is the record — the drawing is always made from it, never the other way round.",
     async run() {
       await evaluate(`__dmo.title("SLD-Sketch","A substation, drawn by dragging symbols")`);
       await rec(22);
@@ -222,16 +234,16 @@ const steps = [
       await rec(4);
     } },
 
-  { say: "A survey starts where the power comes in. Drag the M V incomer from the palette onto the empty sheet.",
+  { say: "A survey starts where the power comes in. Drag the MV incomer from the palette onto the empty sheet.",
     async run() { await dragChip("MV Incomer", [0.34, 0.30], 16); } },
 
-  { say: "A row appears, named M V one, with the engine's guesses tinted. An incomer is a source, so its Feeds From stays empty: its supply is off the drawing.",
+  { say: "A row appears, named MV1, with the engine's guesses tinted. An incomer is a source, so its Feeds From stays empty — its supply is off the drawing.",
     async run() { await rec(6); await moveTo(await cellOf(0, "from"), 9); await rec(12); } },
 
   { say: "Now the transformer, dropped straight onto the incomer.",
     async run() { await dragChip("Transformer", "MV1", 15); } },
 
-  { say: "And Feeds From reads M V one, because that is the symbol it was dropped on. That one column is the only thing in the whole table that makes a connection.",
+  { say: "And Feeds From reads MV1, because that is the symbol it was dropped on. That one column is the only thing in the whole table that makes a connection.",
     async run() { await rec(4); await moveTo(await cellOf(1, "from"), 9); await rec(14); } },
 
   { say: "The low voltage board goes onto the transformer the same way.",
@@ -246,7 +258,7 @@ const steps = [
   { say: "Click any symbol and its row is selected. The drawing and the table are two views of one thing.",
     async run() { await clickSymbol("TX1"); await rec(8); } },
 
-  { say: "Six rows, and not one identifier typed by hand. From here the sheet leaves as a P D F, an S V G, or a D X F for the drawing office.",
+  { say: "Six rows, and not one identifier typed by hand. From here the sheet leaves as a PDF, an SVG, or a DXF for the drawing office.",
     async run() { await moveTo({ x: 165, y: 466 }, 12); await rec(14); } },
 ];
 
@@ -258,7 +270,7 @@ for (const [i, s] of steps.entries()) {
   await evaluate(`__dmo.cap(${JSON.stringify(s.say)})`);
   const start = shot;
   await s.run();
-  const want = Math.ceil(dur * FPS) + 3;                 /* a beat of quiet after each line */
+  const want = Math.ceil(dur * FPS) + 2;                 /* a beat of quiet after each line */
   if (shot - start < want) await rec(want - (shot - start));
   audio.push({ wav, frames: shot - start });
   console.log(`  ${String(i + 1).padStart(2)}. ${(shot - start) / FPS}s  ${s.say.slice(0, 58)}…`);

@@ -429,11 +429,17 @@ over the page, and nothing else is touched. It needs `ffmpeg` and `espeak-ng`,
 the only two things in this repository that are not already needed to run the
 tests — which is why CI does not run it.
 
-For the commentary, install `mbrola` and `mbrola-en1` as well. espeak-ng's own
-voices are formant synthesis and sound metallic because nothing in them was
-ever spoken; the mbrola voices are fragments of recorded speech, and the tool
-prefers them when they are there and falls back to espeak's own when they are
-not. Either way the narration is EQ'd and levelled on the way out.
+For the commentary it looks for three synthesisers, best first, and they are
+three different things. **piper** is a neural vocoder trained on recorded
+speech: it generates the waveform continuously, so there are no seams inside a
+word — `pip install piper-tts`, then put a voice model in `vendor/piper/`
+(gitignored, ~60 MB; `en_GB-alba-medium.onnx` and its `.json` from the
+`rhasspy/piper-voices` collection). **mbrola** (`apt-get install mbrola
+mbrola-en1`) is diphone synthesis — recorded fragments butted together, warmer
+than formant but you can hear the joins. **espeak-ng** alone is formant
+synthesis: nothing in it was ever spoken, and it is the metallic one, kept so
+the tool always runs. Either way the narration is EQ'd and levelled on the way
+out, lightly for piper and heavily for the others.
 
 `sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
 the modules into the page's single `<script>` (browsers refuse `import` from
