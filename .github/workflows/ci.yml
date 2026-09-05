@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # 20 on purpose: package.json claims engines >=20 for the engine and the
+      # CLI, and this job is what keeps that claim true rather than decorative
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -50,9 +52,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # 22, not 20: tools/lib/headless.mjs speaks to Chrome over the DevTools
+      # protocol using the global WebSocket, which Node only exposes from 22.
+      # On 20 this job died with "WebSocket is not defined" before a single
+      # check ran — the first thing this workflow caught, on itself.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       # ubuntu-latest ships Chrome; say which one rather than letting the
       # search in tools/lib/headless.mjs fall through to a bare name
