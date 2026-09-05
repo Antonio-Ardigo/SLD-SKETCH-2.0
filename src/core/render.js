@@ -823,15 +823,21 @@ function render(info, items, order, width, canvas){
 
   /* sub-boards: fed from a feeder or straight from the board above */
   const twoDevices=(x,y0,y1,k0,k1,dash)=>{
-    /* a drop with the outgoing device by the upper bar and, when the fed
-       board names one, its incoming device by the lower bar */
-    const g0=svg.device(k0,x,y0+30);
-    svg.line(x,y0,x,y0+30-g0,2,dash||null);
+    /* the outgoing device by the upper bar when the feeder names one, and the
+       incoming device by the lower bar when the fed board names one — a real
+       main-board way and a real sub-board incomer are two breakers, and both
+       are drawn; neither is invented when its cell is empty */
+    let yFrom=y0;
+    if(k0){
+      const g0=svg.device(k0,x,y0+30);
+      svg.line(x,y0,x,y0+30-g0,2,dash||null);
+      yFrom=y0+30+g0;
+    }
     if(k1){
       const g1=svg.device(k1,x,y1-30);
-      svg.line(x,y0+30+g0,x,y1-30-g1,2,dash||null);
+      svg.line(x,yFrom,x,y1-30-g1,2,dash||null);
       svg.line(x,y1-30+g1,x,y1,2,dash||null);
-    } else svg.line(x,y0+30+g0,x,y1,2,dash||null);
+    } else svg.line(x,yFrom,x,y1,2,dash||null);
   };
   const splitDone=new Set();
   for(const bb of busbars){
@@ -852,7 +858,10 @@ function render(info, items, order, width, canvas){
         if(!pb) continue;
         const yPar=lvY(pb);
         const dash=stateWords(par).has("spare")?"5 4":null;
-        const k0=protFor(par,pb.id)[1]||"cb", k1=protFor(bb,p)[1];
+        /* the same rule as the feeders loop: a filled cell draws, an empty
+           one does not, whether or not the engine knew the word */
+        const [k0raw,k0kind]=protFor(par,pb.id);
+        const k0=k0kind||(k0raw.trim()?"cb":null), k1=protFor(bb,p)[1];
         svg.dot(par.x,yPar);
         const i=fsup.indexOf(p), n=fsup.length;
         const xTo=n===1?bb.x:bb.xLeft+(bb.xRight-bb.xLeft)*(i+0.5)/n;
@@ -861,9 +870,11 @@ function render(info, items, order, width, canvas){
           const ySplit=ySub-60-12*i;
           if(!splitDone.has(p)){
             splitDone.add(p);
-            const g0=svg.device(k0,par.x,yPar+30);
-            svg.line(par.x,yPar,par.x,yPar+30-g0,2,dash);
-            svg.line(par.x,yPar+30+g0,par.x,ySplit,2,dash);
+            if(k0){
+              const g0=svg.device(k0,par.x,yPar+30);
+              svg.line(par.x,yPar,par.x,yPar+30-g0,2,dash);
+              svg.line(par.x,yPar+30+g0,par.x,ySplit,2,dash);
+            } else svg.line(par.x,yPar,par.x,ySplit,2,dash);
           }
           svg.line(par.x,ySplit,xTo,ySplit,2,dash);
           if(k1){
@@ -968,8 +979,19 @@ function render(info, items, order, width, canvas){
     let par=f.parents.length?items[f.parents[0]]:null;
     const pid=par?par.id:null;
     if(par && par.type===TRANSFORMER && txBoard(items,par)) par=txBoard(items,par);  /* a way of the board it feeds */
-    const kind=protFor(f,pid)[1]||"cb";
+    /* A feeder names its device or has none. It is the way out of a board —
+       a placeholder to hang equipment on — so inventing a breaker for it puts
+       two devices in series on a run where the surveyor asked for one. Every
+       other type here keeps its usual default.
+       What counts is whether the cell was filled in, not whether the engine
+       recognised what was written: "Thermal relay" or "RCBO" is a device the
+       surveyor asked for, drawn with the default glyph and already reported by
+       UNKNOWN_PROT. Only an empty cell means no device. */
+    const [praw,pkind]=protFor(f,pid);
+    const kind=pkind||((f.type===FEEDER && !praw.trim())?null:"cb");
     const dash=stateWords(f).has("spare")?"5 4":null;
+    /* the drop, or a bare conductor when no device was named */
+    const runDown=(x,y0,y1,ydev)=>kind?svg.drop(x,y0,y1,kind,ydev,dash):svg.line(x,y0,x,y1,2,dash||null);
     const lbl=[f.id,f.desc,f.rating].filter(Boolean).join(" · ");
     if(par && par.type===TRANSFORMER && TERMINALS.includes(f.type)){
       /* hung on a transformer's secondary: an NER under an earthing
@@ -988,7 +1010,7 @@ function render(info, items, order, width, canvas){
       if(par.type===MV_BUSBAR){
         const y0=yBus(par);
         svg.dot(f.x,y0);
-        svg.drop(f.x,y0,yEnd,kind,undefined,dash);
+        runDown(f.x,y0,yEnd,undefined);
       } else svg.line(f.x,yRmu(par)[1],f.x,yEnd,2,dash);  /* device in the enclosure */
       if(f.type===FEEDER){
         svg.arrowDown(f.x,yTip);
@@ -1014,7 +1036,7 @@ function render(info, items, order, width, canvas){
       yDev=(yFrom+yArrow-26)/2;
     } else svg.dot(f.x,yb);
     if(f.type===MCC){
-      svg.drop(f.x,yFrom,yArrow-26,kind,yDev,dash);
+      runDown(f.x,yFrom,yArrow-26,yDev);
       svg.rect(f.x-14,yArrow-26,28,26,2);
       svg.text(f.x,yArrow-8,"MCC",{size:8});
       if(mccLoads(items,order,f).length && f.xLeft!==null){
@@ -1028,7 +1050,7 @@ function render(info, items, order, width, canvas){
         continue;
       }
     } else if(TERMINALS.includes(f.type)){
-      svg.drop(f.x,yb,yArrow-24,kind,yDev,dash);
+      runDown(f.x,yb,yArrow-24,yDev);
       const h=svg.terminal(f.type,f.x,yArrow-24);
       yLbl=yArrow-24+h+12;
     } else if(subBoardsOf(items,order,f).length){
@@ -1037,7 +1059,7 @@ function render(info, items, order, width, canvas){
       svg.end();
       continue;
     } else {
-      svg.drop(f.x,yb,yArrow-10,kind,yDev,dash);
+      runDown(f.x,yb,yArrow-10,yDev);
       svg.arrowDown(f.x,yArrow);
     }
     svg.text(f.x+4,yLbl,lbl,{size:11,anchor:"start",rotate:90});

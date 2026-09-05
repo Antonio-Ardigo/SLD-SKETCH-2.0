@@ -56,10 +56,15 @@ try {
   /* Enter repeats the row above: F4 is a feeder on BB1, so the new row is a feeder on BB1, whole */
   const again = await evaluate(`JSON.stringify(state.rows[8])`);
   check("Enter repeats the row above — same Type, same supply, the rest proposed",
-    /"id":"F5".*"type":"Feeder".*"voltage":"400 V".*"from":"BB1".*"prot":"CB"/.test(again) && /"_p":\["from","id","prot","voltage"\]/.test(again), again);
-  await evaluate(`(function(){ const s=document.querySelector('tr[data-i="8"] [data-f="type"]'); s.value='Feeder';
+    /"id":"F5".*"type":"Feeder".*"voltage":"400 V".*"from":"BB1"/.test(again) && /"_p":\["from","id","voltage"\]/.test(again), again);
+  check("and a feeder is proposed with no device: it is a way to hang gear on",
+    /"prot":""/.test(again), again);
+  await evaluate(`(function(){ const s=document.querySelector('tr[data-i="8"] [data-f="type"]'); s.value='MCC';
      s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   check("type change fills default protection", await evaluate(`document.querySelector('tr[data-i="8"] [data-f="prot"]').value`) === "CB");
+  await evaluate(`(function(){ const s=document.querySelector('tr[data-i="8"] [data-f="type"]'); s.value='Feeder';
+     s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  check("switching back to Feeder clears it again", await evaluate(`document.querySelector('tr[data-i="8"] [data-f="prot"]').value`) === "");
 
   /* a bad Feeds from highlights the row and lists a clickable problem */
   await evaluate(`(function(){ const el=document.querySelector('tr[data-i="8"] [data-f="id"]'); el.value='F9'; el.dispatchEvent(new Event('input',{bubbles:true}));
@@ -132,7 +137,7 @@ try {
   await sleep(400);
   check("drop adds a row", await evaluate(`state.rows.length`) === rowsBefore + 1);
   const dropped = await evaluate(`JSON.stringify(state.rows.find(r=>r.type==='Feeder'&&!r.desc&&!r.rating)||null)`);
-  check("new row is a Feeder fed from MSB with an auto ID and CB", /"id":"F\d+".*"from":"MSB".*"prot":"CB"/.test(dropped), dropped);
+  check("new row is a Feeder fed from MSB with an auto ID and no device", /"id":"F\d+".*"from":"MSB".*"prot":""/.test(dropped), dropped);
   check("new row is drawn", await evaluate(`(function(){ const r=state.rows.find(r=>r.type==='Feeder'&&!r.desc&&!r.rating); return !!r && !!document.querySelector('#sheet svg g[data-id="'+r.id+'"]'); })()`));
   await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))`);
   check("undo removes the dropped row", await evaluate(`state.rows.length`) === rowsBefore);
@@ -143,9 +148,9 @@ try {
   await evaluate(`addRowFor('Feeder','MSB')`);
   await sleep(400);
   const proposedFeeder = await evaluate(`JSON.stringify(state.rows.find(r=>r.type==='Feeder'&&r.from==='MSB'&&!r.desc)||null)`);
-  check("dropped feeder is proposed whole", /"id":"F\d+".*"voltage":"400 V".*"from":"MSB".*"prot":"CB"/.test(proposedFeeder), proposedFeeder);
+  check("dropped feeder is proposed whole but for its device", /"id":"F\d+".*"voltage":"400 V".*"from":"MSB".*"prot":""/.test(proposedFeeder), proposedFeeder);
   check("proposed cells are tinted", await evaluate(`(function(){ const r=state.rows.findIndex(r=>r.type==='Feeder'&&r.from==='MSB'&&!r.desc);
-     return [...document.querySelectorAll('tr[data-i="'+r+'"] input.proposed')].map(e=>e.dataset.f).sort().join(','); })()`) === "from,id,prot,voltage");
+     return [...document.querySelectorAll('tr[data-i="'+r+'"] input.proposed')].map(e=>e.dataset.f).sort().join(','); })()`) === "from,id,voltage");
   check("a proposed cell says so", (await evaluate(`document.querySelector('input.proposed').title`)).includes("proposed by the engine"));
   /* typing in a proposed cell confirms it */
   await evaluate(`(function(){ const r=state.rows.findIndex(r=>r.type==='Feeder'&&r.from==='MSB'&&!r.desc);
@@ -153,7 +158,7 @@ try {
   await sleep(400);
   check("typing clears that cell's tint", await evaluate(`(function(){ const r=state.rows.findIndex(r=>r.type==='Feeder'&&r.voltage==='690 V');
      const tr=document.querySelector('tr[data-i="'+r+'"]');
-     return !tr.querySelector('[data-f="voltage"]').classList.contains('proposed') && tr.querySelector('[data-f="prot"]').classList.contains('proposed'); })()`));
+     return !tr.querySelector('[data-f="voltage"]').classList.contains('proposed') && tr.querySelector('[data-f="from"]').classList.contains('proposed'); })()`));
 
   /* renaming a board: every way that named it follows, in one edit */
   const refs = id => evaluate(`state.rows.filter(r=>r.from.split(',').map(s=>s.trim()).includes(${JSON.stringify(id)})).length`);

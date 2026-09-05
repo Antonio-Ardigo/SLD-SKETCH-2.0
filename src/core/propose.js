@@ -23,9 +23,15 @@ export const TYPE_PREFIX = {
   "Earthing/NER": "NER", "Surge Arrester": "SA", "UPS": "UPS", "Inverter": "INV", "Battery": "BAT", "DC Busbar": "DCB",
 };
 
-/* the usual device on a row's supply side, per Type label */
+/* The usual device on a row's supply side, per Type label.
+   A Feeder is deliberately absent. A feeder is the way out of a board — a
+   placeholder to hang equipment on — and proposing a breaker for it means
+   that hanging a pump on it draws two devices in series where the surveyor
+   asked for one. Left blank, the feeder contributes nothing and the pump's
+   own device is the only one on the run; write CB on it and it draws, which
+   is what a feeder that really is a breakered way wants. */
 export const TYPE_DEFAULT_PROT = {
-  "RMU": "LBS", "Transformer": "Fuse-switch", "LV Busbar": "CB", "Feeder": "CB", "MCC": "CB", "Pump": "Contactor",
+  "RMU": "LBS", "Transformer": "Fuse-switch", "LV Busbar": "CB", "MCC": "CB", "Pump": "Contactor",
   "MV Busbar": "CB", "Bus Coupler": "CB", "UPS": "CB", "DC Busbar": "CB",
 };
 
