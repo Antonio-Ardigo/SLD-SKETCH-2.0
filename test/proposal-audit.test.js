@@ -104,7 +104,7 @@ const twin = site([
   { id: "BC1", type: "Bus Coupler", voltage: "400 V", prot: "CB", from: "BB1, BB2", notes: "Normally open" },
   { id: "G1", type: "Generator", rating: "500 kVA", voltage: "400 V" },
   { id: "ATS", type: "Bus Coupler", voltage: "400 V", prot: "CB", from: "BB2, G1", notes: "ATS" },
-  { id: "P1", type: "Pump", rating: "30 kW", voltage: "400 V", prot: "Fused contactor", from: "BB1" },
+  { id: "P1", type: "Pump", rating: "18.5 kW", voltage: "400 V", prot: "Fused contactor", from: "BB1" },
   { id: "F1", type: "Feeder", rating: "100 A", voltage: "400 V", prot: "CB", from: "BB1" },
 ]);
 const drop = replay(twin, "networkOrder", "drop", pool, quick);
@@ -128,15 +128,20 @@ test("the first root's voltage is uninferable; in survey order a genset is dropp
 });
 
 test("a second supply is a correction of its own, and a coupler's device is not", () => {
+  /* G1 is a root, so network order places it before BC1: two boards and a genset leave the far end in doubt */
   assert.equal(of("BC1", "SECOND_SUPPLY").length, 1);
   assert.equal(of("ATS", "SECOND_SUPPLY").length, 1);
   assert.equal(of("BC1", "PROT_DEFAULT").length, 0, "CB was proposed and CB was wanted");
+  /* without the genset the twin board leaves no doubt, and the tie is proposed whole */
+  const noGen = site(twin.rows.filter(r => !["G1", "ATS"].includes(r.id)));
+  const d = replay(noGen, "networkOrder", "drop", pool, quick);
+  assert.equal(d.filter(c => c.row === "BC1" && c.cls === "SECOND_SUPPLY").length, 0, JSON.stringify(d.filter(c => c.row === "BC1")));
 });
 
 test("a spelling the reader already understands costs nothing", () => {
-  /* P1 wanted "Fused contactor"; the engine proposes CB on a board — a real correction. Change the row and it becomes a spelling. */
+  /* P1 wanted "Fused contactor"; the engine proposes CB on a board — a real correction. On an MCC the engine proposes "Fused contactor", so "fuse contactor" is a spelling. */
   const s2 = site([...twin.rows.slice(0, 5), { id: "MCC1", type: "MCC", rating: "400 A", voltage: "400 V", prot: "CB", from: "BB1" },
-    { id: "P9", type: "Pump", rating: "30 kW", voltage: "400 V", prot: "contactor", from: "MCC1" }]);
+    { id: "P9", type: "Pump", rating: "30 kW", voltage: "400 V", prot: "fuse contactor", from: "MCC1" }]);
   const d2 = replay(s2, "networkOrder", "drop", pool, quick);
   const c = d2.filter(x => x.row === "P9" && x.field === "prot");
   assert.deepEqual(c.map(x => x.cls), ["SPELLING"], JSON.stringify(c));
@@ -160,6 +165,6 @@ test("POOL needs three rows on two sheets; a thin slice is MIXED or OPINION", ()
 test("the rating is never proposed: its cost is the pick, and an unoffered value is flagged", () => {
   const fill = of("P1", "FILL", "rating")[0];
   assert.ok(fill && fill.cost >= 1);
-  assert.equal(of("P1", "OFFER_MISS", "rating").length, 1, "30 kW is not in the motor list");
+  assert.equal(of("P1", "OFFER_MISS", "rating").length, 1, "18.5 kW is not in the motor list");
   assert.equal(of("F1", "OFFER_MISS", "rating").length, 0, "100 A is");
 });

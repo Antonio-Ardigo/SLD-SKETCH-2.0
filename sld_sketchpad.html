@@ -331,7 +331,7 @@
         <tr><td>Description</td><td>free text: <code>Oil-immersed, Dyn11</code>, <code>Main pump 4 (VSD)</code></td><td>printed as a label; a few words also change the symbol (below)</td></tr>
         <tr><td>Rating</td><td>from the nameplate: <code>1000 kVA</code>, <code>630 A</code>, <code>315 kW</code></td><td>printed</td></tr>
         <tr><td>Voltage</td><td>from the nameplate: <code>11/0.4 kV</code>, <code>400 V</code></td><td>printed only; it never moves anything</td></tr>
-        <tr><td>Protection</td><td>the device on <em>this item's supply side</em>: <code>CB</code>, <code>LBS</code>, <code>Fuse</code>, <code>Fuse-switch</code>, <code>Contactor</code>, <code>Fuse-contactor</code>; blank = the usual default; a comma list matches Feeds from order (<code>LBS, CB</code>)</td><td>swaps the device symbol on that connection; free text on a busbar (<code>87B differential</code>) is printed as a zone label</td></tr>
+        <tr><td>Protection</td><td>the device on <em>this item's supply side</em>: <code>CB</code>, <code>LBS</code>, <code>Fuse</code>, <code>Fuse-switch</code>, <code>Contactor</code>, <code>Fused contactor</code>; blank = the usual default; a comma list matches Feeds from order (<code>LBS, CB</code>)</td><td>swaps the device symbol on that connection; free text on a busbar (<code>87B differential</code>) is printed as a zone label</td></tr>
         <tr><td>Feeds from</td><td>the ID of the item supplying this one; comma for two supplies (<code>BB1, BB2</code>, <code>MV1, MV2</code>)</td><td>the wiring, and the only thing that is</td></tr>
         <tr><td>Notes</td><td>anything worth remembering</td><td>printed on ties; a few leading words change the symbol (below)</td></tr>
       </table>
@@ -389,7 +389,7 @@
         <tr><td><code>capacitor</code>, <code>PFC</code>, <code>kvar</code></td><td>Description or Notes of a Feeder</td><td>drawn as a capacitor bank</td></tr>
         <tr><td><code>NER</code>, <code>earthing</code>, <code>zig-zag</code></td><td>a Feeder, or a Transformer with nothing on its output</td><td>drawn as an earthing resistor / earthing transformer to earth</td></tr>
         <tr><td><code>arrester</code>, <code>surge</code></td><td>Description or Notes of a Feeder</td><td>drawn as a surge arrester</td></tr>
-        <tr><td><code>CB</code> <code>MCCB</code> <code>MCB</code> <code>ACB</code> · <code>LBS</code> <code>isolator</code> · <code>Fuse</code> · <code>Fuse-switch</code> <code>SFU</code> · <code>Contactor</code> · <code>Fuse-contactor</code> <code>starter</code></td><td>Protection</td><td>the device symbol on that connection</td></tr>
+        <tr><td><code>CB</code> <code>MCCB</code> <code>MCB</code> <code>ACB</code> · <code>LBS</code> <code>isolator</code> · <code>Fuse</code> · <code>Fuse-switch</code> <code>SFU</code> · <code>Contactor</code> · <code>Fused contactor</code> <code>starter</code></td><td>Protection</td><td>the device symbol on that connection</td></tr>
       </table>
 
       <h3>Getting it out</h3>
@@ -434,7 +434,7 @@
     <div class="tbl-foot">
       <button id="addrow" class="primary">+ Add row</button>
       <button id="csv" title="Download the equipment table as CSV">Download CSV</button>
-      <span class="hint">Feeds from = the ID of the item supplying this one (pick from the list); comma for two supplies (bus tie: <code>BB1, BB2</code> — ring RMU: <code>RMU1, RMU2</code>). Protection = the device on this item's supply side (CB, LBS, Fuse, Fuse-switch, Contactor, Fuse-contactor; blank = the usual default; comma list matches Feeds from). Row order sets left-to-right order. Words like <code>VSD</code>, <code>Spare</code>, <code>N.O.</code> or <code>capacitor</code> in Description / Notes change the symbol — see <a href="#help" id="helplink">How to fill</a>. Keys: <kbd>Enter</kbd> next row, <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move row, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo.</span>
+      <span class="hint">Feeds from = the ID of the item supplying this one (pick from the list); comma for two supplies (bus tie: <code>BB1, BB2</code> — ring RMU: <code>RMU1, RMU2</code>). Protection = the device on this item's supply side (CB, LBS, Fuse, Fuse-switch, Contactor, Fused contactor; blank = the usual default; comma list matches Feeds from). Row order sets left-to-right order. Words like <code>VSD</code>, <code>Spare</code>, <code>N.O.</code> or <code>capacitor</code> in Description / Notes change the symbol — see <a href="#help" id="helplink">How to fill</a>. Keys: <kbd>Enter</kbd> next row, <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move row, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo.</span>
     </div>
   </section>
 
@@ -1152,7 +1152,7 @@ const USUAL_SUPPLIES = {
   [GENERATOR]:   [TRANSFORMER],                                       /* through its step-up; otherwise a root */
   [LV_BUSBAR]:   [TRANSFORMER, FEEDER, LV_BUSBAR, MCC, GENERATOR],
   [MCC]:         [LV_BUSBAR, MCC, TRANSFORMER],
-  [PUMP]:        [LV_BUSBAR, MCC, MV_BUSBAR, RMU, TRANSFORMER],
+  [PUMP]:        [MCC, LV_BUSBAR, MV_BUSBAR, RMU, TRANSFORMER],           /* the field sheets put motors on an MCC 7.8× as often as on a board */
   [FEEDER]:      [LV_BUSBAR, MCC, MV_BUSBAR, RMU],
   [BUS_COUPLER]: [LV_BUSBAR, MV_BUSBAR, GENERATOR],
   [CAPACITOR]:   [LV_BUSBAR, MV_BUSBAR, RMU, TRANSFORMER],
@@ -1271,7 +1271,7 @@ const PROT_LABELS = [
   ["Fuse", "fuse"],
   ["Fuse-switch", "switch-fuse unit"],
   ["Contactor", "contactor, a motor starter"],
-  ["Fuse-contactor", "fused contactor, an MV motor starter"],
+  ["Fused contactor", "fused contactor, a motor starter (MCC way, MV motor)"],
   ["Motor starter", "fused contactor"],
   ["Unknown", "a device is there, its type was not recorded"],
 ];
@@ -1288,7 +1288,7 @@ const USUAL_PROT = {
   [GENERATOR]:   ["ACB", "CB"],
   [LV_BUSBAR]:   ["ACB", "CB", "MCCB", "LBS"],
   [MCC]:         ["MCCB", "CB", "ACB"],
-  [PUMP]:        ["Contactor", "Fuse-contactor", "MCCB", "CB"],
+  [PUMP]:        ["Fused contactor", "Contactor", "MCCB", "CB"],
   [FEEDER]:      ["MCCB", "MCB", "CB", "Fuse", "LBS", "RCBO"],
   [BUS_COUPLER]: ["ACB", "CB", "LBS"],
   [CAPACITOR]:   ["Contactor", "MCCB", "Fuse"],
@@ -4563,9 +4563,34 @@ function proposeProt(type, supply) {
   let prot = TYPE_DEFAULT_PROT[type] || "";
   if (type === "Transformer" && supply && supply.type === MV_BUSBAR) prot = "CB";
   if (type === "Transformer" && supply && LV_GEAR.includes(supply.type)) prot = "CB";
-  if (type === "Pump" && supply && MV_GEAR.includes(supply.type)) prot = "Fuse-contactor";
+  if (type === "Pump" && supply && MV_GEAR.includes(supply.type)) prot = "Fused contactor";
+  /* the motor ways of an MCC are fused contactors — every field sheet that
+     wrote the device wrote that (proposal audit, round 1); on a board the
+     motor's way is a breaker like the board's other ways */
+  if (type === "Pump" && supply && supply.type === MCC) prot = "Fused contactor";
   if (type === "Pump" && supply && supply.type === LV_BUSBAR) prot = "CB";
   return prot;
+}
+
+/**
+ * The other end of a bus coupler, when the sheet leaves no doubt. What a
+ * coupler on a board can tie to is another board of the same kind (a twin
+ * board) or a generator that is not behind a step-up (a changeover); when
+ * exactly one such thing is on the sheet, that is the far end. Two boards
+ * and a genset, or nothing at all, propose nothing — the surveyor
+ * Shift-drags the coupler onto the far end. `refId` is the end already named.
+ */
+function proposeOtherEnd(items, order, refId) {
+  const end = items[refId];
+  if (!end) return "";
+  const cands = supplyCandidates(items, order, BUS_COUPLER, { exclude: [refId], sameKindAs: end.type });
+  /* a sub-board — a board fed from a way or from another board of its kind —
+     is not what a main board ties to; the distribution boards under a twin
+     board must not make its tie a doubt */
+  const subBoard = it => (it.parents || []).some(p => items[p] && (items[p].type === FEEDER || items[p].type === it.type));
+  const far = cands.filter(c => (c.type === end.type && !subBoard(items[c.id]))
+    || (c.type === GENERATOR && !(items[c.id].parents || []).length));
+  return far.length === 1 ? far[0].id : "";
 }
 
 /**
@@ -4595,13 +4620,28 @@ function proposeRow(items, order, { type = "", targetId = "", sibling = null } =
      its supply (constitution §2 — a voltage is a label, not a connection) */
   const refId = (row.from || targetId).split(",").map(s => s.trim()).filter(Boolean)[0] || "";
   const supply = refId && items[refId] ? items[refId] : null;
+  /* a coupler dropped on one board is a tie to the other, when there is
+     exactly one other to tie to */
+  if (canon === BUS_COUPLER && row.from && !row.from.includes(",")) {
+    const far = proposeOtherEnd(items, order, refId);
+    if (far) row.from = [refId, far].sort((a, b) => order.indexOf(a) - order.indexOf(b)).join(", ");
+  }
+  /* a way is a placeholder: what is dropped on a feeder is really on the
+     feeder's board, and the label and the device follow that board — the
+     ratio of a transformer on a way out of MV gear, its fuse-switch on an
+     RMU's way. A motor keeps its starter: on MV gear a fused contactor
+     whether it is named on the bar or on a way out of it; on a way of an LV
+     board a contactor, the way being the only place its device can sit. */
+  const board = supply && supply.type === FEEDER ? feederBoard(items, supply) : null;
+  const labelSupply = board || supply;
+  const protSupply = canon === PUMP && board && !MV_GEAR.includes(board.type) ? supply : labelSupply;
 
   if (type) {
     row.id = nextId(type, order); mark("id");
-    row.prot = proposeProt(type, supply);
+    row.prot = proposeProt(type, protSupply);
     if (type === "RMU" && row.from.includes(",")) row.prot = "LBS, LBS";
     mark("prot");
-    row.voltage = proposeVoltage(items, order, type, supply); mark("voltage");
+    row.voltage = proposeVoltage(items, order, type, labelSupply); mark("voltage");
   }
   return row;
 }
@@ -5097,11 +5137,11 @@ const QUICK={
     dc:["110 V DC","220 V DC","48 V DC","24 V DC"],
   },
   rating:{
-    board:["630 A","800 A","1250 A","1600 A","2000 A","2500 A","3200 A","4000 A"],
-    feeder:["63 A","100 A","160 A","250 A","400 A","630 A","800 A"],
-    tx:["315 kVA","500 kVA","630 kVA","800 kVA","1000 kVA","1250 kVA","1600 kVA","2000 kVA","2500 kVA"],
-    motor:["11 kW","22 kW","37 kW","55 kW","75 kW","110 kW","160 kW","250 kW","315 kW","500 kW"],
-    gen:["250 kVA","500 kVA","800 kVA","1000 kVA","1600 kVA","2000 kVA"],
+    board:["160 A","250 A","400 A","630 A","800 A","1250 A","1600 A","2000 A","2500 A","3200 A","4000 A"],
+    feeder:["32 A","63 A","100 A","160 A","250 A","400 A","630 A","800 A"],
+    tx:["315 kVA","500 kVA","630 kVA","800 kVA","1000 kVA","1250 kVA","1600 kVA","2000 kVA","2500 kVA","10 MVA"],
+    motor:["11 kW","15 kW","22 kW","30 kW","37 kW","45 kW","55 kW","75 kW","110 kW","160 kW","250 kW","315 kW","355 kW","500 kW","1.5 MW"],
+    gen:["250 kVA","500 kVA","800 kVA","1000 kVA","1250 kVA","1600 kVA","2000 kVA"],
     cap:["50 kvar","100 kvar","150 kvar","200 kvar","300 kvar","400 kvar","500 kvar","800 kvar"],
     ups:["10 kVA","20 kVA","40 kVA","60 kVA","100 kVA","200 kVA"],
     battery:["100 Ah","200 Ah","300 Ah","500 Ah"],
@@ -5447,8 +5487,25 @@ function rewire(id, targetId, also){
   row.from=next.join(", ");
   clearMark(row,"from");
   const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="from"]`); if(el){ el.value=row.from; el.classList.remove("proposed"); }
+  reproposeFor(row,i);
   redraw(); persist(); selectId(id);
   return true;
+}
+/* the supply just changed under a row whose device or voltage is still the
+   engine's: propose them again for the new supply. An RMU that gains its
+   second link this way gets "LBS, LBS"; a coupler finished on the far board
+   keeps its breaker; a cell the surveyor typed is never touched. */
+function reproposeFor(row, i){
+  const marks=new Set(row._p||[]);
+  if(!marks.has("prot") && !marks.has("voltage")) return;
+  const [items,order]=currentModel();
+  const p=proposeRow(items,order,{type:row.type,targetId:row.from.trim()});
+  for(const f of ["prot","voltage"]){
+    if(!marks.has(f) || row[f]===p[f]) continue;
+    row[f]=p[f];
+    const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="${f}"]`); if(el) el.value=p[f];
+    if(!p[f]) clearMark(row,f);
+  }
 }
 (function bindViewer(){
   const pointers=new Map();

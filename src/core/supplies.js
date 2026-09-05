@@ -24,7 +24,7 @@ export const USUAL_SUPPLIES = {
   [GENERATOR]:   [TRANSFORMER],                                       /* through its step-up; otherwise a root */
   [LV_BUSBAR]:   [TRANSFORMER, FEEDER, LV_BUSBAR, MCC, GENERATOR],
   [MCC]:         [LV_BUSBAR, MCC, TRANSFORMER],
-  [PUMP]:        [LV_BUSBAR, MCC, MV_BUSBAR, RMU, TRANSFORMER],
+  [PUMP]:        [MCC, LV_BUSBAR, MV_BUSBAR, RMU, TRANSFORMER],           /* the field sheets put motors on an MCC 7.8× as often as on a board */
   [FEEDER]:      [LV_BUSBAR, MCC, MV_BUSBAR, RMU],
   [BUS_COUPLER]: [LV_BUSBAR, MV_BUSBAR, GENERATOR],
   [CAPACITOR]:   [LV_BUSBAR, MV_BUSBAR, RMU, TRANSFORMER],

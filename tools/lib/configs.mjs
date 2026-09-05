@@ -66,7 +66,7 @@ const V = {
   feederDesc: ["Intake lighting", "Filter gallery DB", "Backwash valves", "Gallery lighting", "Chemical building DB", "Sockets east", "Small power", "HVAC", "Workshop DB", "Spare"],
   feederProt: ["CB", "CB", "CB", "MCB", "MCCB"],
   boardProt: ["CB", "CB", "CB", "CB", "MCCB", "ACB"],
-  lvPumpProt: ["Contactor", "Contactor", "CB", "Fused contactor", ""],
+  lvPumpProt: ["Fused contactor", "Fused contactor", "Fused contactor", "CB", ""],   /* the pool: every filled cell on an MCC way is a fused contactor; a contactor alone is 10% of motors anywhere */
   mvPumpProt: ["Fuse-contactor", "Fuse-contactor", "Fused contactor", "CB"],
 };
 

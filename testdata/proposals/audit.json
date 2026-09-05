@@ -5,7 +5,7 @@
   "n": 200,
   "sites": 188,
   "rejected": 12,
-  "engine": "f5a395a",
+  "engine": "f0de18c",
   "poolHash": "1fabdc82ab92",
   "poolFixtures": 22,
   "poolGroups": [
@@ -13,10 +13,10 @@
    "audit",
    "examples"
   ],
-  "unit": "cost is in the entry baseline's unit: 1 per value entered or picked from the top four, 2 for a pick further down, 1.5 for a wrong proposal (it can ship), 0 for a right one",
+  "unit": "cost is in the entry baseline's unit: 1 per value entered or picked, wherever it sits in the list, 1.5 for a wrong proposal (it can ship), 0 for a right one",
   "ranking": "potential = breadth (sites affected / sites) × depth (mean cost per affected row) × mean P of the affected sites; headline is drop mode, both orders; only POOL-labelled classes are high potential",
   "sample": {
-   "first50TopTenAgree": 7,
+   "first50TopTenAgree": 9,
    "of": 10
   }
  },
@@ -35,7 +35,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 2.875
+   "fill": 2.75
   },
   {
    "id": "2026-131",
@@ -51,7 +51,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3.094
+   "fill": 2.844
   },
   {
    "id": "2026-140",
@@ -67,7 +67,7 @@
    "injected": "mv_motor_tiny",
    "rejected": false,
    "corrections": 12,
-   "fill": 3.063
+   "fill": 2.813
   },
   {
    "id": "2026-043",
@@ -83,8 +83,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 11,
-   "fill": 2.875
+   "corrections": 10,
+   "fill": 2.65
   },
   {
    "id": "2026-073",
@@ -118,7 +118,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.813
+   "fill": 2.625
   },
   {
    "id": "2026-057",
@@ -135,7 +135,7 @@
    "injected": "mv_motor_tiny",
    "rejected": false,
    "corrections": 6,
-   "fill": 2.563
+   "fill": 2.375
   },
   {
    "id": "2026-067",
@@ -151,8 +151,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 3.13
+   "corrections": 15,
+   "fill": 2.717
   },
   {
    "id": "2026-160",
@@ -168,8 +168,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 2.813
+   "corrections": 9,
+   "fill": 2.594
   },
   {
    "id": "2026-030",
@@ -186,8 +186,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 3.024
+   "corrections": 9,
+   "fill": 2.476
   },
   {
    "id": "2026-196",
@@ -204,8 +204,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 14,
-   "fill": 3
+   "corrections": 13,
+   "fill": 2.738
   },
   {
    "id": "2026-055",
@@ -222,8 +222,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 2.962
+   "corrections": 13,
+   "fill": 2.635
   },
   {
    "id": "2026-135",
@@ -240,7 +240,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 3.188
+   "fill": 2.813
   },
   {
    "id": "2026-049",
@@ -257,8 +257,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 2.795
+   "corrections": 7,
+   "fill": 2.477
   },
   {
    "id": "2026-174",
@@ -275,7 +275,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 2.857
+   "fill": 2.476
   },
   {
    "id": "2026-012",
@@ -292,8 +292,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 20,
-   "fill": 3.033
+   "corrections": 17,
+   "fill": 2.65
   },
   {
    "id": "2026-080",
@@ -310,8 +310,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 3.019
+   "corrections": 15,
+   "fill": 2.648
   },
   {
    "id": "2026-149",
@@ -328,8 +328,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 22,
-   "fill": 3.017
+   "corrections": 19,
+   "fill": 2.7
   },
   {
    "id": "2026-163",
@@ -348,7 +348,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3
+   "fill": 2.636
   },
   {
    "id": "2026-195",
@@ -366,8 +366,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 17,
-   "fill": 2.81
+   "corrections": 16,
+   "fill": 2.621
   },
   {
    "id": "2026-064",
@@ -385,8 +385,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 14,
-   "fill": 2.913
+   "corrections": 13,
+   "fill": 2.717
   },
   {
    "id": "2026-105",
@@ -403,8 +403,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 2.933
+   "corrections": 15,
+   "fill": 2.7
   },
   {
    "id": "2026-170",
@@ -423,7 +423,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 2.72
+   "fill": 2.52
   },
   {
    "id": "2026-118",
@@ -441,7 +441,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 13,
-   "fill": 2.828
+   "fill": 2.552
   },
   {
    "id": "2026-123",
@@ -459,7 +459,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 2.842
+   "fill": 2.737
   },
   {
    "id": "2026-010",
@@ -477,7 +477,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 3.1
+   "fill": 2.65
   },
   {
    "id": "2026-027",
@@ -495,7 +495,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 2.8
+   "fill": 2.52
   },
   {
    "id": "2026-023",
@@ -512,8 +512,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 2.952
+   "corrections": 9,
+   "fill": 2.548
   },
   {
    "id": "2026-011",
@@ -531,7 +531,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 8,
-   "fill": 2.875
+   "fill": 2.575
   },
   {
    "id": "2026-079",
@@ -549,8 +549,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 11,
-   "fill": 2.848
+   "corrections": 10,
+   "fill": 2.478
   },
   {
    "id": "2026-048",
@@ -567,8 +567,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 6,
-   "fill": 2.719
+   "corrections": 5,
+   "fill": 2.375
   },
   {
    "id": "2026-139",
@@ -587,7 +587,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 13,
-   "fill": 2.85
+   "fill": 2.55
   },
   {
    "id": "2026-181",
@@ -605,8 +605,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 2.55
+   "corrections": 9,
+   "fill": 2.4
   },
   {
    "id": "2026-033",
@@ -624,8 +624,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 2.983
+   "corrections": 14,
+   "fill": 2.55
   },
   {
    "id": "2026-198",
@@ -642,8 +642,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 2.719
+   "corrections": 8,
+   "fill": 2.563
   },
   {
    "id": "2026-107",
@@ -660,8 +660,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 2.906
+   "corrections": 8,
+   "fill": 2.719
   },
   {
    "id": "2026-128",
@@ -679,7 +679,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.905
+   "fill": 2.571
   },
   {
    "id": "2026-191",
@@ -697,7 +697,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 2.925
+   "fill": 2.675
   },
   {
    "id": "2026-060",
@@ -716,7 +716,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 17,
-   "fill": 2.767
+   "fill": 2.667
   },
   {
    "id": "2026-137",
@@ -734,7 +734,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 2.75
+   "fill": 2.7
   },
   {
    "id": "2026-157",
@@ -752,8 +752,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 15,
-   "fill": 2.933
+   "corrections": 13,
+   "fill": 2.533
   },
   {
    "id": "2026-025",
@@ -771,8 +771,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 12,
-   "fill": 2.952
+   "corrections": 11,
+   "fill": 2.786
   },
   {
    "id": "2026-091",
@@ -791,7 +791,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 15,
-   "fill": 2.786
+   "fill": 2.679
   },
   {
    "id": "2026-146",
@@ -808,7 +808,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3.188
+   "fill": 2.875
   },
   {
    "id": "2026-151",
@@ -825,7 +825,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3
+   "fill": 2.75
   },
   {
    "id": "2026-197",
@@ -842,7 +842,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3
+   "fill": 2.813
   },
   {
    "id": "2026-186",
@@ -859,7 +859,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 3.063
+   "fill": 2.625
   },
   {
    "id": "2026-050",
@@ -877,7 +877,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 3.294
+   "fill": 2.765
   },
   {
    "id": "2026-187",
@@ -894,8 +894,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 2.75
+   "corrections": 9,
+   "fill": 2.625
   },
   {
    "id": "2026-184",
@@ -913,7 +913,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 3.281
+   "fill": 2.781
   },
   {
    "id": "2026-074",
@@ -931,8 +931,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 21,
-   "fill": 2.9
+   "corrections": 17,
+   "fill": 2.6
   },
   {
    "id": "2026-069",
@@ -951,7 +951,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 14,
-   "fill": 2.981
+   "fill": 2.611
   },
   {
    "id": "2026-032",
@@ -971,7 +971,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 15,
-   "fill": 2.81
+   "fill": 2.638
   },
   {
    "id": "2026-089",
@@ -990,7 +990,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.853
+   "fill": 2.676
   },
   {
    "id": "2026-037",
@@ -1008,8 +1008,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 2.875
+   "corrections": 8,
+   "fill": 2.656
   },
   {
    "id": "2026-097",
@@ -1027,7 +1027,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.875
+   "fill": 2.563
   },
   {
    "id": "2026-199",
@@ -1044,8 +1044,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 3.188
+   "corrections": 8,
+   "fill": 2.594
   },
   {
    "id": "2026-053",
@@ -1062,8 +1062,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 8,
-   "fill": 2.813
+   "corrections": 7,
+   "fill": 2.406
   },
   {
    "id": "2026-065",
@@ -1080,7 +1080,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 3.094
+   "fill": 2.719
   },
   {
    "id": "2026-088",
@@ -1097,8 +1097,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 14,
-   "fill": 3.083
+   "corrections": 11,
+   "fill": 2.625
   },
   {
    "id": "2026-100",
@@ -1117,8 +1117,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 3.313
+   "corrections": 15,
+   "fill": 2.708
   },
   {
    "id": "2026-114",
@@ -1137,8 +1137,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 3.067
+   "corrections": 16,
+   "fill": 2.633
   },
   {
    "id": "2026-134",
@@ -1158,7 +1158,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 16,
-   "fill": 2.767
+   "fill": 2.6
   },
   {
    "id": "2026-077",
@@ -1177,7 +1177,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3.048
+   "fill": 2.714
   },
   {
    "id": "2026-008",
@@ -1197,7 +1197,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 16,
-   "fill": 2.967
+   "fill": 2.667
   },
   {
    "id": "2026-200",
@@ -1217,7 +1217,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 16,
-   "fill": 3.018
+   "fill": 2.732
   },
   {
    "id": "2026-084",
@@ -1236,7 +1236,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 2.827
+   "fill": 2.635
   },
   {
    "id": "2026-178",
@@ -1253,8 +1253,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 3.25
+   "corrections": 15,
+   "fill": 2.729
   },
   {
    "id": "2026-009",
@@ -1274,7 +1274,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 13,
-   "fill": 2.875
+   "fill": 2.625
   },
   {
    "id": "2026-015",
@@ -1291,8 +1291,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 2.889
+   "corrections": 6,
+   "fill": 2.417
   },
   {
    "id": "2026-036",
@@ -1311,8 +1311,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 3.033
+   "corrections": 16,
+   "fill": 2.633
   },
   {
    "id": "2026-122",
@@ -1332,7 +1332,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3
+   "fill": 2.783
   },
   {
    "id": "2026-092",
@@ -1350,7 +1350,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 2.844
+   "fill": 2.719
   },
   {
    "id": "2026-155",
@@ -1368,8 +1368,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 2.95
+   "corrections": 13,
+   "fill": 2.5
   },
   {
    "id": "2026-138",
@@ -1387,8 +1387,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 20,
-   "fill": 3.25
+   "corrections": 15,
+   "fill": 2.633
   },
   {
    "id": "2026-153",
@@ -1407,7 +1407,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.875
+   "fill": 2.688
   },
   {
    "id": "2026-038",
@@ -1427,7 +1427,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 16,
-   "fill": 2.929
+   "fill": 2.643
   },
   {
    "id": "2026-193",
@@ -1446,8 +1446,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 20,
-   "fill": 3.1
+   "corrections": 16,
+   "fill": 2.633
   },
   {
    "id": "2026-093",
@@ -1467,7 +1467,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 15,
-   "fill": 2.8
+   "fill": 2.667
   },
   {
    "id": "2026-173",
@@ -1485,8 +1485,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 2.929
+   "corrections": 9,
+   "fill": 2.571
   },
   {
    "id": "2026-004",
@@ -1505,8 +1505,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 13,
-   "fill": 2.867
+   "corrections": 11,
+   "fill": 2.517
   },
   {
    "id": "2026-095",
@@ -1525,7 +1525,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 14,
-   "fill": 2.833
+   "fill": 2.467
   },
   {
    "id": "2026-129",
@@ -1544,7 +1544,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 8,
-   "fill": 2.75
+   "fill": 2.639
   },
   {
    "id": "2026-167",
@@ -1564,7 +1564,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 14,
-   "fill": 2.9
+   "fill": 2.58
   },
   {
    "id": "2026-002",
@@ -1583,8 +1583,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 2.967
+   "corrections": 14,
+   "fill": 2.567
   },
   {
    "id": "2026-132",
@@ -1603,8 +1603,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 19,
-   "fill": 3.067
+   "corrections": 15,
+   "fill": 2.6
   },
   {
    "id": "2026-154",
@@ -1641,8 +1641,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 17,
-   "fill": 2.95
+   "corrections": 15,
+   "fill": 2.683
   },
   {
    "id": "2026-190",
@@ -1661,8 +1661,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 19,
-   "fill": 3.133
+   "corrections": 15,
+   "fill": 2.6
   },
   {
    "id": "2026-081",
@@ -1680,8 +1680,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 21,
-   "fill": 3.117
+   "corrections": 18,
+   "fill": 2.767
   },
   {
    "id": "2026-013",
@@ -1700,8 +1700,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 13,
-   "fill": 2.75
+   "corrections": 12,
+   "fill": 2.4
   },
   {
    "id": "2026-035",
@@ -1720,7 +1720,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 14,
-   "fill": 2.821
+   "fill": 2.571
   },
   {
    "id": "2026-085",
@@ -1737,8 +1737,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 17,
-   "fill": 2.962
+   "corrections": 16,
+   "fill": 2.731
   },
   {
    "id": "2026-066",
@@ -1756,8 +1756,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 2.864
+   "corrections": 8,
+   "fill": 2.455
   },
   {
    "id": "2026-061",
@@ -1775,8 +1775,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 11,
-   "fill": 2.904
+   "corrections": 10,
+   "fill": 2.5
   },
   {
    "id": "2026-192",
@@ -1795,7 +1795,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 2.85
+   "fill": 2.7
   },
   {
    "id": "2026-056",
@@ -1815,8 +1815,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 2.933
+   "corrections": 15,
+   "fill": 2.65
   },
   {
    "id": "2026-042",
@@ -1834,7 +1834,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 3.094
+   "fill": 2.719
   },
   {
    "id": "2026-017",
@@ -1852,7 +1852,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.9
+   "fill": 2.55
   },
   {
    "id": "2026-120",
@@ -1870,7 +1870,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 8,
-   "fill": 3.188
+   "fill": 2.625
   },
   {
    "id": "2026-052",
@@ -1888,8 +1888,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 13,
-   "fill": 2.759
+   "corrections": 12,
+   "fill": 2.556
   },
   {
    "id": "2026-188",
@@ -1907,8 +1907,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 12,
-   "fill": 2.731
+   "corrections": 10,
+   "fill": 2.423
   },
   {
    "id": "2026-098",
@@ -1926,7 +1926,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 2.75
+   "fill": 2.625
   },
   {
    "id": "2026-040",
@@ -1946,7 +1946,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 17,
-   "fill": 3.14
+   "fill": 2.82
   },
   {
    "id": "2026-075",
@@ -1965,8 +1965,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 15,
-   "fill": 2.7
+   "corrections": 14,
+   "fill": 2.517
   },
   {
    "id": "2026-014",
@@ -1985,8 +1985,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 2.885
+   "corrections": 8,
+   "fill": 2.462
   },
   {
    "id": "2026-078",
@@ -2005,8 +2005,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 12,
-   "fill": 3
+   "corrections": 11,
+   "fill": 2.646
   },
   {
    "id": "2026-189",
@@ -2025,8 +2025,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 17,
-   "fill": 2.933
+   "corrections": 15,
+   "fill": 2.583
   },
   {
    "id": "2026-169",
@@ -2046,8 +2046,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 14,
-   "fill": 2.926
+   "corrections": 13,
+   "fill": 2.648
   },
   {
    "id": "2026-029",
@@ -2067,8 +2067,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 2.8
+   "corrections": 15,
+   "fill": 2.533
   },
   {
    "id": "2026-005",
@@ -2088,7 +2088,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 2.891
+   "fill": 2.5
   },
   {
    "id": "2026-070",
@@ -2109,7 +2109,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 16,
-   "fill": 2.75
+   "fill": 2.65
   },
   {
    "id": "2026-007",
@@ -2127,8 +2127,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 3.156
+   "corrections": 8,
+   "fill": 2.688
   },
   {
    "id": "2026-143",
@@ -2148,7 +2148,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 15,
-   "fill": 3.017
+   "fill": 2.717
   },
   {
    "id": "2026-166",
@@ -2167,7 +2167,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 3.125
+   "fill": 2.688
   },
   {
    "id": "2026-150",
@@ -2186,8 +2186,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 15,
-   "fill": 2.833
+   "corrections": 12,
+   "fill": 2.5
   },
   {
    "id": "2026-168",
@@ -2206,8 +2206,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 17,
-   "fill": 2.867
+   "corrections": 13,
+   "fill": 2.533
   },
   {
    "id": "2026-003",
@@ -2226,8 +2226,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 13,
-   "fill": 3.192
+   "corrections": 11,
+   "fill": 2.692
   },
   {
    "id": "2026-152",
@@ -2245,8 +2245,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 3.075
+   "corrections": 8,
+   "fill": 2.5
   },
   {
    "id": "2026-159",
@@ -2265,7 +2265,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 2.938
+   "fill": 2.688
   },
   {
    "id": "2026-165",
@@ -2284,8 +2284,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 2.896
+   "corrections": 9,
+   "fill": 2.604
   },
   {
    "id": "2026-108",
@@ -2305,8 +2305,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 2.897
+   "corrections": 15,
+   "fill": 2.741
   },
   {
    "id": "2026-028",
@@ -2328,7 +2328,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 16,
-   "fill": 3
+   "fill": 2.7
   },
   {
    "id": "2026-126",
@@ -2346,8 +2346,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 11,
-   "fill": 3.143
+   "corrections": 10,
+   "fill": 2.643
   },
   {
    "id": "2026-062",
@@ -2366,8 +2366,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 14,
-   "fill": 2.981
+   "corrections": 13,
+   "fill": 2.704
   },
   {
    "id": "2026-148",
@@ -2384,7 +2384,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3.083
+   "fill": 2.75
   },
   {
    "id": "2026-180",
@@ -2401,7 +2401,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.813
+   "fill": 2.563
   },
   {
    "id": "2026-110",
@@ -2422,7 +2422,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 2.567
+   "fill": 2.433
   },
   {
    "id": "2026-112",
@@ -2442,7 +2442,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 2.891
+   "fill": 2.63
   },
   {
    "id": "2026-113",
@@ -2460,8 +2460,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 2.969
+   "corrections": 8,
+   "fill": 2.656
   },
   {
    "id": "2026-164",
@@ -2479,8 +2479,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 12,
-   "fill": 2.955
+   "corrections": 11,
+   "fill": 2.659
   },
   {
    "id": "2026-102",
@@ -2500,8 +2500,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 15,
-   "fill": 2.817
+   "corrections": 14,
+   "fill": 2.633
   },
   {
    "id": "2026-158",
@@ -2521,8 +2521,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 11,
-   "fill": 2.731
+   "corrections": 9,
+   "fill": 2.346
   },
   {
    "id": "2026-059",
@@ -2540,8 +2540,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 12,
-   "fill": 2.904
+   "corrections": 11,
+   "fill": 2.615
   },
   {
    "id": "2026-090",
@@ -2561,7 +2561,7 @@
    "injected": "mv_motor_tiny",
    "rejected": false,
    "corrections": 14,
-   "fill": 2.907
+   "fill": 2.722
   },
   {
    "id": "2026-125",
@@ -2579,8 +2579,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 2.844
+   "corrections": 8,
+   "fill": 2.594
   },
   {
    "id": "2026-171",
@@ -2598,7 +2598,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 3.029
+   "fill": 2.735
   },
   {
    "id": "2026-072",
@@ -2616,7 +2616,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 7,
-   "fill": 2.842
+   "fill": 2.474
   },
   {
    "id": "2026-058",
@@ -2636,7 +2636,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 14,
-   "fill": 2.767
+   "fill": 2.533
   },
   {
    "id": "2026-176",
@@ -2653,8 +2653,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F14)",
    "injected": null,
    "rejected": false,
-   "corrections": 20,
-   "fill": 3.26
+   "corrections": 17,
+   "fill": 2.72
   },
   {
    "id": "2026-121",
@@ -2674,8 +2674,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 14,
-   "fill": 2.75
+   "corrections": 11,
+   "fill": 2.518
   },
   {
    "id": "2026-063",
@@ -2695,8 +2695,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 2.983
+   "corrections": 14,
+   "fill": 2.55
   },
   {
    "id": "2026-182",
@@ -2716,7 +2716,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 2.848
+   "fill": 2.63
   },
   {
    "id": "2026-086",
@@ -2736,7 +2736,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 13,
-   "fill": 3.022
+   "fill": 2.674
   },
   {
    "id": "2026-111",
@@ -2753,7 +2753,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 3.219
+   "fill": 2.719
   },
   {
    "id": "2026-082",
@@ -2770,8 +2770,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F11)",
    "injected": null,
    "rejected": false,
-   "corrections": 23,
-   "fill": 3.183
+   "corrections": 20,
+   "fill": 2.767
   },
   {
    "id": "2026-034",
@@ -2789,8 +2789,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F9)",
    "injected": null,
    "rejected": false,
-   "corrections": 23,
-   "fill": 3.25
+   "corrections": 18,
+   "fill": 2.733
   },
   {
    "id": "2026-103",
@@ -2808,8 +2808,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F6)",
    "injected": null,
    "rejected": false,
-   "corrections": 19,
-   "fill": 3.033
+   "corrections": 15,
+   "fill": 2.633
   },
   {
    "id": "2026-083",
@@ -2828,7 +2828,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.833
+   "fill": 2.556
   },
   {
    "id": "2026-136",
@@ -2846,8 +2846,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F7)",
    "injected": null,
    "rejected": false,
-   "corrections": 19,
-   "fill": 3.117
+   "corrections": 15,
+   "fill": 2.683
   },
   {
    "id": "2026-044",
@@ -2867,7 +2867,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 15,
-   "fill": 2.845
+   "fill": 2.603
   },
   {
    "id": "2026-076",
@@ -2887,7 +2887,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 18,
-   "fill": 2.964
+   "fill": 2.75
   },
   {
    "id": "2026-141",
@@ -2905,7 +2905,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 14,
-   "fill": 2.655
+   "fill": 2.483
   },
   {
    "id": "2026-071",
@@ -2923,8 +2923,8 @@
    "lowest": "BOARD_A_VS_LOAD (MSB1,MSB2,MSB3)",
    "injected": null,
    "rejected": false,
-   "corrections": 21,
-   "fill": 3.133
+   "corrections": 16,
+   "fill": 2.683
   },
   {
    "id": "2026-147",
@@ -2944,7 +2944,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 19,
-   "fill": 3.183
+   "fill": 2.833
   },
   {
    "id": "2026-018",
@@ -2963,8 +2963,8 @@
    "lowest": "A",
    "injected": null,
    "rejected": false,
-   "corrections": 8,
-   "fill": 2.938
+   "corrections": 7,
+   "fill": 2.563
   },
   {
    "id": "2026-115",
@@ -2983,7 +2983,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 20,
-   "fill": 3.172
+   "fill": 2.793
   },
   {
    "id": "2026-024",
@@ -3001,8 +3001,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F5)",
    "injected": null,
    "rejected": false,
-   "corrections": 8,
-   "fill": 3.156
+   "corrections": 7,
+   "fill": 2.563
   },
   {
    "id": "2026-161",
@@ -3021,8 +3021,8 @@
    "lowest": "BOARD_A_VS_LOAD (MSB1,MSB2)",
    "injected": null,
    "rejected": false,
-   "corrections": 13,
-   "fill": 3.021
+   "corrections": 11,
+   "fill": 2.604
   },
   {
    "id": "2026-124",
@@ -3042,7 +3042,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 11,
-   "fill": 2.567
+   "fill": 2.433
   },
   {
    "id": "2026-144",
@@ -3061,8 +3061,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F10)",
    "injected": null,
    "rejected": false,
-   "corrections": 20,
-   "fill": 3.083
+   "corrections": 16,
+   "fill": 2.617
   },
   {
    "id": "2026-054",
@@ -3081,8 +3081,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F5)",
    "injected": null,
    "rejected": false,
-   "corrections": 20,
-   "fill": 3.133
+   "corrections": 17,
+   "fill": 2.717
   },
   {
    "id": "2026-001",
@@ -3100,8 +3100,8 @@
    "lowest": "BOARD_A_VS_LOAD (BB1)",
    "injected": null,
    "rejected": false,
-   "corrections": 10,
-   "fill": 3.118
+   "corrections": 7,
+   "fill": 2.706
   },
   {
    "id": "2026-194",
@@ -3120,7 +3120,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 15,
-   "fill": 3.021
+   "fill": 2.771
   },
   {
    "id": "2026-046",
@@ -3139,7 +3139,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 10,
-   "fill": 3.059
+   "fill": 2.647
   },
   {
    "id": "2026-130",
@@ -3158,8 +3158,8 @@
    "lowest": "FEEDER_A_LE_BOARD_A (F8)",
    "injected": null,
    "rejected": false,
-   "corrections": 21,
-   "fill": 3.1
+   "corrections": 18,
+   "fill": 2.683
   },
   {
    "id": "2026-068",
@@ -3179,8 +3179,8 @@
    "lowest": "BOARD_A_VS_LOAD (LVB1,LVB4)",
    "injected": null,
    "rejected": false,
-   "corrections": 19,
-   "fill": 2.967
+   "corrections": 15,
+   "fill": 2.6
   },
   {
    "id": "2026-127",
@@ -3200,8 +3200,8 @@
    "lowest": "BOARD_A_VS_LOAD (LVB1,LVB3,LVB6)",
    "injected": null,
    "rejected": false,
-   "corrections": 11,
-   "fill": 2.717
+   "corrections": 10,
+   "fill": 2.433
   },
   {
    "id": "2026-045",
@@ -3222,8 +3222,8 @@
    "lowest": "BOARD_A_VS_LOAD (BB1,BB2,BB3)",
    "injected": null,
    "rejected": false,
-   "corrections": 14,
-   "fill": 2.933
+   "corrections": 13,
+   "fill": 2.533
   },
   {
    "id": "2026-177",
@@ -3243,7 +3243,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.7
+   "fill": 2.4
   },
   {
    "id": "2026-051",
@@ -3264,7 +3264,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 17,
-   "fill": 2.8
+   "fill": 2.567
   },
   {
    "id": "2026-119",
@@ -3284,8 +3284,8 @@
    "lowest": "BOARD_A_VS_LOAD (LVB3,LVB5,LVB6)",
    "injected": null,
    "rejected": false,
-   "corrections": 19,
-   "fill": 2.95
+   "corrections": 14,
+   "fill": 2.5
   },
   {
    "id": "2026-145",
@@ -3305,8 +3305,8 @@
    "lowest": "BOARD_A_VS_LOAD (LVB1,LVB2,LVB4,LVB6)",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 2.967
+   "corrections": 14,
+   "fill": 2.5
   },
   {
    "id": "2026-099",
@@ -3325,8 +3325,8 @@
    "lowest": "BOARD_A_VS_LOAD (BB1,BB2)",
    "injected": null,
    "rejected": false,
-   "corrections": 21,
-   "fill": 3.2
+   "corrections": 17,
+   "fill": 2.6
   },
   {
    "id": "2026-117",
@@ -3346,7 +3346,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 14,
-   "fill": 2.846
+   "fill": 2.615
   },
   {
    "id": "2026-087",
@@ -3366,8 +3366,8 @@
    "lowest": "BOARD_A_VS_LOAD (BB1,BB2,BB3)",
    "injected": null,
    "rejected": false,
-   "corrections": 16,
-   "fill": 2.933
+   "corrections": 13,
+   "fill": 2.55
   },
   {
    "id": "2026-026",
@@ -3385,8 +3385,8 @@
    "lowest": "BOARD_A_VS_LOAD (MSB1)",
    "injected": null,
    "rejected": false,
-   "corrections": 9,
-   "fill": 3
+   "corrections": 8,
+   "fill": 2.625
   },
   {
    "id": "2026-142",
@@ -3405,8 +3405,8 @@
    "lowest": "BOARD_A_VS_LOAD (BB1)",
    "injected": null,
    "rejected": false,
-   "corrections": 8,
-   "fill": 3
+   "corrections": 7,
+   "fill": 2.531
   },
   {
    "id": "2026-175",
@@ -3426,7 +3426,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 2.8
+   "fill": 2.56
   },
   {
    "id": "2026-133",
@@ -3447,8 +3447,8 @@
    "lowest": "BOARD_A_VS_LOAD (LVB1,LVB2)",
    "injected": null,
    "rejected": false,
-   "corrections": 14,
-   "fill": 2.88
+   "corrections": 12,
+   "fill": 2.54
   },
   {
    "id": "2026-106",
@@ -3468,8 +3468,8 @@
    "lowest": "BOARD_A_VS_LOAD (MSB1,MSB2)",
    "injected": null,
    "rejected": false,
-   "corrections": 15,
-   "fill": 2.883
+   "corrections": 12,
+   "fill": 2.5
   },
   {
    "id": "2026-101",
@@ -3489,7 +3489,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 12,
-   "fill": 3.2
+   "fill": 2.75
   },
   {
    "id": "2026-021",
@@ -3508,8 +3508,8 @@
    "lowest": "BOARD_A_VS_LOAD (MSB3)",
    "injected": null,
    "rejected": false,
-   "corrections": 18,
-   "fill": 2.983
+   "corrections": 17,
+   "fill": 2.724
   },
   {
    "id": "2026-016",
@@ -3528,8 +3528,8 @@
    "lowest": "BOARD_A_VS_LOAD (BB1,BB3,BB4)",
    "injected": null,
    "rejected": false,
-   "corrections": 17,
-   "fill": 3.155
+   "corrections": 16,
+   "fill": 2.672
   },
   {
    "id": "2026-020",
@@ -3548,8 +3548,8 @@
    "lowest": "BOARD_A_VS_LOAD (BB1)",
    "injected": null,
    "rejected": false,
-   "corrections": 15,
-   "fill": 3.017
+   "corrections": 12,
+   "fill": 2.517
   },
   {
    "id": "2026-116",
@@ -3569,8 +3569,8 @@
    "lowest": "BOARD_A_VS_LOAD (LVB2)",
    "injected": null,
    "rejected": false,
-   "corrections": 15,
-   "fill": 2.946
+   "corrections": 14,
+   "fill": 2.679
   },
   {
    "id": "2026-039",
@@ -3592,8 +3592,8 @@
    "lowest": "BOARD_A_VS_LOAD (LVB1,LVB3)",
    "injected": null,
    "rejected": false,
-   "corrections": 11,
-   "fill": 2.65
+   "corrections": 10,
+   "fill": 2.433
   },
   {
    "id": "2026-019",
@@ -3612,7 +3612,7 @@
    "injected": null,
    "rejected": false,
    "corrections": 9,
-   "fill": 2.875
+   "fill": 2.625
   },
   {
    "id": "2026-031",
@@ -3888,61 +3888,19 @@
    "change": "deliberate: a feeder is proposed blank so that equipment hung on it gets one device, not two (PR #11). The pool writes a device on nearly every way. A way out: propose MCCB on the drop, and clear it when something is dropped onto the feeder while the cell is still the engine's (it is tinted, so the page knows)"
   },
   {
-   "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-   "cls": "PROT_DEFAULT",
-   "type": "capacitor bank",
-   "supplyType": "lv busbar",
-   "field": "prot",
-   "proposed": "",
-   "intended": "CB",
-   "kind": "blank",
-   "label": "MIXED",
-   "poolIntended": 1,
-   "poolProposed": 0,
-   "poolRows": 1,
-   "poolFixtures": 1,
-   "rows": 66,
-   "rowsAffected": 66,
-   "sites": 63,
-   "breadth": 0.335,
-   "depth": 2,
-   "meanP": 0.169,
-   "potential": 0.113,
-   "archetypes": {
-    "lv_subboards": 28,
-    "pfc": 63,
-    "pump_station_mcc": 40,
-    "rmu_ring": 17,
-    "single_tx": 63,
-    "mv_motors": 4,
-    "twin_tx_coupler": 22,
-    "dual_mv_boards": 11,
-    "genset_changeover": 9,
-    "ups_dc": 6,
-    "hv_primary": 11,
-    "ner": 5
-   },
-   "examples": [
-    "2026-137",
-    "2026-151",
-    "2026-050"
-   ],
-   "change": "proposeProt: give a capacitor bank a default (CB) — TYPE_DEFAULT_PROT has none"
-  },
-  {
-   "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
+   "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
    "cls": "PROT_DEFAULT",
    "type": "pump",
    "supplyType": "mcc",
    "field": "prot",
-   "proposed": "Contactor",
-   "intended": "Fused contactor",
+   "proposed": "Fused contactor",
+   "intended": "CB",
    "kind": "wrong",
-   "label": "POOL",
-   "poolIntended": 1,
-   "poolProposed": 0,
+   "label": "OPINION",
+   "poolIntended": 0,
+   "poolProposed": 1,
    "poolRows": 4,
-   "poolFixtures": 3,
+   "poolFixtures": 0,
    "rows": 97,
    "rowsAffected": 97,
    "sites": 68,
@@ -3969,91 +3927,7 @@
     "2026-073",
     "2026-055"
    ],
-   "change": "proposeProt: a pump fed from mcc → Fused contactor instead of Contactor (one line in the supply-type chain)"
-  },
-  {
-   "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-   "cls": "PROT_DEFAULT",
-   "type": "pump",
-   "supplyType": "mcc",
-   "field": "prot",
-   "proposed": "Contactor",
-   "intended": "CB",
-   "kind": "wrong",
-   "label": "OPINION",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 4,
-   "poolFixtures": 0,
-   "rows": 98,
-   "rowsAffected": 98,
-   "sites": 69,
-   "breadth": 0.367,
-   "depth": 1.5,
-   "meanP": 0.185,
-   "potential": 0.102,
-   "archetypes": {
-    "genset_changeover": 13,
-    "hv_primary": 13,
-    "pump_station_mcc": 69,
-    "single_tx": 69,
-    "dual_mv_boards": 14,
-    "ner": 7,
-    "lv_subboards": 36,
-    "mv_motors": 10,
-    "pfc": 36,
-    "rmu_ring": 13,
-    "twin_tx_coupler": 20,
-    "ups_dc": 10
-   },
-   "examples": [
-    "2026-043",
-    "2026-160",
-    "2026-030"
-   ],
-   "change": "proposeProt: a pump fed from mcc → CB instead of Contactor (one line in the supply-type chain)"
-  },
-  {
-   "key": "SECOND_SUPPLY|bus coupler|lv busbar",
-   "cls": "SECOND_SUPPLY",
-   "type": "bus coupler",
-   "supplyType": "lv busbar",
-   "field": "from",
-   "proposed": "BB1",
-   "intended": "BB1, BB2",
-   "kind": "blank",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 94,
-   "rowsAffected": 94,
-   "sites": 82,
-   "breadth": 0.436,
-   "depth": 1,
-   "meanP": 0.178,
-   "potential": 0.078,
-   "archetypes": {
-    "genset_changeover": 40,
-    "hv_primary": 16,
-    "pump_station_mcc": 62,
-    "single_tx": 82,
-    "dual_mv_boards": 8,
-    "ner": 11,
-    "lv_subboards": 46,
-    "mv_motors": 3,
-    "pfc": 46,
-    "twin_tx_coupler": 54,
-    "rmu_ring": 8,
-    "ups_dc": 9
-   },
-   "examples": [
-    "2026-030",
-    "2026-196",
-    "2026-055"
-   ],
-   "change": "a second supply is never proposed; the page could offer it when the sheet has exactly two candidates of the same kind (a twin board, a ring's other end)"
+   "change": "proposeProt: a pump fed from mcc → CB instead of Fused contactor (one line in the supply-type chain)"
   },
   {
    "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
@@ -4098,12 +3972,54 @@
    "change": "proposeProt: a pump fed from lv busbar → Contactor instead of CB (one line in the supply-type chain)"
   },
   {
-   "key": "DELETE_PROPOSED|pump|mcc|prot|contactor→",
+   "key": "SECOND_SUPPLY|bus coupler|lv busbar",
+   "cls": "SECOND_SUPPLY",
+   "type": "bus coupler",
+   "supplyType": "lv busbar",
+   "field": "from",
+   "proposed": "BB1",
+   "intended": "BB1, BB2",
+   "kind": "blank",
+   "label": "POOL",
+   "poolIntended": 0,
+   "poolProposed": 0,
+   "poolRows": 0,
+   "poolFixtures": 0,
+   "rows": 86,
+   "rowsAffected": 86,
+   "sites": 74,
+   "breadth": 0.394,
+   "depth": 1.006,
+   "meanP": 0.181,
+   "potential": 0.072,
+   "archetypes": {
+    "dual_mv_boards": 8,
+    "genset_changeover": 32,
+    "ner": 10,
+    "pump_station_mcc": 59,
+    "single_tx": 74,
+    "lv_subboards": 44,
+    "mv_motors": 1,
+    "pfc": 41,
+    "twin_tx_coupler": 54,
+    "rmu_ring": 8,
+    "hv_primary": 14,
+    "ups_dc": 8
+   },
+   "examples": [
+    "2026-030",
+    "2026-196",
+    "2026-055"
+   ],
+   "change": "proposeOtherEnd names a coupler's far end only when the sheet leaves no doubt (one other board of the kind, or one genset); here it did not — the surveyor Shift-drags the coupler onto the far end"
+  },
+  {
+   "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
    "cls": "DELETE_PROPOSED",
    "type": "pump",
    "supplyType": "mcc",
    "field": "prot",
-   "proposed": "Contactor",
+   "proposed": "Fused contactor",
    "intended": "",
    "kind": "over",
    "label": "BLANK",
@@ -4140,10 +4056,10 @@
    "change": "the sheet leaves this prot empty on a pump; a blank is not evidence (one tester's habit), so no change unless the pool's filled cells agree"
   },
   {
-   "key": "PROT_DEFAULT|capacitor bank|mv busbar|prot|→cb",
+   "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
    "cls": "PROT_DEFAULT",
    "type": "capacitor bank",
-   "supplyType": "mv busbar",
+   "supplyType": "lv busbar",
    "field": "prot",
    "proposed": "",
    "intended": "CB",
@@ -4153,108 +4069,33 @@
    "poolProposed": 0,
    "poolRows": 1,
    "poolFixtures": 1,
-   "rows": 27,
-   "rowsAffected": 27,
-   "sites": 27,
-   "breadth": 0.144,
-   "depth": 2,
-   "meanP": 0.179,
-   "potential": 0.051,
+   "rows": 66,
+   "rowsAffected": 66,
+   "sites": 63,
+   "breadth": 0.335,
+   "depth": 1,
+   "meanP": 0.169,
+   "potential": 0.057,
    "archetypes": {
-    "ner": 3,
-    "pfc": 27,
-    "pump_station_mcc": 14,
-    "single_tx": 27,
-    "twin_tx_coupler": 11,
-    "lv_subboards": 9,
-    "genset_changeover": 5,
-    "hv_primary": 3,
+    "lv_subboards": 28,
+    "pfc": 63,
+    "pump_station_mcc": 40,
+    "rmu_ring": 17,
+    "single_tx": 63,
     "mv_motors": 4,
-    "dual_mv_boards": 3,
-    "ups_dc": 3
+    "twin_tx_coupler": 22,
+    "dual_mv_boards": 11,
+    "genset_changeover": 9,
+    "ups_dc": 6,
+    "hv_primary": 11,
+    "ner": 5
    },
    "examples": [
-    "2026-146",
-    "2026-197",
-    "2026-186"
+    "2026-137",
+    "2026-151",
+    "2026-050"
    ],
    "change": "proposeProt: give a capacitor bank a default (CB) — TYPE_DEFAULT_PROT has none"
-  },
-  {
-   "key": "SECOND_END_STALE_PROT|rmu|mv incomer|prot|lbs→LBS, LBS",
-   "cls": "SECOND_END_STALE_PROT",
-   "type": "rmu",
-   "supplyType": "mv incomer",
-   "field": "prot",
-   "proposed": "LBS",
-   "intended": "LBS, LBS",
-   "kind": "wrong",
-   "label": "MIXED",
-   "poolIntended": 0.175,
-   "poolProposed": 0.825,
-   "poolRows": 11,
-   "poolFixtures": 1,
-   "rows": 27,
-   "rowsAffected": 27,
-   "sites": 27,
-   "breadth": 0.144,
-   "depth": 1.5,
-   "meanP": 0.166,
-   "potential": 0.036,
-   "archetypes": {
-    "lv_subboards": 20,
-    "pfc": 14,
-    "pump_station_mcc": 21,
-    "rmu_ring": 27,
-    "single_tx": 27,
-    "ups_dc": 1,
-    "genset_changeover": 3,
-    "hv_primary": 5
-   },
-   "examples": [
-    "2026-067",
-    "2026-012",
-    "2026-149"
-   ],
-   "change": "re-run proposeProt when Shift-drag adds a second supply: \"LBS, LBS\" for an RMU is only proposed if the comma is already there at drop time (propose.js:152)"
-  },
-  {
-   "key": "SECOND_END_STALE_PROT|rmu|rmu|prot|lbs→LBS, LBS",
-   "cls": "SECOND_END_STALE_PROT",
-   "type": "rmu",
-   "supplyType": "rmu",
-   "field": "prot",
-   "proposed": "LBS",
-   "intended": "LBS, LBS",
-   "kind": "wrong",
-   "label": "POOL",
-   "poolIntended": 0.539,
-   "poolProposed": 0.409,
-   "poolRows": 17,
-   "poolFixtures": 4,
-   "rows": 67,
-   "rowsAffected": 67,
-   "sites": 27,
-   "breadth": 0.144,
-   "depth": 1.5,
-   "meanP": 0.166,
-   "potential": 0.036,
-   "archetypes": {
-    "lv_subboards": 20,
-    "pfc": 14,
-    "pump_station_mcc": 21,
-    "rmu_ring": 27,
-    "single_tx": 27,
-    "ups_dc": 1,
-    "genset_changeover": 3,
-    "hv_primary": 5
-   },
-   "examples": [
-    "2026-067",
-    "2026-012",
-    "2026-149"
-   ],
-   "change": "re-run proposeProt when Shift-drag adds a second supply: \"LBS, LBS\" for an RMU is only proposed if the comma is already there at drop time (propose.js:152)"
   },
   {
    "key": "PROT_DEFAULT|feeder|mv busbar|prot|→cb",
@@ -4334,7 +4175,48 @@
     "2026-027",
     "2026-011"
    ],
-   "change": "a second supply is never proposed; the page could offer it when the sheet has exactly two candidates of the same kind (a twin board, a ring's other end)"
+   "change": "proposeOtherEnd names a coupler's far end only when the sheet leaves no doubt (one other board of the kind, or one genset); here it did not — the surveyor Shift-drags the coupler onto the far end"
+  },
+  {
+   "key": "PROT_DEFAULT|capacitor bank|mv busbar|prot|→cb",
+   "cls": "PROT_DEFAULT",
+   "type": "capacitor bank",
+   "supplyType": "mv busbar",
+   "field": "prot",
+   "proposed": "",
+   "intended": "CB",
+   "kind": "blank",
+   "label": "MIXED",
+   "poolIntended": 1,
+   "poolProposed": 0,
+   "poolRows": 1,
+   "poolFixtures": 1,
+   "rows": 27,
+   "rowsAffected": 27,
+   "sites": 27,
+   "breadth": 0.144,
+   "depth": 1,
+   "meanP": 0.179,
+   "potential": 0.026,
+   "archetypes": {
+    "ner": 3,
+    "pfc": 27,
+    "pump_station_mcc": 14,
+    "single_tx": 27,
+    "twin_tx_coupler": 11,
+    "lv_subboards": 9,
+    "genset_changeover": 5,
+    "hv_primary": 3,
+    "mv_motors": 4,
+    "dual_mv_boards": 3,
+    "ups_dc": 3
+   },
+   "examples": [
+    "2026-146",
+    "2026-197",
+    "2026-186"
+   ],
+   "change": "proposeProt: give a capacitor bank a default (CB) — TYPE_DEFAULT_PROT has none"
   },
   {
    "key": "SECOND_SUPPLY|rmu|mv incomer",
@@ -4372,7 +4254,7 @@
     "2026-012",
     "2026-149"
    ],
-   "change": "a second supply is never proposed; the page could offer it when the sheet has exactly two candidates of the same kind (a twin board, a ring's other end)"
+   "change": "a ring's other link is not proposed: which RMU closes the ring is the surveyor's call, made by Shift-dragging the RMU onto it"
   },
   {
    "key": "SECOND_SUPPLY|rmu|rmu",
@@ -4410,45 +4292,7 @@
     "2026-012",
     "2026-149"
    ],
-   "change": "a second supply is never proposed; the page could offer it when the sheet has exactly two candidates of the same kind (a twin board, a ring's other end)"
-  },
-  {
-   "key": "PLACEHOLDER_CHAIN|transformer|feeder|voltage|→11/0.4 kV",
-   "cls": "PLACEHOLDER_CHAIN",
-   "type": "transformer",
-   "supplyType": "feeder",
-   "field": "voltage",
-   "proposed": "",
-   "intended": "11/0.4 kV",
-   "kind": "blank",
-   "label": "POOL",
-   "poolIntended": 0.72,
-   "poolProposed": 0,
-   "poolRows": 77,
-   "poolFixtures": 21,
-   "rows": 5,
-   "rowsAffected": 5,
-   "sites": 5,
-   "breadth": 0.027,
-   "depth": 1,
-   "meanP": 0.215,
-   "potential": 0.006,
-   "archetypes": {
-    "genset_changeover": 2,
-    "lv_subboards": 4,
-    "mv_motors": 1,
-    "pump_station_mcc": 5,
-    "single_tx": 5,
-    "ner": 1,
-    "pfc": 3,
-    "twin_tx_coupler": 1
-   },
-   "examples": [
-    "2026-080",
-    "2026-088",
-    "2026-004"
-   ],
-   "change": "proposeProt/proposeVoltage: resolve a Feeder supply to the board it is a way of (layout.feederBoard) before choosing — the way is a placeholder, its board is what the item is really on"
+   "change": "a ring's other link is not proposed: which RMU closes the ring is the surveyor's call, made by Shift-dragging the RMU onto it"
   },
   {
    "key": "PROT_DEFAULT|pump|mv busbar|prot|fuse-contactor→cb",
@@ -4456,7 +4300,7 @@
    "type": "pump",
    "supplyType": "mv busbar",
    "field": "prot",
-   "proposed": "Fuse-contactor",
+   "proposed": "Fused contactor",
    "intended": "CB",
    "kind": "wrong",
    "label": "MIXED",
@@ -4486,128 +4330,10 @@
     "2026-113",
     "2026-121"
    ],
-   "change": "proposeProt: a pump fed from mv busbar → CB instead of Fuse-contactor (one line in the supply-type chain)"
-  },
-  {
-   "key": "PLACEHOLDER_CHAIN|transformer|feeder|voltage|→3.3/0.4 kV",
-   "cls": "PLACEHOLDER_CHAIN",
-   "type": "transformer",
-   "supplyType": "feeder",
-   "field": "voltage",
-   "proposed": "",
-   "intended": "3.3/0.4 kV",
-   "kind": "blank",
-   "label": "OPINION",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 77,
-   "poolFixtures": 0,
-   "rows": 3,
-   "rowsAffected": 3,
-   "sites": 3,
-   "breadth": 0.016,
-   "depth": 1,
-   "meanP": 0.217,
-   "potential": 0.003,
-   "archetypes": {
-    "lv_subboards": 3,
-    "ner": 1,
-    "single_tx": 3,
-    "pump_station_mcc": 2,
-    "dual_mv_boards": 1,
-    "pfc": 1
-   },
-   "examples": [
-    "2026-105",
-    "2026-085",
-    "2026-150"
-   ],
-   "change": "proposeProt/proposeVoltage: resolve a Feeder supply to the board it is a way of (layout.feederBoard) before choosing — the way is a placeholder, its board is what the item is really on"
-  },
-  {
-   "key": "PLACEHOLDER_CHAIN|transformer|feeder|voltage|→33/0.4 kV",
-   "cls": "PLACEHOLDER_CHAIN",
-   "type": "transformer",
-   "supplyType": "feeder",
-   "field": "voltage",
-   "proposed": "",
-   "intended": "33/0.4 kV",
-   "kind": "blank",
-   "label": "OPINION",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 77,
-   "poolFixtures": 0,
-   "rows": 4,
-   "rowsAffected": 4,
-   "sites": 4,
-   "breadth": 0.021,
-   "depth": 1,
-   "meanP": 0.063,
-   "potential": 0.001,
-   "archetypes": {
-    "hv_primary": 4,
-    "lv_subboards": 4,
-    "pump_station_mcc": 4,
-    "single_tx": 4,
-    "twin_tx_coupler": 2,
-    "mv_motors": 2,
-    "genset_changeover": 1,
-    "ner": 1,
-    "pfc": 1,
-    "ups_dc": 1
-   },
-   "examples": [
-    "2026-045",
-    "2026-133",
-    "2026-016"
-   ],
-   "change": "proposeProt/proposeVoltage: resolve a Feeder supply to the board it is a way of (layout.feederBoard) before choosing — the way is a placeholder, its board is what the item is really on"
+   "change": "proposeProt: a pump fed from mv busbar → CB instead of Fused contactor (one line in the supply-type chain)"
   }
  ],
  "clickClasses": [
-  {
-   "key": "SUPPLY_RANK|pump|mcc",
-   "cls": "SUPPLY_RANK",
-   "type": "pump",
-   "supplyType": "mcc",
-   "field": "from",
-   "proposed": "BB2",
-   "intended": "MCC1",
-   "kind": "wrong",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 465,
-   "rowsAffected": 465,
-   "sites": 124,
-   "breadth": 0.66,
-   "depth": 1.282,
-   "meanP": 0.193,
-   "potential": 0.163,
-   "archetypes": {
-    "genset_changeover": 22,
-    "hv_primary": 20,
-    "pump_station_mcc": 124,
-    "single_tx": 124,
-    "lv_subboards": 69,
-    "pfc": 59,
-    "rmu_ring": 26,
-    "dual_mv_boards": 22,
-    "ner": 13,
-    "mv_motors": 10,
-    "twin_tx_coupler": 41,
-    "ups_dc": 13
-   },
-   "examples": [
-    "2026-043",
-    "2026-073",
-    "2026-022"
-   ],
-   "change": "USUAL_SUPPLIES[PUMP]: put mcc ahead of lv busbar — the pool has pumps on mcc 7.8× as often, and defaultSupply lands a palette click on the first usual kind"
-  },
   {
    "key": "SUPPLY_RANK|lv busbar|feeder",
    "cls": "SUPPLY_RANK",
@@ -4698,7 +4424,7 @@
    "type": "pump",
    "supplyType": "feeder",
    "field": "from",
-   "proposed": "MSB2",
+   "proposed": "MCC1",
    "intended": "F6",
    "kind": "wrong",
    "label": "POOL",
@@ -4732,7 +4458,7 @@
     "2026-174",
     "2026-080"
    ],
-   "change": "no change: the pool has pumps on lv busbar more often than on feeder, so the click lands on the commoner kind; this one is dropped on its supply instead"
+   "change": "no change: the pool has pumps on mcc more often than on feeder, so the click lands on the commoner kind; this one is dropped on its supply instead"
   },
   {
    "key": "SUPPLY_LAST_WINS|lv busbar|transformer",
@@ -4814,48 +4540,6 @@
     "2026-030",
     "2026-055",
     "2026-049"
-   ],
-   "change": "a palette click with nothing selected lands on the bottom-most lv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
-  },
-  {
-   "key": "SUPPLY_LAST_WINS|bus coupler|lv busbar",
-   "cls": "SUPPLY_LAST_WINS",
-   "type": "bus coupler",
-   "supplyType": "lv busbar",
-   "field": "from",
-   "proposed": "BB2",
-   "intended": "BB1",
-   "kind": "wrong",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 77,
-   "rowsAffected": 77,
-   "sites": 69,
-   "breadth": 0.367,
-   "depth": 1,
-   "meanP": 0.185,
-   "potential": 0.068,
-   "archetypes": {
-    "dual_mv_boards": 4,
-    "genset_changeover": 27,
-    "ner": 9,
-    "pump_station_mcc": 55,
-    "single_tx": 69,
-    "lv_subboards": 42,
-    "mv_motors": 1,
-    "pfc": 37,
-    "twin_tx_coupler": 54,
-    "rmu_ring": 7,
-    "hv_primary": 13,
-    "ups_dc": 7
-   },
-   "examples": [
-    "2026-030",
-    "2026-196",
-    "2026-055"
    ],
    "change": "a palette click with nothing selected lands on the bottom-most lv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
   },
@@ -4943,6 +4627,48 @@
    "change": "no change: the pool has feeders on lv busbar more often than on mv busbar, so the click lands on the commoner kind; this one is dropped on its supply instead"
   },
   {
+   "key": "SUPPLY_RANK|pump|lv busbar",
+   "cls": "SUPPLY_RANK",
+   "type": "pump",
+   "supplyType": "lv busbar",
+   "field": "from",
+   "proposed": "MCC1",
+   "intended": "BB1",
+   "kind": "wrong",
+   "label": "POOL",
+   "poolIntended": 0,
+   "poolProposed": 0,
+   "poolRows": 0,
+   "poolFixtures": 0,
+   "rows": 77,
+   "rowsAffected": 77,
+   "sites": 49,
+   "breadth": 0.261,
+   "depth": 1,
+   "meanP": 0.194,
+   "potential": 0.051,
+   "archetypes": {
+    "dual_mv_boards": 11,
+    "genset_changeover": 14,
+    "ner": 6,
+    "pump_station_mcc": 49,
+    "single_tx": 49,
+    "lv_subboards": 24,
+    "mv_motors": 5,
+    "rmu_ring": 9,
+    "hv_primary": 7,
+    "twin_tx_coupler": 15,
+    "pfc": 23,
+    "ups_dc": 6
+   },
+   "examples": [
+    "2026-057",
+    "2026-160",
+    "2026-196"
+   ],
+   "change": "no change: the pool has pumps on mcc more often than on lv busbar, so the click lands on the commoner kind; this one is dropped on its supply instead"
+  },
+  {
    "key": "SUPPLY_LAST_WINS|transformer|rmu",
    "cls": "SUPPLY_LAST_WINS",
    "type": "transformer",
@@ -5017,47 +4743,6 @@
     "2026-149"
    ],
    "change": "no change: the pool has rmus on mv incomer more often than on rmu, so the click lands on the commoner kind; this one is dropped on its supply instead"
-  },
-  {
-   "key": "SUPPLY_LAST_WINS|pump|lv busbar",
-   "cls": "SUPPLY_LAST_WINS",
-   "type": "pump",
-   "supplyType": "lv busbar",
-   "field": "from",
-   "proposed": "BB2",
-   "intended": "BB1",
-   "kind": "wrong",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 52,
-   "rowsAffected": 52,
-   "sites": 35,
-   "breadth": 0.186,
-   "depth": 1,
-   "meanP": 0.183,
-   "potential": 0.034,
-   "archetypes": {
-    "dual_mv_boards": 13,
-    "genset_changeover": 10,
-    "ner": 8,
-    "pump_station_mcc": 26,
-    "single_tx": 35,
-    "twin_tx_coupler": 20,
-    "hv_primary": 3,
-    "lv_subboards": 18,
-    "pfc": 21,
-    "ups_dc": 4,
-    "rmu_ring": 2
-   },
-   "examples": [
-    "2026-049",
-    "2026-195",
-    "2026-170"
-   ],
-   "change": "a palette click with nothing selected lands on the bottom-most lv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
   },
   {
    "key": "SUPPLY_LAST_WINS|capacitor bank|lv busbar",
@@ -5143,45 +4828,6 @@
    "change": "no change: the pool has capacitor banks on lv busbar more often than on mv busbar, so the click lands on the commoner kind; this one is dropped on its supply instead"
   },
   {
-   "key": "SUPPLY_LAST_WINS|bus coupler|mv busbar",
-   "cls": "SUPPLY_LAST_WINS",
-   "type": "bus coupler",
-   "supplyType": "mv busbar",
-   "field": "from",
-   "proposed": "MVB2",
-   "intended": "MVB1",
-   "kind": "wrong",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 29,
-   "rowsAffected": 29,
-   "sites": 29,
-   "breadth": 0.154,
-   "depth": 1,
-   "meanP": 0.183,
-   "potential": 0.028,
-   "archetypes": {
-    "dual_mv_boards": 29,
-    "genset_changeover": 8,
-    "ner": 7,
-    "pump_station_mcc": 22,
-    "single_tx": 29,
-    "pfc": 16,
-    "hv_primary": 2,
-    "lv_subboards": 8,
-    "ups_dc": 3
-   },
-   "examples": [
-    "2026-174",
-    "2026-027",
-    "2026-011"
-   ],
-   "change": "a palette click with nothing selected lands on the bottom-most mv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
-  },
-  {
    "key": "SUPPLY_LAST_WINS|mv busbar|mv incomer",
    "cls": "SUPPLY_LAST_WINS",
    "type": "mv busbar",
@@ -5260,6 +4906,89 @@
    "change": "a palette click with nothing selected lands on the bottom-most mv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
   },
   {
+   "key": "SUPPLY_LAST_WINS|bus coupler|lv busbar",
+   "cls": "SUPPLY_LAST_WINS",
+   "type": "bus coupler",
+   "supplyType": "lv busbar",
+   "field": "from",
+   "proposed": "BB2",
+   "intended": "BB1",
+   "kind": "wrong",
+   "label": "POOL",
+   "poolIntended": 0,
+   "poolProposed": 0,
+   "poolRows": 0,
+   "poolFixtures": 0,
+   "rows": 36,
+   "rowsAffected": 36,
+   "sites": 28,
+   "breadth": 0.149,
+   "depth": 1.028,
+   "meanP": 0.173,
+   "potential": 0.027,
+   "archetypes": {
+    "dual_mv_boards": 4,
+    "genset_changeover": 27,
+    "ner": 6,
+    "pump_station_mcc": 21,
+    "single_tx": 28,
+    "lv_subboards": 18,
+    "mv_motors": 1,
+    "rmu_ring": 7,
+    "twin_tx_coupler": 13,
+    "pfc": 11,
+    "hv_primary": 5,
+    "ups_dc": 1
+   },
+   "examples": [
+    "2026-123",
+    "2026-010",
+    "2026-187"
+   ],
+   "change": "a palette click with nothing selected lands on the bottom-most lv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
+  },
+  {
+   "key": "SUPPLY_LAST_WINS|pump|mcc",
+   "cls": "SUPPLY_LAST_WINS",
+   "type": "pump",
+   "supplyType": "mcc",
+   "field": "from",
+   "proposed": "MCC2",
+   "intended": "MCC1",
+   "kind": "wrong",
+   "label": "POOL",
+   "poolIntended": 0,
+   "poolProposed": 0,
+   "poolRows": 0,
+   "poolFixtures": 0,
+   "rows": 83,
+   "rowsAffected": 83,
+   "sites": 28,
+   "breadth": 0.149,
+   "depth": 1,
+   "meanP": 0.183,
+   "potential": 0.027,
+   "archetypes": {
+    "genset_changeover": 9,
+    "lv_subboards": 15,
+    "mv_motors": 5,
+    "pump_station_mcc": 28,
+    "single_tx": 28,
+    "ner": 3,
+    "pfc": 15,
+    "twin_tx_coupler": 14,
+    "hv_primary": 6,
+    "dual_mv_boards": 5,
+    "ups_dc": 6
+   },
+   "examples": [
+    "2026-043",
+    "2026-030",
+    "2026-055"
+   ],
+   "change": "a palette click with nothing selected lands on the bottom-most mcc; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
+  },
+  {
    "key": "SUPPLY_RANK|earthing|mv busbar",
    "cls": "SUPPLY_RANK",
    "type": "earthing",
@@ -5306,7 +5035,7 @@
    "type": "pump",
    "supplyType": "mv busbar",
    "field": "from",
-   "proposed": "BB2",
+   "proposed": "MCC2",
    "intended": "MVB1",
    "kind": "wrong",
    "label": "POOL",
@@ -5337,7 +5066,47 @@
     "2026-023",
     "2026-048"
    ],
-   "change": "USUAL_SUPPLIES[PUMP]: put mv busbar ahead of lv busbar — the pool has pumps on mv busbar 2.2× as often, and defaultSupply lands a palette click on the first usual kind"
+   "change": "no change: the pool has pumps on mcc more often than on mv busbar, so the click lands on the commoner kind; this one is dropped on its supply instead"
+  },
+  {
+   "key": "SUPPLY_LAST_WINS|pump|lv busbar",
+   "cls": "SUPPLY_LAST_WINS",
+   "type": "pump",
+   "supplyType": "lv busbar",
+   "field": "from",
+   "proposed": "BB2",
+   "intended": "BB1",
+   "kind": "wrong",
+   "label": "POOL",
+   "poolIntended": 0,
+   "poolProposed": 0,
+   "poolRows": 0,
+   "poolFixtures": 0,
+   "rows": 24,
+   "rowsAffected": 24,
+   "sites": 18,
+   "breadth": 0.096,
+   "depth": 1,
+   "meanP": 0.181,
+   "potential": 0.017,
+   "archetypes": {
+    "genset_changeover": 5,
+    "single_tx": 18,
+    "twin_tx_coupler": 10,
+    "dual_mv_boards": 6,
+    "pfc": 12,
+    "lv_subboards": 9,
+    "ner": 4,
+    "pump_station_mcc": 9,
+    "hv_primary": 1,
+    "rmu_ring": 2
+   },
+   "examples": [
+    "2026-195",
+    "2026-010",
+    "2026-128"
+   ],
+   "change": "a palette click with nothing selected lands on the bottom-most lv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
   },
   {
    "key": "SUPPLY_LAST_WINS|surge arrester|lv busbar",
@@ -5424,6 +5193,45 @@
    "change": "no change: the pool has transformers on mv busbar more often than on lv busbar, so the click lands on the commoner kind; this one is dropped on its supply instead"
   },
   {
+   "key": "SUPPLY_LAST_WINS|bus coupler|mv busbar",
+   "cls": "SUPPLY_LAST_WINS",
+   "type": "bus coupler",
+   "supplyType": "mv busbar",
+   "field": "from",
+   "proposed": "MVB2",
+   "intended": "MVB1",
+   "kind": "wrong",
+   "label": "POOL",
+   "poolIntended": 0,
+   "poolProposed": 0,
+   "poolRows": 0,
+   "poolFixtures": 0,
+   "rows": 8,
+   "rowsAffected": 8,
+   "sites": 8,
+   "breadth": 0.043,
+   "depth": 1,
+   "meanP": 0.157,
+   "potential": 0.007,
+   "archetypes": {
+    "dual_mv_boards": 8,
+    "genset_changeover": 8,
+    "ner": 3,
+    "pump_station_mcc": 6,
+    "single_tx": 8,
+    "hv_primary": 1,
+    "lv_subboards": 2,
+    "pfc": 5,
+    "ups_dc": 1
+   },
+   "examples": [
+    "2026-084",
+    "2026-154",
+    "2026-143"
+   ],
+   "change": "a palette click with nothing selected lands on the bottom-most mv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
+  },
+  {
    "key": "SUPPLY_LAST_WINS|feeder|mv busbar",
    "cls": "SUPPLY_LAST_WINS",
    "type": "feeder",
@@ -5458,6 +5266,45 @@
     "2026-091"
    ],
    "change": "a palette click with nothing selected lands on the bottom-most mv busbar; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)"
+  },
+  {
+   "key": "SUPPLY_RANK|bus coupler|lv busbar",
+   "cls": "SUPPLY_RANK",
+   "type": "bus coupler",
+   "supplyType": "lv busbar",
+   "field": "from",
+   "proposed": "G1",
+   "intended": "BB1",
+   "kind": "wrong",
+   "label": "POOL",
+   "poolIntended": 0,
+   "poolProposed": 0,
+   "poolRows": 0,
+   "poolFixtures": 0,
+   "rows": 8,
+   "rowsAffected": 8,
+   "sites": 8,
+   "breadth": 0.043,
+   "depth": 1,
+   "meanP": 0.154,
+   "potential": 0.007,
+   "archetypes": {
+    "genset_changeover": 8,
+    "hv_primary": 2,
+    "pump_station_mcc": 3,
+    "single_tx": 8,
+    "mv_motors": 2,
+    "pfc": 5,
+    "ups_dc": 1,
+    "ner": 1,
+    "lv_subboards": 2
+   },
+   "examples": [
+    "2026-107",
+    "2026-187",
+    "2026-165"
+   ],
+   "change": "USUAL_SUPPLIES[BUS_COUPLER]: put lv busbar ahead of generator — the pool has bus couplers on lv busbar 466042766.0× as often, and defaultSupply lands a palette click on the first usual kind"
   },
   {
    "key": "SUPPLY_LAST_WINS|earthing|mv busbar",
@@ -5627,629 +5474,6 @@
   }
  ],
  "offer": [
-  {
-   "key": "OFFER_MISS|pump|prot|Fused contactor",
-   "cls": "OFFER_MISS",
-   "type": "pump",
-   "supplyType": "mcc",
-   "field": "prot",
-   "proposed": "",
-   "intended": "Fused contactor",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 97,
-   "rowsAffected": 97,
-   "sites": 68,
-   "breadth": 0.362,
-   "depth": 0,
-   "meanP": 0.195,
-   "potential": 0,
-   "archetypes": {
-    "dual_mv_boards": 10,
-    "genset_changeover": 15,
-    "ner": 9,
-    "pump_station_mcc": 68,
-    "single_tx": 68,
-    "lv_subboards": 37,
-    "mv_motors": 6,
-    "pfc": 27,
-    "twin_tx_coupler": 23,
-    "rmu_ring": 14,
-    "hv_primary": 9,
-    "ups_dc": 6
-   },
-   "examples": [
-    "2026-043",
-    "2026-073",
-    "2026-055"
-   ],
-   "change": "PROT_LABELS (src/core/protection.js): offer the spelling Fused contactor; the reader already understands it",
-   "poolSeen": 13
-  },
-  {
-   "key": "OFFER_MISS|mcc|rating|400 A",
-   "cls": "OFFER_MISS",
-   "type": "mcc",
-   "supplyType": "lv busbar",
-   "field": "rating",
-   "proposed": "",
-   "intended": "400 A",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 73,
-   "rowsAffected": 73,
-   "sites": 63,
-   "breadth": 0.335,
-   "depth": 0,
-   "meanP": 0.199,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 34,
-    "pfc": 32,
-    "pump_station_mcc": 63,
-    "rmu_ring": 17,
-    "single_tx": 63,
-    "genset_changeover": 18,
-    "mv_motors": 3,
-    "ner": 6,
-    "twin_tx_coupler": 21,
-    "dual_mv_boards": 12,
-    "hv_primary": 9,
-    "ups_dc": 6
-   },
-   "examples": [
-    "2026-043",
-    "2026-022",
-    "2026-030"
-   ],
-   "change": "QUICK.rating: add 400 A to the mcc list (src/ui/app.js)",
-   "poolSeen": 13
-  },
-  {
-   "key": "OFFER_MISS|mcc|rating|250 A",
-   "cls": "OFFER_MISS",
-   "type": "mcc",
-   "supplyType": "lv busbar",
-   "field": "rating",
-   "proposed": "",
-   "intended": "250 A",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 48,
-   "rowsAffected": 48,
-   "sites": 43,
-   "breadth": 0.229,
-   "depth": 0,
-   "meanP": 0.191,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 27,
-    "pfc": 22,
-    "pump_station_mcc": 43,
-    "rmu_ring": 23,
-    "single_tx": 43,
-    "hv_primary": 8,
-    "mv_motors": 1,
-    "twin_tx_coupler": 10,
-    "genset_changeover": 4,
-    "ups_dc": 4,
-    "dual_mv_boards": 5,
-    "ner": 2
-   },
-   "examples": [
-    "2026-043",
-    "2026-057",
-    "2026-030"
-   ],
-   "change": "QUICK.rating: add 250 A to the mcc list (src/ui/app.js)",
-   "poolSeen": 9
-  },
-  {
-   "key": "OFFER_MISS|feeder|rating|32 A",
-   "cls": "OFFER_MISS",
-   "type": "feeder",
-   "supplyType": "lv busbar",
-   "field": "rating",
-   "proposed": "",
-   "intended": "32 A",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 166,
-   "rowsAffected": 166,
-   "sites": 112,
-   "breadth": 0.596,
-   "depth": 0,
-   "meanP": 0.196,
-   "potential": 0,
-   "archetypes": {
-    "genset_changeover": 23,
-    "hv_primary": 19,
-    "pump_station_mcc": 79,
-    "single_tx": 112,
-    "lv_subboards": 62,
-    "pfc": 57,
-    "rmu_ring": 33,
-    "dual_mv_boards": 18,
-    "ner": 14,
-    "mv_motors": 10,
-    "twin_tx_coupler": 28,
-    "ups_dc": 12
-   },
-   "examples": [
-    "2026-104",
-    "2026-131",
-    "2026-140"
-   ],
-   "change": "QUICK.rating: add 32 A to the feeder list (src/ui/app.js)",
-   "poolSeen": 8
-  },
-  {
-   "key": "OFFER_MISS|pump|rating|1.5 MW",
-   "cls": "OFFER_MISS",
-   "type": "pump",
-   "supplyType": "mv busbar",
-   "field": "rating",
-   "proposed": "",
-   "intended": "1.5 MW",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 3,
-   "rowsAffected": 3,
-   "sites": 3,
-   "breadth": 0.016,
-   "depth": 0,
-   "meanP": 0.167,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 2,
-    "mv_motors": 3,
-    "ner": 1,
-    "pump_station_mcc": 3,
-    "single_tx": 3,
-    "hv_primary": 1
-   },
-   "examples": [
-    "2026-023",
-    "2026-014",
-    "2026-020"
-   ],
-   "change": "QUICK.rating: add 1.5 MW to the pump list (src/ui/app.js)",
-   "poolSeen": 6
-  },
-  {
-   "key": "OFFER_MISS|pump|rating|30 kW",
-   "cls": "OFFER_MISS",
-   "type": "pump",
-   "supplyType": "mcc",
-   "field": "rating",
-   "proposed": "",
-   "intended": "30 kW",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 70,
-   "rowsAffected": 70,
-   "sites": 57,
-   "breadth": 0.303,
-   "depth": 0,
-   "meanP": 0.182,
-   "potential": 0,
-   "archetypes": {
-    "genset_changeover": 12,
-    "hv_primary": 10,
-    "pump_station_mcc": 52,
-    "single_tx": 57,
-    "ner": 8,
-    "pfc": 29,
-    "twin_tx_coupler": 20,
-    "lv_subboards": 32,
-    "rmu_ring": 11,
-    "dual_mv_boards": 9,
-    "mv_motors": 8,
-    "ups_dc": 5
-   },
-   "examples": [
-    "2026-030",
-    "2026-055",
-    "2026-049"
-   ],
-   "change": "QUICK.rating: add 30 kW to the pump list (src/ui/app.js)",
-   "poolSeen": 5
-  },
-  {
-   "key": "OFFER_MISS|rmu|rating|400 A",
-   "cls": "OFFER_MISS",
-   "type": "rmu",
-   "supplyType": "mv incomer",
-   "field": "rating",
-   "proposed": "",
-   "intended": "400 A",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 40,
-   "rowsAffected": 40,
-   "sites": 31,
-   "breadth": 0.165,
-   "depth": 0,
-   "meanP": 0.179,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 22,
-    "pfc": 14,
-    "pump_station_mcc": 23,
-    "rmu_ring": 31,
-    "single_tx": 31,
-    "hv_primary": 6,
-    "ups_dc": 1,
-    "genset_changeover": 3
-   },
-   "examples": [
-    "2026-067",
-    "2026-012",
-    "2026-149"
-   ],
-   "change": "QUICK.rating: add 400 A to the rmu list (src/ui/app.js)",
-   "poolSeen": 5
-  },
-  {
-   "key": "OFFER_MISS|lv busbar|rating|250 A",
-   "cls": "OFFER_MISS",
-   "type": "lv busbar",
-   "supplyType": "feeder",
-   "field": "rating",
-   "proposed": "",
-   "intended": "250 A",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 73,
-   "rowsAffected": 73,
-   "sites": 59,
-   "breadth": 0.314,
-   "depth": 0,
-   "meanP": 0.167,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 59,
-    "pfc": 30,
-    "pump_station_mcc": 47,
-    "rmu_ring": 21,
-    "single_tx": 59,
-    "hv_primary": 9,
-    "mv_motors": 4,
-    "twin_tx_coupler": 18,
-    "genset_changeover": 14,
-    "ner": 7,
-    "dual_mv_boards": 6,
-    "ups_dc": 8
-   },
-   "examples": [
-    "2026-163",
-    "2026-195",
-    "2026-064"
-   ],
-   "change": "QUICK.rating: add 250 A to the lv busbar list (src/ui/app.js)",
-   "poolSeen": 4
-  },
-  {
-   "key": "OFFER_MISS|pump|rating|45 kW",
-   "cls": "OFFER_MISS",
-   "type": "pump",
-   "supplyType": "mcc",
-   "field": "rating",
-   "proposed": "",
-   "intended": "45 kW",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 52,
-   "rowsAffected": 52,
-   "sites": 46,
-   "breadth": 0.245,
-   "depth": 0,
-   "meanP": 0.187,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 28,
-    "pfc": 26,
-    "pump_station_mcc": 44,
-    "rmu_ring": 11,
-    "single_tx": 46,
-    "genset_changeover": 10,
-    "mv_motors": 3,
-    "twin_tx_coupler": 18,
-    "hv_primary": 11,
-    "ner": 5,
-    "dual_mv_boards": 6,
-    "ups_dc": 3
-   },
-   "examples": [
-    "2026-043",
-    "2026-057",
-    "2026-160"
-   ],
-   "change": "QUICK.rating: add 45 kW to the pump list (src/ui/app.js)",
-   "poolSeen": 4
-  },
-  {
-   "key": "OFFER_MISS|pump|rating|15 kW",
-   "cls": "OFFER_MISS",
-   "type": "pump",
-   "supplyType": "mcc",
-   "field": "rating",
-   "proposed": "",
-   "intended": "15 kW",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 58,
-   "rowsAffected": 58,
-   "sites": 47,
-   "breadth": 0.25,
-   "depth": 0,
-   "meanP": 0.194,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 26,
-    "pfc": 28,
-    "pump_station_mcc": 40,
-    "rmu_ring": 9,
-    "single_tx": 47,
-    "genset_changeover": 9,
-    "mv_motors": 3,
-    "twin_tx_coupler": 13,
-    "dual_mv_boards": 12,
-    "ner": 4,
-    "hv_primary": 7,
-    "ups_dc": 4
-   },
-   "examples": [
-    "2026-043",
-    "2026-022",
-    "2026-057"
-   ],
-   "change": "QUICK.rating: add 15 kW to the pump list (src/ui/app.js)",
-   "poolSeen": 3
-  },
-  {
-   "key": "OFFER_MISS|mcc|rating|160 A",
-   "cls": "OFFER_MISS",
-   "type": "mcc",
-   "supplyType": "lv busbar",
-   "field": "rating",
-   "proposed": "",
-   "intended": "160 A",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 35,
-   "rowsAffected": 35,
-   "sites": 35,
-   "breadth": 0.186,
-   "depth": 0,
-   "meanP": 0.164,
-   "potential": 0,
-   "archetypes": {
-    "dual_mv_boards": 3,
-    "genset_changeover": 11,
-    "ner": 5,
-    "pump_station_mcc": 35,
-    "single_tx": 35,
-    "lv_subboards": 24,
-    "mv_motors": 5,
-    "hv_primary": 9,
-    "twin_tx_coupler": 14,
-    "pfc": 18,
-    "rmu_ring": 7,
-    "ups_dc": 4
-   },
-   "examples": [
-    "2026-139",
-    "2026-198",
-    "2026-157"
-   ],
-   "change": "QUICK.rating: add 160 A to the mcc list (src/ui/app.js)",
-   "poolSeen": 3
-  },
-  {
-   "key": "OFFER_MISS|lv busbar|rating|400 A",
-   "cls": "OFFER_MISS",
-   "type": "lv busbar",
-   "supplyType": "feeder",
-   "field": "rating",
-   "proposed": "",
-   "intended": "400 A",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 33,
-   "rowsAffected": 33,
-   "sites": 30,
-   "breadth": 0.16,
-   "depth": 0,
-   "meanP": 0.174,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 30,
-    "pfc": 14,
-    "pump_station_mcc": 22,
-    "rmu_ring": 12,
-    "single_tx": 30,
-    "genset_changeover": 7,
-    "mv_motors": 1,
-    "hv_primary": 4,
-    "twin_tx_coupler": 9,
-    "ner": 3,
-    "dual_mv_boards": 1
-   },
-   "examples": [
-    "2026-080",
-    "2026-139",
-    "2026-181"
-   ],
-   "change": "QUICK.rating: add 400 A to the lv busbar list (src/ui/app.js)",
-   "poolSeen": 3
-  },
-  {
-   "key": "OFFER_MISS|transformer|rating|10 MVA",
-   "cls": "OFFER_MISS",
-   "type": "transformer",
-   "supplyType": "mv busbar",
-   "field": "rating",
-   "proposed": "",
-   "intended": "10 MVA",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 23,
-   "rowsAffected": 23,
-   "sites": 17,
-   "breadth": 0.09,
-   "depth": 0,
-   "meanP": 0.081,
-   "potential": 0,
-   "archetypes": {
-    "hv_primary": 17,
-    "lv_subboards": 10,
-    "pump_station_mcc": 14,
-    "single_tx": 17,
-    "twin_tx_coupler": 4,
-    "mv_motors": 2,
-    "genset_changeover": 5,
-    "pfc": 9,
-    "dual_mv_boards": 2,
-    "ups_dc": 3,
-    "ner": 1,
-    "rmu_ring": 8
-   },
-   "examples": [
-    "2026-044",
-    "2026-141",
-    "2026-071"
-   ],
-   "change": "QUICK.rating: add 10 MVA to the transformer list (src/ui/app.js)",
-   "poolSeen": 3
-  },
-  {
-   "key": "OFFER_MISS|generator|rating|1250 kVA",
-   "cls": "OFFER_MISS",
-   "type": "generator",
-   "supplyType": "(root)",
-   "field": "rating",
-   "proposed": "",
-   "intended": "1250 kVA",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 3,
-   "rowsAffected": 3,
-   "sites": 3,
-   "breadth": 0.016,
-   "depth": 0,
-   "meanP": 0.133,
-   "potential": 0,
-   "archetypes": {
-    "genset_changeover": 3,
-    "mv_motors": 1,
-    "pfc": 2,
-    "single_tx": 3,
-    "ups_dc": 1,
-    "lv_subboards": 1,
-    "rmu_ring": 1,
-    "dual_mv_boards": 1
-   },
-   "examples": [
-    "2026-154",
-    "2026-018",
-    "2026-130"
-   ],
-   "change": "QUICK.rating: add 1250 kVA to the generator list (src/ui/app.js)",
-   "poolSeen": 3
-  },
-  {
-   "key": "OFFER_MISS|pump|rating|355 kW",
-   "cls": "OFFER_MISS",
-   "type": "pump",
-   "supplyType": "mv busbar",
-   "field": "rating",
-   "proposed": "",
-   "intended": "355 kW",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 1,
-   "rowsAffected": 1,
-   "sites": 1,
-   "breadth": 0.005,
-   "depth": 0,
-   "meanP": 0.064,
-   "potential": 0,
-   "archetypes": {
-    "hv_primary": 1,
-    "lv_subboards": 1,
-    "mv_motors": 1,
-    "pfc": 1,
-    "pump_station_mcc": 1,
-    "single_tx": 1,
-    "ups_dc": 1
-   },
-   "examples": [
-    "2026-133"
-   ],
-   "change": "QUICK.rating: add 355 kW to the pump list (src/ui/app.js)",
-   "poolSeen": 3
-  },
   {
    "key": "OFFER_MISS|pump|rating|800 kW",
    "cls": "OFFER_MISS",
@@ -6907,84 +6131,6 @@
    "poolSeen": 0
   },
   {
-   "key": "OFFER_MISS|transformer|voltage|33/0.4 kV",
-   "cls": "OFFER_MISS",
-   "type": "transformer",
-   "supplyType": "feeder",
-   "field": "voltage",
-   "proposed": "",
-   "intended": "33/0.4 kV",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 4,
-   "rowsAffected": 4,
-   "sites": 4,
-   "breadth": 0.021,
-   "depth": 0,
-   "meanP": 0.063,
-   "potential": 0,
-   "archetypes": {
-    "hv_primary": 4,
-    "lv_subboards": 4,
-    "pump_station_mcc": 4,
-    "single_tx": 4,
-    "twin_tx_coupler": 2,
-    "mv_motors": 2,
-    "genset_changeover": 1,
-    "ner": 1,
-    "pfc": 1,
-    "ups_dc": 1
-   },
-   "examples": [
-    "2026-045",
-    "2026-133",
-    "2026-016"
-   ],
-   "change": "QUICK.volt: add 33/0.4 kV to the transformer list (src/ui/app.js)",
-   "poolSeen": 0
-  },
-  {
-   "key": "OFFER_MISS|transformer|voltage|3.3/0.4 kV",
-   "cls": "OFFER_MISS",
-   "type": "transformer",
-   "supplyType": "feeder",
-   "field": "voltage",
-   "proposed": "",
-   "intended": "3.3/0.4 kV",
-   "kind": "info",
-   "label": "POOL",
-   "poolIntended": 0,
-   "poolProposed": 0,
-   "poolRows": 0,
-   "poolFixtures": 0,
-   "rows": 3,
-   "rowsAffected": 3,
-   "sites": 3,
-   "breadth": 0.016,
-   "depth": 0,
-   "meanP": 0.217,
-   "potential": 0,
-   "archetypes": {
-    "lv_subboards": 3,
-    "ner": 1,
-    "single_tx": 3,
-    "pump_station_mcc": 2,
-    "dual_mv_boards": 1,
-    "pfc": 1
-   },
-   "examples": [
-    "2026-105",
-    "2026-085",
-    "2026-150"
-   ],
-   "change": "QUICK.volt: add 3.3/0.4 kV to the transformer list (src/ui/app.js)",
-   "poolSeen": 0
-  },
-  {
    "key": "OFFER_MISS|bus coupler|rating|1000 A",
    "cls": "OFFER_MISS",
    "type": "bus coupler",
@@ -7193,42 +6339,43 @@
    "change": "the picker offers CB; the sheet writes MCCB. Add the spelling to PROT_LABELS or leave it (the reader understands both)"
   },
   {
-   "key": "SPELLING|pump|Fused contactor→Fuse-contactor",
+   "key": "SPELLING|pump|Fuse-contactor→Fused contactor",
    "cls": "SPELLING",
    "type": "pump",
    "supplyType": "mv busbar",
    "field": "prot",
-   "proposed": "Fuse-contactor",
-   "intended": "Fused contactor",
+   "proposed": "Fused contactor",
+   "intended": "Fuse-contactor",
    "kind": "spelling",
    "label": "POOL",
    "poolIntended": 0,
    "poolProposed": 0,
    "poolRows": 0,
    "poolFixtures": 0,
-   "rows": 5,
-   "rowsAffected": 5,
-   "sites": 5,
-   "breadth": 0.027,
+   "rows": 13,
+   "rowsAffected": 13,
+   "sites": 11,
+   "breadth": 0.059,
    "depth": 0,
-   "meanP": 0.176,
+   "meanP": 0.198,
    "potential": 0,
    "archetypes": {
-    "lv_subboards": 3,
-    "mv_motors": 5,
+    "genset_changeover": 2,
+    "lv_subboards": 4,
+    "mv_motors": 11,
+    "pump_station_mcc": 7,
+    "single_tx": 11,
+    "pfc": 4,
     "ner": 1,
-    "pump_station_mcc": 5,
-    "single_tx": 5,
-    "hv_primary": 1,
-    "pfc": 1,
-    "ups_dc": 1
+    "ups_dc": 1,
+    "hv_primary": 1
    },
    "examples": [
+    "2026-135",
     "2026-023",
-    "2026-198",
-    "2026-014"
+    "2026-048"
    ],
-   "change": "the picker offers Fuse-contactor; the sheet writes Fused contactor. Add the spelling to PROT_LABELS or leave it (the reader understands both)"
+   "change": "the picker offers Fused contactor; the sheet writes Fuse-contactor. Add the spelling to PROT_LABELS or leave it (the reader understands both)"
   }
  ],
  "prefixes": {
@@ -7351,8 +6498,8 @@
  },
  "fill": {
   "rows": 4530,
-  "cost": 13309.5,
-  "perRow": 2.938
+  "cost": 11850,
+  "perRow": 2.616
  },
  "perArchetype": {
   "single_tx": {
@@ -7366,28 +6513,28 @@
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.113,
-     "sites": 63,
-     "label": "MIXED"
-    },
-    {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
      "potential": 0.106,
      "sites": 68,
-     "label": "POOL"
-    },
-    {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.102,
-     "sites": 69,
      "label": "OPINION"
     },
     {
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.073,
+     "sites": 45,
+     "label": "MIXED"
+    },
+    {
      "key": "SECOND_SUPPLY|bus coupler|lv busbar",
-     "potential": 0.078,
-     "sites": 82,
+     "potential": 0.072,
+     "sites": 74,
      "label": "POOL"
+    },
+    {
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
+     "potential": 0.063,
+     "sites": 63,
+     "label": "BLANK"
     }
    ]
   },
@@ -7396,34 +6543,34 @@
    "A": 0.265,
    "top": [
     {
+     "key": "SECOND_SUPPLY|bus coupler|lv busbar",
+     "potential": 0.192,
+     "sites": 54,
+     "label": "POOL"
+    },
+    {
      "key": "PROT_DEFAULT|feeder|lv busbar|prot|→cb",
      "potential": 0.191,
      "sites": 54,
      "label": "POOL"
     },
     {
-     "key": "SECOND_SUPPLY|bus coupler|lv busbar",
-     "potential": 0.191,
-     "sites": 54,
-     "label": "POOL"
-    },
-    {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.146,
-     "sites": 22,
-     "label": "MIXED"
-    },
-    {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.117,
-     "sites": 20,
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
+     "potential": 0.115,
+     "sites": 23,
      "label": "OPINION"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
-     "potential": 0.115,
-     "sites": 23,
-     "label": "POOL"
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
+     "potential": 0.098,
+     "sites": 27,
+     "label": "BLANK"
+    },
+    {
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.088,
+     "sites": 15,
+     "label": "MIXED"
     }
    ]
   },
@@ -7438,28 +6585,28 @@
      "label": "POOL"
     },
     {
-     "key": "SECOND_END_STALE_PROT|rmu|mv incomer|prot|lbs→LBS, LBS",
-     "potential": 0.146,
-     "sites": 27,
-     "label": "MIXED"
-    },
-    {
-     "key": "SECOND_END_STALE_PROT|rmu|rmu|prot|lbs→LBS, LBS",
-     "potential": 0.146,
-     "sites": 27,
-     "label": "POOL"
-    },
-    {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.121,
-     "sites": 17,
-     "label": "MIXED"
-    },
-    {
      "key": "SECOND_SUPPLY|rmu|mv incomer",
      "potential": 0.098,
      "sites": 27,
      "label": "POOL"
+    },
+    {
+     "key": "SECOND_SUPPLY|rmu|rmu",
+     "potential": 0.098,
+     "sites": 27,
+     "label": "POOL"
+    },
+    {
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
+     "potential": 0.084,
+     "sites": 14,
+     "label": "OPINION"
+    },
+    {
+     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
+     "potential": 0.061,
+     "sites": 17,
+     "label": "MIXED"
     }
    ]
   },
@@ -7474,28 +6621,28 @@
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
      "potential": 0.146,
      "sites": 68,
-     "label": "POOL"
-    },
-    {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.141,
-     "sites": 69,
      "label": "OPINION"
     },
     {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.099,
-     "sites": 40,
-     "label": "MIXED"
-    },
-    {
-     "key": "DELETE_PROPOSED|pump|mcc|prot|contactor→",
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
      "potential": 0.087,
      "sites": 63,
      "label": "BLANK"
+    },
+    {
+     "key": "SECOND_SUPPLY|bus coupler|lv busbar",
+     "potential": 0.08,
+     "sites": 59,
+     "label": "POOL"
+    },
+    {
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.065,
+     "sites": 29,
+     "label": "MIXED"
     }
    ]
   },
@@ -7516,22 +6663,22 @@
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.119,
-     "sites": 14,
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
+     "potential": 0.113,
+     "sites": 10,
      "label": "OPINION"
     },
     {
      "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.115,
+     "potential": 0.058,
      "sites": 11,
      "label": "MIXED"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
-     "potential": 0.113,
-     "sites": 10,
-     "label": "POOL"
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.053,
+     "sites": 6,
+     "label": "MIXED"
     }
    ]
   },
@@ -7547,27 +6694,27 @@
     },
     {
      "key": "SECOND_SUPPLY|bus coupler|lv busbar",
-     "potential": 0.165,
-     "sites": 40,
+     "potential": 0.134,
+     "sites": 32,
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
      "potential": 0.104,
      "sites": 15,
-     "label": "POOL"
-    },
-    {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.07,
-     "sites": 13,
      "label": "OPINION"
     },
     {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.068,
-     "sites": 9,
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.066,
+     "sites": 11,
      "label": "MIXED"
+    },
+    {
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
+     "potential": 0.039,
+     "sites": 10,
+     "label": "BLANK"
     }
    ]
   },
@@ -7576,34 +6723,34 @@
    "A": 0.088,
    "top": [
     {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.219,
-     "sites": 63,
-     "label": "MIXED"
-    },
-    {
      "key": "PROT_DEFAULT|feeder|lv busbar|prot|→cb",
      "potential": 0.169,
      "sites": 97,
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|capacitor bank|mv busbar|prot|→cb",
-     "potential": 0.1,
-     "sites": 27,
+     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
+     "potential": 0.11,
+     "sites": 63,
      "label": "MIXED"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.091,
-     "sites": 36,
-     "label": "OPINION"
+     "key": "SECOND_SUPPLY|bus coupler|lv busbar",
+     "potential": 0.073,
+     "sites": 41,
+     "label": "POOL"
     },
     {
-     "key": "SECOND_SUPPLY|bus coupler|lv busbar",
-     "potential": 0.079,
-     "sites": 46,
-     "label": "POOL"
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.072,
+     "sites": 26,
+     "label": "MIXED"
+    },
+    {
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
+     "potential": 0.071,
+     "sites": 27,
+     "label": "OPINION"
     }
    ]
   },
@@ -7618,28 +6765,28 @@
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
      "potential": 0.103,
      "sites": 37,
-     "label": "POOL"
-    },
-    {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.096,
-     "sites": 28,
-     "label": "MIXED"
-    },
-    {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.093,
-     "sites": 36,
      "label": "OPINION"
     },
     {
      "key": "SECOND_SUPPLY|bus coupler|lv busbar",
-     "potential": 0.082,
-     "sites": 46,
+     "potential": 0.078,
+     "sites": 44,
      "label": "POOL"
+    },
+    {
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.063,
+     "sites": 23,
+     "label": "MIXED"
+    },
+    {
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
+     "potential": 0.062,
+     "sites": 36,
+     "label": "BLANK"
     }
    ]
   },
@@ -7654,28 +6801,28 @@
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.183,
-     "sites": 10,
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
+     "potential": 0.107,
+     "sites": 6,
      "label": "OPINION"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
-     "potential": 0.107,
-     "sites": 6,
-     "label": "POOL"
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
+     "potential": 0.076,
+     "sites": 7,
+     "label": "BLANK"
     },
     {
-     "key": "PROT_DEFAULT|capacitor bank|mv busbar|prot|→cb",
-     "potential": 0.09,
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.068,
      "sites": 4,
      "label": "MIXED"
     },
     {
-     "key": "DELETE_PROPOSED|pump|mcc|prot|contactor→",
-     "potential": 0.076,
-     "sites": 7,
-     "label": "BLANK"
+     "key": "PROT_DEFAULT|pump|mv busbar|prot|fuse-contactor→cb",
+     "potential": 0.056,
+     "sites": 4,
+     "label": "MIXED"
     }
    ]
   },
@@ -7690,28 +6837,28 @@
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.061,
-     "sites": 11,
-     "label": "MIXED"
-    },
-    {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.047,
-     "sites": 13,
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
+     "potential": 0.041,
+     "sites": 9,
      "label": "OPINION"
     },
     {
      "key": "SECOND_SUPPLY|bus coupler|lv busbar",
-     "potential": 0.045,
-     "sites": 16,
+     "potential": 0.039,
+     "sites": 14,
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
-     "potential": 0.041,
-     "sites": 9,
-     "label": "POOL"
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
+     "potential": 0.038,
+     "sites": 13,
+     "label": "BLANK"
+    },
+    {
+     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
+     "potential": 0.031,
+     "sites": 11,
+     "label": "MIXED"
     }
    ]
   },
@@ -7726,28 +6873,28 @@
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.097,
-     "sites": 10,
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
+     "potential": 0.068,
+     "sites": 6,
      "label": "OPINION"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
-     "potential": 0.068,
-     "sites": 6,
-     "label": "POOL"
-    },
-    {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.06,
-     "sites": 6,
-     "label": "MIXED"
-    },
-    {
-     "key": "DELETE_PROPOSED|pump|mcc|prot|contactor→",
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
      "potential": 0.058,
      "sites": 9,
      "label": "BLANK"
+    },
+    {
+     "key": "SECOND_SUPPLY|bus coupler|lv busbar",
+     "potential": 0.049,
+     "sites": 8,
+     "label": "POOL"
+    },
+    {
+     "key": "PROT_DEFAULT|pump|lv busbar|prot|cb→contactor",
+     "potential": 0.047,
+     "sites": 4,
+     "label": "MIXED"
     }
    ]
   },
@@ -7762,28 +6909,28 @@
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→fuse-contactor",
+     "key": "PROT_DEFAULT|pump|mcc|prot|fuse-contactor→cb",
      "potential": 0.103,
      "sites": 9,
-     "label": "POOL"
-    },
-    {
-     "key": "PROT_DEFAULT|pump|mcc|prot|contactor→cb",
-     "potential": 0.081,
-     "sites": 7,
      "label": "OPINION"
     },
     {
      "key": "SECOND_SUPPLY|bus coupler|lv busbar",
-     "potential": 0.078,
-     "sites": 11,
+     "potential": 0.072,
+     "sites": 10,
      "label": "POOL"
     },
     {
-     "key": "PROT_DEFAULT|capacitor bank|lv busbar|prot|→cb",
-     "potential": 0.054,
-     "sites": 5,
-     "label": "MIXED"
+     "key": "SECOND_SUPPLY|bus coupler|mv busbar",
+     "potential": 0.05,
+     "sites": 7,
+     "label": "POOL"
+    },
+    {
+     "key": "DELETE_PROPOSED|pump|mcc|prot|fuse-contactor→",
+     "potential": 0.048,
+     "sites": 6,
+     "label": "BLANK"
     }
    ]
   }

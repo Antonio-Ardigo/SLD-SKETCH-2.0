@@ -319,7 +319,7 @@
         <tr><td>Description</td><td>free text: <code>Oil-immersed, Dyn11</code>, <code>Main pump 4 (VSD)</code></td><td>printed as a label; a few words also change the symbol (below)</td></tr>
         <tr><td>Rating</td><td>from the nameplate: <code>1000 kVA</code>, <code>630 A</code>, <code>315 kW</code></td><td>printed</td></tr>
         <tr><td>Voltage</td><td>from the nameplate: <code>11/0.4 kV</code>, <code>400 V</code></td><td>printed only; it never moves anything</td></tr>
-        <tr><td>Protection</td><td>the device on <em>this item's supply side</em>: <code>CB</code>, <code>LBS</code>, <code>Fuse</code>, <code>Fuse-switch</code>, <code>Contactor</code>, <code>Fuse-contactor</code>; blank = the usual default; a comma list matches Feeds from order (<code>LBS, CB</code>)</td><td>swaps the device symbol on that connection; free text on a busbar (<code>87B differential</code>) is printed as a zone label</td></tr>
+        <tr><td>Protection</td><td>the device on <em>this item's supply side</em>: <code>CB</code>, <code>LBS</code>, <code>Fuse</code>, <code>Fuse-switch</code>, <code>Contactor</code>, <code>Fused contactor</code>; blank = the usual default; a comma list matches Feeds from order (<code>LBS, CB</code>)</td><td>swaps the device symbol on that connection; free text on a busbar (<code>87B differential</code>) is printed as a zone label</td></tr>
         <tr><td>Feeds from</td><td>the ID of the item supplying this one; comma for two supplies (<code>BB1, BB2</code>, <code>MV1, MV2</code>)</td><td>the wiring, and the only thing that is</td></tr>
         <tr><td>Notes</td><td>anything worth remembering</td><td>printed on ties; a few leading words change the symbol (below)</td></tr>
       </table>
@@ -377,7 +377,7 @@
         <tr><td><code>capacitor</code>, <code>PFC</code>, <code>kvar</code></td><td>Description or Notes of a Feeder</td><td>drawn as a capacitor bank</td></tr>
         <tr><td><code>NER</code>, <code>earthing</code>, <code>zig-zag</code></td><td>a Feeder, or a Transformer with nothing on its output</td><td>drawn as an earthing resistor / earthing transformer to earth</td></tr>
         <tr><td><code>arrester</code>, <code>surge</code></td><td>Description or Notes of a Feeder</td><td>drawn as a surge arrester</td></tr>
-        <tr><td><code>CB</code> <code>MCCB</code> <code>MCB</code> <code>ACB</code> · <code>LBS</code> <code>isolator</code> · <code>Fuse</code> · <code>Fuse-switch</code> <code>SFU</code> · <code>Contactor</code> · <code>Fuse-contactor</code> <code>starter</code></td><td>Protection</td><td>the device symbol on that connection</td></tr>
+        <tr><td><code>CB</code> <code>MCCB</code> <code>MCB</code> <code>ACB</code> · <code>LBS</code> <code>isolator</code> · <code>Fuse</code> · <code>Fuse-switch</code> <code>SFU</code> · <code>Contactor</code> · <code>Fused contactor</code> <code>starter</code></td><td>Protection</td><td>the device symbol on that connection</td></tr>
       </table>
 
       <h3>Getting it out</h3>
@@ -422,7 +422,7 @@
     <div class="tbl-foot">
       <button id="addrow" class="primary">+ Add row</button>
       <button id="csv" title="Download the equipment table as CSV">Download CSV</button>
-      <span class="hint">Feeds from = the ID of the item supplying this one (pick from the list); comma for two supplies (bus tie: <code>BB1, BB2</code> — ring RMU: <code>RMU1, RMU2</code>). Protection = the device on this item's supply side (CB, LBS, Fuse, Fuse-switch, Contactor, Fuse-contactor; blank = the usual default; comma list matches Feeds from). Row order sets left-to-right order. Words like <code>VSD</code>, <code>Spare</code>, <code>N.O.</code> or <code>capacitor</code> in Description / Notes change the symbol — see <a href="#help" id="helplink">How to fill</a>. Keys: <kbd>Enter</kbd> next row, <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move row, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo.</span>
+      <span class="hint">Feeds from = the ID of the item supplying this one (pick from the list); comma for two supplies (bus tie: <code>BB1, BB2</code> — ring RMU: <code>RMU1, RMU2</code>). Protection = the device on this item's supply side (CB, LBS, Fuse, Fuse-switch, Contactor, Fused contactor; blank = the usual default; comma list matches Feeds from). Row order sets left-to-right order. Words like <code>VSD</code>, <code>Spare</code>, <code>N.O.</code> or <code>capacitor</code> in Description / Notes change the symbol — see <a href="#help" id="helplink">How to fill</a>. Keys: <kbd>Enter</kbd> next row, <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move row, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo.</span>
     </div>
   </section>
 

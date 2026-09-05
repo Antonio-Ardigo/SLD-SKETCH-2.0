@@ -13,8 +13,9 @@
  *   proposeRow(items, order, { type, targetId, sibling })
  *     → { id, type, desc, rating, voltage, prot, from, notes, proposed: [field…] }
  */
-import { MV_INCOMER, MV_BUSBAR, RMU, TRANSFORMER, LV_BUSBAR, MCC, FEEDER, GENERATOR, ALIASES } from "./types.js";
-import { defaultSupply, isRoot } from "./supplies.js";
+import { MV_INCOMER, MV_BUSBAR, RMU, TRANSFORMER, LV_BUSBAR, MCC, FEEDER, GENERATOR, PUMP, BUS_COUPLER, ALIASES } from "./types.js";
+import { defaultSupply, isRoot, supplyCandidates } from "./supplies.js";
+import { feederBoard } from "./layout.js";
 
 /* the prefix of an auto-numbered ID, per Type label */
 export const TYPE_PREFIX = {
@@ -113,9 +114,34 @@ export function proposeProt(type, supply) {
   let prot = TYPE_DEFAULT_PROT[type] || "";
   if (type === "Transformer" && supply && supply.type === MV_BUSBAR) prot = "CB";
   if (type === "Transformer" && supply && LV_GEAR.includes(supply.type)) prot = "CB";
-  if (type === "Pump" && supply && MV_GEAR.includes(supply.type)) prot = "Fuse-contactor";
+  if (type === "Pump" && supply && MV_GEAR.includes(supply.type)) prot = "Fused contactor";
+  /* the motor ways of an MCC are fused contactors — every field sheet that
+     wrote the device wrote that (proposal audit, round 1); on a board the
+     motor's way is a breaker like the board's other ways */
+  if (type === "Pump" && supply && supply.type === MCC) prot = "Fused contactor";
   if (type === "Pump" && supply && supply.type === LV_BUSBAR) prot = "CB";
   return prot;
+}
+
+/**
+ * The other end of a bus coupler, when the sheet leaves no doubt. What a
+ * coupler on a board can tie to is another board of the same kind (a twin
+ * board) or a generator that is not behind a step-up (a changeover); when
+ * exactly one such thing is on the sheet, that is the far end. Two boards
+ * and a genset, or nothing at all, propose nothing — the surveyor
+ * Shift-drags the coupler onto the far end. `refId` is the end already named.
+ */
+export function proposeOtherEnd(items, order, refId) {
+  const end = items[refId];
+  if (!end) return "";
+  const cands = supplyCandidates(items, order, BUS_COUPLER, { exclude: [refId], sameKindAs: end.type });
+  /* a sub-board — a board fed from a way or from another board of its kind —
+     is not what a main board ties to; the distribution boards under a twin
+     board must not make its tie a doubt */
+  const subBoard = it => (it.parents || []).some(p => items[p] && (items[p].type === FEEDER || items[p].type === it.type));
+  const far = cands.filter(c => (c.type === end.type && !subBoard(items[c.id]))
+    || (c.type === GENERATOR && !(items[c.id].parents || []).length));
+  return far.length === 1 ? far[0].id : "";
 }
 
 /**
@@ -145,13 +171,28 @@ export function proposeRow(items, order, { type = "", targetId = "", sibling = n
      its supply (constitution §2 — a voltage is a label, not a connection) */
   const refId = (row.from || targetId).split(",").map(s => s.trim()).filter(Boolean)[0] || "";
   const supply = refId && items[refId] ? items[refId] : null;
+  /* a coupler dropped on one board is a tie to the other, when there is
+     exactly one other to tie to */
+  if (canon === BUS_COUPLER && row.from && !row.from.includes(",")) {
+    const far = proposeOtherEnd(items, order, refId);
+    if (far) row.from = [refId, far].sort((a, b) => order.indexOf(a) - order.indexOf(b)).join(", ");
+  }
+  /* a way is a placeholder: what is dropped on a feeder is really on the
+     feeder's board, and the label and the device follow that board — the
+     ratio of a transformer on a way out of MV gear, its fuse-switch on an
+     RMU's way. A motor keeps its starter: on MV gear a fused contactor
+     whether it is named on the bar or on a way out of it; on a way of an LV
+     board a contactor, the way being the only place its device can sit. */
+  const board = supply && supply.type === FEEDER ? feederBoard(items, supply) : null;
+  const labelSupply = board || supply;
+  const protSupply = canon === PUMP && board && !MV_GEAR.includes(board.type) ? supply : labelSupply;
 
   if (type) {
     row.id = nextId(type, order); mark("id");
-    row.prot = proposeProt(type, supply);
+    row.prot = proposeProt(type, protSupply);
     if (type === "RMU" && row.from.includes(",")) row.prot = "LBS, LBS";
     mark("prot");
-    row.voltage = proposeVoltage(items, order, type, supply); mark("voltage");
+    row.voltage = proposeVoltage(items, order, type, labelSupply); mark("voltage");
   }
   return row;
 }

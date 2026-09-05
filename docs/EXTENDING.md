@@ -62,7 +62,15 @@ model, called only when a row is added.
 
 - **A new ID prefix**: add the Type label to `TYPE_PREFIX`.
 - **A new default protection**: add it to `TYPE_DEFAULT_PROT`, or, when it
-  depends on what the item is fed from, to `proposeProt(type, supply)`.
+  depends on what the item is fed from, to `proposeProt(type, supply)`. The
+  supply handed to it and to `proposeVoltage` is the *board* when the row was
+  dropped on a feeder (`feederBoard`): a way is a placeholder. A motor is the
+  one exception — its starter follows where it hangs.
+- **A second end**: `proposeOtherEnd(items, order, refId)` names a coupler's
+  far end when exactly one thing on the sheet can be it; extend it there, not
+  in `proposeRow`. The page calls `proposeRow` again when a supply changes
+  under a cell that is still tinted (`reproposeFor` in app.js), so a rule that
+  depends on the comma list is applied when the list is completed.
 - **A voltage rule**: `proposeVoltage(items, order, type, supply)` is a short
   chain of cases on the supply's type — transformer (take the secondary), MV
   gear (the ratio for a transformer, the level for anything else), LV gear

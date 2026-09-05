@@ -53,10 +53,12 @@ const sameVolts = (a, b) => { const x = parseVoltage(a), y = parseVoltage(b); if
 const tokens = s => String(s || "").split(",").map(x => x.trim()).filter(Boolean);
 const COST = { blank: 1, wrong: 1.5, over: 1 };
 
-/** The cost of getting `intended` into a cell offered `list`: 0 proposed right, 1 a pick from the top four or a typed value, 2 a pick further down. */
+/** The cost of getting `intended` into a cell offered `list`: 0 proposed right, else 1 — a pick or a typed value is one action
+    wherever it sits (the picker shows the whole list; charging a lower rank more made every value added to a list cost
+    something, round 2). The rank is reported, not priced. */
 function pickCost(intended, list) {
   const i = list.findIndex(v => v === intended);
-  return i < 0 ? { cost: 1, offered: false, rank: null } : { cost: i < 4 ? 1 : 2, offered: true, rank: i + 1 };
+  return i < 0 ? { cost: 1, offered: false, rank: null } : { cost: 1, offered: true, rank: i + 1 };
 }
 
 /**
@@ -95,20 +97,29 @@ export function replay(cfg, orderKey, mode, pool, quick) {
     const lab = (field, intended, proposed) => provenance(pool, t, st, field, intended, proposed);
 
     /* supply */
+    const pFrom = tokens(p.from), pFirst = pFrom[0] || "";
     if (mode === "click" && !isRoot) {
       const cands = supplyCandidates(items, ids, t);
       const at = cands.findIndex(c => idKey(c.id) === idKey(first));
       const want = cands[at];
-      if (idKey(p.from) !== idKey(first)) {
-        const got = placed.find(r => idKey(r.id) === idKey(p.from));
+      if (idKey(pFirst) !== idKey(first)) {
+        const got = placed.find(r => idKey(r.id) === idKey(pFirst));
         const sameKind = got && canon(got.type) === st;
-        rec("from", sameKind ? "SUPPLY_LAST_WINS" : "SUPPLY_RANK", "wrong", { cost: at >= 0 && at < 3 ? 1 : 2, proposed: p.from, intended: first, proposedType: got ? canon(got.type) : "?", rank: at + 1, rankOf: want ? want.rank : null, label: "POOL" });
+        rec("from", sameKind ? "SUPPLY_LAST_WINS" : "SUPPLY_RANK", "wrong", { cost: at >= 0 && at < 3 ? 1 : 2, proposed: pFirst, intended: first, proposedType: got ? canon(got.type) : "?", rank: at + 1, rankOf: want ? want.rank : null, label: "POOL" });
       }
     }
-    if (sup.length > 1) rec("from", "SECOND_SUPPLY", "blank", { cost: 1, proposed: p.from, intended: row.from, label: "POOL" });
+    /* a comma list the proposal did not complete (a coupler's other end is
+       proposed when the sheet leaves no doubt; a ring's other link never is) */
+    const secondMissing = sup.length > 1 && !(pFrom.length === sup.length && sup.every(s => pFrom.some(x => idKey(x) === idKey(s))));
+    if (secondMissing) rec("from", "SECOND_SUPPLY", pFrom.length > 1 ? "wrong" : "blank", { cost: pFrom.length > 1 ? COST.wrong : 1, proposed: p.from, intended: row.from, label: "POOL" });
+    /* the page proposes the device and the label again when the supply
+       changes under a row whose cells are still the engine's (app.js
+       reproposeFor), so a second end added by Shift-drag is judged on what
+       the engine says once both ends are named */
+    const q = secondMissing ? proposeRow(items, ids, { type: row.type, targetId: row.from }) : p;
 
     /* device */
-    const ic = protCanon(row.prot), pc = protCanon(p.prot);
+    const ic = protCanon(row.prot), pc = protCanon(q.prot);
     const protList = protCandidates(t, variant).map(c => c.value);
     if (ic !== pc) {
       const kind = !row.prot.trim() ? "over" : !p.prot ? "blank" : "wrong";
@@ -116,22 +127,22 @@ export function replay(cfg, orderKey, mode, pool, quick) {
       if (st === "feeder" && kind !== "over") cls = "PLACEHOLDER_CHAIN";
       if (t === "rmu" && sup.length > 1 && pc === "lbs" && ic !== "lbs") cls = "SECOND_END_STALE_PROT";
       const pk = pickCost(row.prot.trim(), protList);
-      rec("prot", cls, kind, { cost: kind === "over" ? COST.over : Math.max(COST[kind], pk.cost), proposed: p.prot, intended: row.prot, rank: pk.rank, ...lab("prot", row.prot, p.prot) });
+      rec("prot", cls, kind, { cost: kind === "over" ? COST.over : Math.max(COST[kind], pk.cost), proposed: q.prot, intended: row.prot, rank: pk.rank, ...lab("prot", row.prot, q.prot) });
       if (row.prot.trim() && !pk.offered && !row.prot.includes(",")) rec("prot", "OFFER_MISS", "info", { cost: 0, intended: row.prot, label: "POOL", poolSeen: seen(pool, t, "prot", row.prot) });
-    } else if (row.prot.trim() && row.prot.trim() !== (p.prot || "").trim()) {
-      rec("prot", "SPELLING", "spelling", { cost: 0, proposed: p.prot, intended: row.prot, label: "POOL" });
+    } else if (row.prot.trim() && row.prot.trim() !== (q.prot || "").trim()) {
+      rec("prot", "SPELLING", "spelling", { cost: 0, proposed: q.prot, intended: row.prot, label: "POOL" });
     }
 
     /* voltage */
     const volt = row.voltage.trim();
-    if (!sameVolts(volt, p.voltage)) {
-      if (isRoot && !targetId && !p.voltage) rec("voltage", "UNINFERABLE", "blank", { cost: 1, proposed: "", intended: volt, label: "BLANK" });
-      else if (t === "transformer" && !p.voltage && (["lv busbar", "mcc"].includes(st) || (st === "feeder" && ["lv busbar", "mcc"].includes(wayBoard))))
+    if (!sameVolts(volt, q.voltage)) {
+      if (isRoot && !targetId && !q.voltage) rec("voltage", "UNINFERABLE", "blank", { cost: 1, proposed: "", intended: volt, label: "BLANK" });
+      else if (t === "transformer" && !q.voltage && (["lv busbar", "mcc"].includes(st) || (st === "feeder" && ["lv busbar", "mcc"].includes(wayBoard))))
         rec("voltage", "DELIBERATE_BLANK", "blank", { cost: 1, proposed: "", intended: volt, ...lab("voltage", volt, "") });
-      else if (st === "feeder" && !p.voltage) rec("voltage", "PLACEHOLDER_CHAIN", "blank", { cost: 1, proposed: "", intended: volt, wayBoard, ...lab("voltage", volt, "") });
+      else if (st === "feeder" && !q.voltage) rec("voltage", "PLACEHOLDER_CHAIN", "blank", { cost: 1, proposed: "", intended: volt, wayBoard, ...lab("voltage", volt, "") });
       else {
-        const kind = !volt ? "over" : !p.voltage ? "blank" : "wrong";
-        rec("voltage", kind === "over" ? "DELETE_PROPOSED" : "VOLT_DEFAULT", kind, { cost: COST[kind], proposed: p.voltage, intended: volt, ...lab("voltage", volt, p.voltage) });
+        const kind = !volt ? "over" : !q.voltage ? "blank" : "wrong";
+        rec("voltage", kind === "over" ? "DELETE_PROPOSED" : "VOLT_DEFAULT", kind, { cost: COST[kind], proposed: q.voltage, intended: volt, ...lab("voltage", volt, q.voltage) });
       }
       if (volt && !quick.quickVolt(row.type).includes(volt)) rec("voltage", "OFFER_MISS", "info", { cost: 0, intended: volt, label: "POOL", poolSeen: seen(pool, t, "voltage", volt) });
     }
@@ -224,7 +235,7 @@ function suggest(c, pool) {
       if (T === "feeder") return `deliberate: a feeder is proposed blank so that equipment hung on it gets one device, not two (PR #11). The pool writes a device on nearly every way. A way out: propose ${I} on the drop, and clear it when something is dropped onto the feeder while the cell is still the engine's (it is tinted, so the page knows)`;
       return `proposeProt: give a ${T} a default (${I}) — TYPE_DEFAULT_PROT has none`;
     case "VOLT_DEFAULT": return `proposeVoltage: a ${T} fed from ${S} should read ${I}, not ${P} — a case in the supply-type chain`;
-    case "PLACEHOLDER_CHAIN": return `proposeProt/proposeVoltage: resolve a Feeder supply to the board it is a way of (layout.feederBoard) before choosing — the way is a placeholder, its board is what the item is really on`;
+    case "PLACEHOLDER_CHAIN": return `proposeRow resolves a Feeder supply to the board it is a way of (layout.feederBoard) for the label and the device; this one still differs — a case the resolution does not cover`;
     case "DELETE_PROPOSED": return `the sheet leaves this ${c.field} empty on a ${T}; a blank is not evidence (one tester's habit), so no change unless the pool's filled cells agree`;
     case "SUPPLY_RANK": {
       const w = (pool && pool.supplies[T]) || {}, wi = w[S] || 0, wp = w[c.proposedType] || 0;
@@ -233,8 +244,10 @@ function suggest(c, pool) {
         : `no change: the pool has ${T}s on ${c.proposedType} more often than on ${S}, so the click lands on the commoner kind; this one is dropped on its supply instead`;
     }
     case "SUPPLY_LAST_WINS": return `a palette click with nothing selected lands on the bottom-most ${S}; with two on the sheet the surveyor drops the chip, or selects the board first (a click adds under the selected row)`;
-    case "SECOND_SUPPLY": return `a second supply is never proposed; the page could offer it when the sheet has exactly two candidates of the same kind (a twin board, a ring's other end)`;
-    case "SECOND_END_STALE_PROT": return `re-run proposeProt when Shift-drag adds a second supply: "LBS, LBS" for an RMU is only proposed if the comma is already there at drop time (propose.js:152)`;
+    case "SECOND_SUPPLY": return T === "bus coupler"
+      ? `proposeOtherEnd names a coupler's far end only when the sheet leaves no doubt (one other board of the kind, or one genset); here it did not — the surveyor Shift-drags the coupler onto the far end`
+      : `a ring's other link is not proposed: which RMU closes the ring is the surveyor's call, made by Shift-dragging the RMU onto it`;
+    case "SECOND_END_STALE_PROT": return `the page proposes the device again when a second supply is added under a tinted cell (app.js reproposeFor); this one still differs — check what proposeRow says for the two supplies together`;
     case "DELIBERATE_BLANK": return `proposeVoltage leaves an LV/LV transformer's ratio blank on purpose; if one ratio dominates the pool, propose it`;
     case "UNINFERABLE": return `the first root's voltage cannot be known; the page could remember the last site's level`;
     case "OFFER_MISS": return c.field === "prot" ? `PROT_LABELS (src/core/protection.js): offer the spelling ${I}; the reader already understands it`
@@ -299,7 +312,7 @@ export function runAudit({ seed = SEED, n = N } = {}) {
 
   let engineRev = "unknown"; try { engineRev = execSync("git rev-parse --short HEAD", { cwd: ROOT, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch {}
   const header = { tool: "proposal-audit", seed, n, sites: ok.length, rejected: cfgs.length - ok.length, engine: engineRev, poolHash: pool.hash, poolFixtures: pool.fixtures.length, poolGroups: ["sites", "audit", "examples"],
-    unit: "cost is in the entry baseline's unit: 1 per value entered or picked from the top four, 2 for a pick further down, 1.5 for a wrong proposal (it can ship), 0 for a right one",
+    unit: "cost is in the entry baseline's unit: 1 per value entered or picked, wherever it sits in the list, 1.5 for a wrong proposal (it can ship), 0 for a right one",
     ranking: "potential = breadth (sites affected / sites) × depth (mean cost per affected row) × mean P of the affected sites; headline is drop mode, both orders; only POOL-labelled classes are high potential",
     sample: { first50TopTenAgree: agree, of: 10 } };
   const configs = cfgs.map(c => ({ id: c.id, archetypes: c.archetypes, rows: c.rows.length, P: +c.P.toFixed(5), A: r3(c.factors.A), C: r3(c.factors.C), V: r3(c.factors.V),

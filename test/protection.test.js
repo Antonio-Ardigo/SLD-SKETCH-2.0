@@ -123,7 +123,7 @@ test("the picker offers every word, whatever the Type, and puts the likely ones 
     const ranks = got.map(c => c.rank);
     assert.deepEqual(ranks, ranks.slice().sort((a, b) => b - a), `${t}: the usual ones come first`);
   }
-  assert.equal(protCandidates(PUMP)[0].value, "Contactor");
+  assert.equal(protCandidates(PUMP)[0].value, "Fused contactor");
   assert.equal(protCandidates(RMU)[0].value, "LBS");
   assert.equal(protCandidates(FEEDER)[0].value, "MCCB");
   assert.equal(protCandidates(TRANSFORMER)[0].value, "Fuse-switch");
