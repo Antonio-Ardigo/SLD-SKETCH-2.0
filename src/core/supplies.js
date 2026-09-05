@@ -37,7 +37,11 @@ export function supplyRank(parentType, childType){
   if(!parentType || !childType) return 0;
   /* rank 0 is the reader's own judgement, verbatim: these draw floating */
   if([PUMP,BUS_COUPLER].concat(TERMINALS).includes(parentType)) return 0;
-  if(parentType===FEEDER && ![LV_BUSBAR,MCC].includes(childType)) return 0;
+  /* A feeder used to be refused everything but a board and an MCC. It is the
+     way out of a board — a placeholder to hang equipment on — so a pump, a
+     transformer or a terminal item named on one is an ordinary thing to write
+     and is drawn. It stays rank 1 rather than 2: the Feeds From picker still
+     offers the board above the feeder for a pump. */
   if(parentType===MV_INCOMER && [PUMP,FEEDER,MCC,LV_BUSBAR].concat(TERMINALS).includes(childType)) return 0;
   return (USUAL_SUPPLIES[childType]||[]).includes(parentType) ? 2 : 1;
 }

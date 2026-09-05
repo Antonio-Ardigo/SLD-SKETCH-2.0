@@ -1,7 +1,7 @@
 {
   "name": "mcc_on_mv",
   "group": "warnings",
-  "description": "An MCC on MV gear and an MCC on a feeder",
+  "description": "An MCC on MV gear, and an MCC on a feeder. The first is warned about; the second is an ordinary way of a board now that a feeder is a placeholder, and only its drawing is still wrong",
   "info": {
     "site": "Warning path: mcc on mv",
     "date": "",
@@ -10,14 +10,13 @@
   },
   "expect": {
     "diagnostics": [
-      "MCC_BAD_SUPPLY:MCC2",
       "MCC_ON_MV:MCC1"
     ],
     "golden": true,
     "legacy": {
       "items": 5,
       "errors": 0,
-      "warnings": 2
+      "warnings": 1
     },
     "check": {
       "items": "all",
