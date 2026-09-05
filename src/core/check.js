@@ -15,7 +15,7 @@
  * lines, arrows) claims the conductor ends that touch it, and a bar's own
  * nodes belong to the bar. Then paths are searched between items. */
 import { BUS_COUPLER, FEEDER, PUMP, MCC, LV_BUSBAR, TRANSFORMER } from "./types.js";
-import { txBoard, carriesOn } from "./layout.js";
+import { txBoard, carriesOn, feederBoard } from "./layout.js";
 import { couplerOf } from "./couplers.js";
 
 const TOL = 1.0, TOUCH = 2.2, LONG = 20;
@@ -84,7 +84,7 @@ export function expectedEdges(items, order) {
          sub-board, a motor, an MCC, a transformer alike: judge board → what
          the way goes to, naming the way */
       if (items[p].type === FEEDER && carriesOn(items, order, items[p]).some(k => k.id === id)) {
-        const pb = items[p].parents.map(q => items[q]).find(o => o && [LV_BUSBAR, MCC].includes(o.type));
+        const pb = feederBoard(items, items[p]);
         if (pb) { out.push([pb.id, id, `${p}`]); continue; }
       }
       out.push([from, id, null]);

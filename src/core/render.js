@@ -1,7 +1,7 @@
 import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, LV_LOADS, hasWord, earthBelow, stateWords, protFor } from "./types.js";
 import { Y_LABEL, Y_MV_TOP, Y_RMU_TOP, Y_RMU_BOT, Y_MVBUS, PUMP_R, TX_R, STEPUP_H, GEN_H, LV_SUB_H, Y_GEN, Y_SU_C1, Y_SU_C2, STEPUP_SHIFT, Y_PUMP, Y_TX_C1, Y_TX_C2, Y_BUS, Y_ARROW, DIAG_H, LABEL_CHAR, extendSheet, labelClearance, allocLanes, setTiers, VIEW, genFeeds, mvGens, rmuHang, hangHas, suMid, lvSubs, stepUps, genBelow, mvDepth, levelLinks, tierOffsets } from "./geometry.js";
 import { childrenOf } from "./model.js";
-import { mccLoads, subBoardsOf, carriesOn, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
+import { mccLoads, subBoardsOf, carriesOn, feederBoard, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
 import { SVG } from "./svg.js";
 import { legendEntries, drawSymbol } from "./symbols/registry.js";
 import { couplerOf } from "./couplers.js";
@@ -102,9 +102,8 @@ function render(info, items, order, width, canvas){
      HANG is how far the equipment moves down to make room for that device. */
   const HANG=60;
   const carriedBy=f=>{
-    if(!f || f.type!==FEEDER) return null;
-    const board=f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type));
-    if(!board) return null;
+    const board=feederBoard(items,f);
+    if(!board || ![LV_BUSBAR,MCC].includes(board.type)) return null;
     const [raw,k]=protFor(f,board.id);
     const kind=k||(raw.trim()?"cb":null);
     return { board, y:lvY(board), kind, drop:kind?HANG:0 };

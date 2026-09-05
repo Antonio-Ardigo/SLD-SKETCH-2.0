@@ -102,17 +102,25 @@ test("a pump, an MCC, a transformer and a sub-board all hang on a way", () => {
   }
 });
 
-test("a way on MV gear is a cable, not a placeholder: it keeps its arrow", () => {
-  const rows = [
-    { id: "MV1", type: "MV Incomer", voltage: "11 kV", from: "" },
-    { id: "RMU1", type: "RMU", voltage: "11 kV", prot: "LBS", from: "MV1" },
-    { id: "OUT", type: "Feeder", desc: "Cable to farm", voltage: "11 kV", prot: "", from: "RMU1" },
-  ];
-  const out = draw({ site: "t" }, rows, { check: true });
-  assert.equal(feederBoard(out.items, out.items.OUT), null);
-  assert.deepEqual(carriesOn(out.items, out.order, out.items.OUT), []);
-  assert.equal(out.scene.ops.filter(o => o.t === "poly" && o.owner === "OUT").length, 1);
-  assert.deepEqual(out.check.items.missing, []);
+/* A way is a way on either side of the transformer. What decides whether it
+   terminates is not which board it leaves — it is whether anything is named
+   on it. An MV outgoing cable to a farm carries nothing, so it keeps its
+   arrow; five fixtures in the pool are exactly that and must not move. */
+test("an MV way that carries nothing is a cable, and keeps its arrow", () => {
+  for (const board of [
+    { id: "B", type: "RMU", voltage: "11 kV", prot: "LBS", from: "MV1" },
+    { id: "B", type: "MV Busbar", voltage: "11 kV", prot: "CB", from: "MV1" },
+  ]) {
+    const out = draw({ site: "t" }, [
+      { id: "MV1", type: "MV Incomer", voltage: "11 kV", from: "" },
+      board,
+      { id: "OUT", type: "Feeder", desc: "Cable to farm", voltage: "11 kV", prot: "", from: "B" },
+    ], { check: true });
+    assert.equal(feederBoard(out.items, out.items.OUT).id, "B", board.type);
+    assert.deepEqual(carriesOn(out.items, out.order, out.items.OUT), [], board.type);
+    assert.equal(out.scene.ops.filter(o => o.t === "poly" && o.owner === "OUT").length, 1, board.type);
+    assert.deepEqual(out.check.items.missing, [], board.type);
+  }
 });
 
 test("a proposed feeder arrives blank, so the first thing hung on it is the device", () => {

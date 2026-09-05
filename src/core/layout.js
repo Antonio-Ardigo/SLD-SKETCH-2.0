@@ -31,17 +31,27 @@ function hangingOf(items, order, f, seen=[]){
   return f.type!==FEEDER || seen.includes(f.id) ? []
     : childrenOf(items,order,f.id,LV_LOADS.concat([TRANSFORMER])).filter(k=>!seen.includes(k.id));
 }
-/* The board a feeder is a way of. A feeder on MV gear is an outgoing cable
-   way — drawn with its own arrow, in its own slot — not a placeholder, so it
-   has no board here and carries nothing but a sub-board. */
+/* The board a feeder is a way of — the one place that decides it, so that the
+   layout, the drawing and the checker cannot each hold a different opinion
+   (constitution §5).
+
+   A way is a way on either side of the transformer. This used to answer only
+   for an LV board or an MCC, which made a way out of an MV switchboard a
+   terminating cable and nothing else: a transformer named on one was given no
+   slot, landed in the leftover column past the end of the sheet, drew no
+   conductor at all and said "supply not defined" — while the table plainly
+   named its supply, and nothing was reported.
+
+   The LV types stay first, so an LV way resolves exactly as it always did
+   when a row names two supplies. */
+const WAY_BOARDS=[LV_BUSBAR,MCC,MV_BUSBAR,RMU];
 function feederBoard(items, f){
   if(!f || f.type!==FEEDER) return null;
-  return f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type)) || null;
+  return f.parents.map(q=>items[q]).find(o=>o && WAY_BOARDS.includes(o.type)) || null;
 }
-/* Everything a feeder carries, sub-boards and equipment alike — the one
-   judgement the layout, the drawing and the checker all read (constitution
-   §5). A feeder that carries something is a link: a conductor with a device
-   on it, ending at what it feeds, not a symbol with an open end. */
+/* Everything a feeder carries, sub-boards and equipment alike. A feeder that
+   carries something is a link: a conductor with a device on it, ending at
+   what it feeds, not a symbol with an open end. */
 function carriesOn(items, order, f){
   const subs=subBoardsOf(items,order,f);
   return feederBoard(items,f) ? subs.concat(hangingOf(items,order,f)) : subs;
