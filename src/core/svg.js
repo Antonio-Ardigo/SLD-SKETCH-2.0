@@ -180,6 +180,9 @@ class SVG {
   vsd(x,y){              /* drive box over a motor's drop, conductor running through */
     this.rect(x-12,y-7,24,14,1.5,null,"white"); this.text(x,y+3,"VSD",{size:7.5});
   }
+  softStart(x,y){        /* soft starter: the same box, in the same place, reading Soft S. */
+    this.rect(x-16,y-7,32,14,1.5,null,"white"); this.text(x,y+3,"Soft S.",{size:7.5});
+  }
   /* a generation source: the G circle, or its variants — an inverter (the
      ~ / = box in the circle) and a battery (two plates) */
   genMark(x,cy,r,variant){

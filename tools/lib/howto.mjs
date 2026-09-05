@@ -100,6 +100,7 @@ export const HOW_TO_LINES = [
   "",
   "WORDS THAT CHANGE THE SYMBOL (read from Description and Notes)",
   "  VSD / VFD / drive        on a Pump: a drive box on the motor's drop",
+  "  soft starter / soft start on a Pump: a Soft S. box in the same place",
   "  Spare / Future /         at the start of Notes: the way drawn dashed",
   "    Out of service",
   "  N.O. / Normally open     on a Bus Coupler: printed under it",
