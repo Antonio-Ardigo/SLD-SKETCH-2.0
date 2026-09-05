@@ -40,6 +40,12 @@ jobs:
       - name: goldens
         run: node tools/golden.mjs
 
+      # what the engine proposes for a dropped row, against what plausible
+      # sheets want (testdata/proposals): deterministic, so a change in any
+      # class is an engine change, and it fails either way
+      - name: proposal audit
+        run: node tools/proposal-audit.mjs --check
+
       # the presets, the example workbooks and sld_sketchpad.html are generated:
       # a source edit that was not rebuilt is a stale page shipping to users
       - name: generated files are up to date

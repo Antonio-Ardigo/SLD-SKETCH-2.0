@@ -59,6 +59,7 @@ Only the keys present under `expect` are asserted:
 | `audit` | 10 | sites written by an independent tester from the README alone (`audit/README.md`); `w08_wrongloads` is wrong on purpose |
 | `topics` | 10 | topologies the original corpus lacked: three bus sections, three parallel transformers, three-supply boards, meshed MV boards, a double-ended substation, a UPS with bypass, a seven-row cascade, a forty-way board, a board-fed ring, an MCC cascade |
 | `warnings` | 15 | one case per diagnostic code: duplicate ID, unknown supply, unknown type, a row with no ID, a loop no supply reaches, impossible supplies, open transformer ends, couplers that cannot be drawn, … Each `case.json` lists the `CODE:firstId` keys the reader must report |
+| `proposals` | — | not fixtures: the proposal audit's report, its JSON and the ten most plausible generated sites as plain `rows.csv` (`proposals/README.md`); `listCases` ignores it, having no `case.json` |
 
 ## Commands
 

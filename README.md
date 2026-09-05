@@ -425,8 +425,9 @@ src/core/     the engine, as ES modules: types, supplies (which supply can feed
 src/io/       csv and xlsx (SheetJS) ⇄ table rows
 src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js
 src/cli/      sld.js — draw | dxf
-tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page, usage-baseline
+tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page, usage-baseline, proposal-audit
 testdata/usage/  the entry baseline: actions per task, outcomes when the topology is wrong
+testdata/proposals/  the proposal audit: what a surveyor has to correct after a drop, ranked
 testdata/     the cases; test/ the node --test suites
 ```
 
@@ -443,6 +444,20 @@ a supply too many, a spreadsheet with a decoy ID column. `--check` fails on
 any difference, so an improvement lands with the number it earned and a
 regression cannot land quietly. `testdata/usage/README.md` states the
 counting rule.
+
+**The proposal audit.** `testdata/proposals/AUDIT.md` is whether what the
+engine pre-fills is what the sheet wanted, measured: `node
+tools/proposal-audit.mjs` generates two hundred plausible sites from a seeded
+grammar, scores each for plausibility (its shape's frequency among the real
+fixtures × hard consistency checks × how often the pool writes each value),
+builds each the way a surveyor does — drop the item on its supply, read the
+proposal, correct it, fill the rest — and ranks the corrections by how often
+they happen on how plausible a site. Every correction is labelled against the
+pool, and only the ones the pool backs make the headline; the generator's
+opinion is kept apart. `--check` fails if any class moves, `--page` rebuilds
+one sheet per shape in the browser and confirms the page hands over exactly
+what the engine returns. The audit proposes the engine change that would
+remove each class; it does not make it (`testdata/proposals/README.md`).
 
 **Continuous integration.** `.github/workflows/ci.yml` runs on every push and
 pull request, in two jobs so a failure says which half broke. `engine` is pure
