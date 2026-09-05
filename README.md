@@ -429,6 +429,12 @@ over the page, and nothing else is touched. It needs `ffmpeg` and `espeak-ng`,
 the only two things in this repository that are not already needed to run the
 tests — which is why CI does not run it.
 
+For the commentary, install `mbrola` and `mbrola-en1` as well. espeak-ng's own
+voices are formant synthesis and sound metallic because nothing in them was
+ever spoken; the mbrola voices are fragments of recorded speech, and the tool
+prefers them when they are there and falls back to espeak's own when they are
+not. Either way the narration is EQ'd and levelled on the way out.
+
 `sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
 the modules into the page's single `<script>` (browsers refuse `import` from
 `file://`, and the page must open from a plain file) and inlines the vendored

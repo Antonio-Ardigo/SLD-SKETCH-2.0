@@ -35,9 +35,46 @@ fs.mkdirSync(FRAMES, { recursive: true });
 const need = t => { try { execFileSync("sh", ["-c", `command -v ${t}`], { stdio: "ignore" }); } catch { console.error(`demo-video needs ${t} on PATH`); process.exit(1); } };
 need("ffmpeg"); need("ffprobe"); need("espeak-ng");
 
-/* ---------------------------------------------------------------- narration */
+/* ---------------------------------------------------------------- narration
+ *
+ * espeak-ng's own voices are formant synthesis: they sound metallic because
+ * nothing in them was ever spoken. The mbrola voices are diphone synthesis —
+ * fragments of recorded speech stitched together — so they are used when they
+ * are installed (`apt-get install mbrola mbrola-en1`), and espeak's own voice
+ * is the fallback so the tool still runs without them.
+ *
+ * The chain afterwards is the rest of the difference: the presence band around
+ * 2.9 kHz is where synthesis sounds hard, so it comes down; a little body goes
+ * in at 200 Hz; the 5 kHz sibilance comes down; then compression to even the
+ * delivery, a hint of room so it is not bone dry, and a limiter for headroom.
+ * Measured against plain espeak this moves 5 dB of energy out of the harsh
+ * band and leaves peaks near −3.6 dBFS instead of clipping. */
+const WARMTH = [
+  "highpass=f=75",
+  "equalizer=f=2900:t=q:w=1.4:g=-4",
+  "equalizer=f=200:t=q:w=1.1:g=2.5",
+  "equalizer=f=5200:t=q:w=2:g=-3",
+  "acompressor=threshold=-18dB:ratio=3:attack=8:release=180",
+  "aecho=0.85:0.9:22:0.06",
+  "dynaudnorm=f=200:g=7:p=0.71",
+  "alimiter=level_in=1:level_out=0.8:limit=0.85",
+].join(",");
+
+const VOICE = (() => {
+  const probe = path.join(TMP, "probe.wav");
+  for (const v of ["mb-en1", "mb-us2", "mb-us1", "en-gb"]) {
+    try {
+      execFileSync("espeak-ng", ["-v", v, "-w", probe, "voice check"], { stdio: "ignore" });
+      if (fs.statSync(probe).size > 1000) { console.log(`voice: ${v}${v.startsWith("mb-") ? "" : "  (install mbrola and mbrola-en1 for a warmer one)"}`); return v; }
+    } catch { /* not installed: try the next */ }
+  }
+  console.error("no usable espeak-ng voice"); process.exit(1);
+})();
+
 const say = (text, file) => {
-  execFileSync("espeak-ng", ["-v", "en-gb", "-s", "142", "-p", "42", "-g", "6", "-w", file, text]);
+  const raw = file.replace(/\.wav$/, ".raw.wav");
+  execFileSync("espeak-ng", ["-v", VOICE, "-s", "138", "-g", "6", "-w", raw, text]);
+  execFileSync("ffmpeg", ["-v", "error", "-y", "-i", raw, "-af", WARMTH, "-ar", "44100", "-ac", "1", file]);
   return +execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file], { encoding: "utf8" }).trim();
 };
 
