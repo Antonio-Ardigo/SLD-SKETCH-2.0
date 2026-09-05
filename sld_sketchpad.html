@@ -3179,22 +3179,29 @@ function render(info, items, order, width, canvas){
   }
 
   /* sub-boards: fed from a feeder or straight from the board above */
-  const twoDevices=(x,y0,y1,k0,k1,dash)=>{
+  const twoDevices=(x,y0,y1,k0,k1,dash,o0,o1)=>{
     /* the outgoing device by the upper bar when the feeder names one, and the
        incoming device by the lower bar when the fed board names one — a real
        main-board way and a real sub-board incomer are two breakers, and both
-       are drawn; neither is invented when its cell is empty */
+       are drawn; neither is invented when its cell is empty.
+       Each half is drawn inside its own row's group, so the way's breaker
+       answers for the way and the incomer for the board it feeds — the same
+       attribution every other symbol on the sheet has. */
     let yFrom=y0;
     if(k0){
+      svg.begin(o0.id,o0.type);
       const g0=svg.device(k0,x,y0+30);
       svg.line(x,y0,x,y0+30-g0,2,dash||null);
+      svg.end();
       yFrom=y0+30+g0;
     }
+    svg.begin(o1.id,o1.type);
     if(k1){
       const g1=svg.device(k1,x,y1-30);
       svg.line(x,yFrom,x,y1-30-g1,2,dash||null);
       svg.line(x,y1-30+g1,x,y1,2,dash||null);
     } else svg.line(x,yFrom,x,y1,2,dash||null);
+    svg.end();
   };
   const splitDone=new Set();
   for(const bb of busbars){
@@ -3207,9 +3214,9 @@ function render(info, items, order, width, canvas){
       if(!par || par.x===null) continue;
       if(par.type===LV_BUSBAR){
         const yPar=lvY(par);
-        svg.dot(bb.x,yPar);
-        twoDevices(bb.x,yPar,ySub,protFor(bb,p)[1]||"cb",null);
-        svg.dot(bb.x,ySub);
+        svg.begin(bb.id,bb.type); svg.dot(bb.x,yPar); svg.end();
+        twoDevices(bb.x,yPar,ySub,protFor(bb,p)[1]||"cb",null,null,bb,bb);
+        svg.begin(bb.id,bb.type); svg.dot(bb.x,ySub); svg.end();
       } else if(par.type===FEEDER){
         const pb=par.parents.map(q=>items[q]).find(o=>o && o.type===LV_BUSBAR);
         if(!pb) continue;
@@ -3219,28 +3226,32 @@ function render(info, items, order, width, canvas){
            one does not, whether or not the engine knew the word */
         const [k0raw,k0kind]=protFor(par,pb.id);
         const k0=k0kind||(k0raw.trim()?"cb":null), k1=protFor(bb,p)[1];
-        svg.dot(par.x,yPar);
+        svg.begin(par.id,par.type); svg.dot(par.x,yPar); svg.end();
         const i=fsup.indexOf(p), n=fsup.length;
         const xTo=n===1?bb.x:bb.xLeft+(bb.xRight-bb.xLeft)*(i+0.5)/n;
-        if(Math.abs(par.x-xTo)<1) twoDevices(par.x,yPar,ySub,k0,k1,dash);
+        if(Math.abs(par.x-xTo)<1) twoDevices(par.x,yPar,ySub,k0,k1,dash,par,bb);
         else {            /* several boards under one feeder, or feeders into one */
           const ySplit=ySub-60-12*i;
           if(!splitDone.has(p)){
             splitDone.add(p);
+            svg.begin(par.id,par.type);
             if(k0){
               const g0=svg.device(k0,par.x,yPar+30);
               svg.line(par.x,yPar,par.x,yPar+30-g0,2,dash);
               svg.line(par.x,yPar+30+g0,par.x,ySplit,2,dash);
             } else svg.line(par.x,yPar,par.x,ySplit,2,dash);
+            svg.end();
           }
+          svg.begin(bb.id,bb.type);
           svg.line(par.x,ySplit,xTo,ySplit,2,dash);
           if(k1){
             const g1=svg.device(k1,xTo,ySub-30);
             svg.line(xTo,ySplit,xTo,ySub-30-g1);
             svg.line(xTo,ySub-30+g1,xTo,ySub);
           } else svg.line(xTo,ySplit,xTo,ySub);
+          svg.end();
         }
-        svg.dot(xTo,ySub);
+        svg.begin(bb.id,bb.type); svg.dot(xTo,ySub); svg.end();
       }
     }
   }
