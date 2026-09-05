@@ -69,9 +69,12 @@ jobs:
           echo "CHROME=$CHROME" >> "$GITHUB_ENV"
           "$CHROME" --version
 
-      # the page must be the build of the modules before it is driven
-      - name: build the page
-        run: node tools/build-page.mjs
+      # `npm run build`, both halves: gen-fixtures writes the example workbooks
+      # under build/ — which is gitignored, so a fresh checkout has none — and
+      # the smoke test imports one of them to exercise the vendored SheetJS.
+      # Running only build-page.mjs left it reading a file that was never there.
+      - name: generate fixtures and build the page
+        run: npm run build
 
       - name: smoke checks
         run: node tools/smoke-page.mjs
