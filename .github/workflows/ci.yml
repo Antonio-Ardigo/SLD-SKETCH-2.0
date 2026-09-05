@@ -1,0 +1,75 @@
+# Everything a contributor runs before pushing, run again on every push and
+# pull request. Nothing is installed: the project has no npm dependencies, and
+# SheetJS is vendored.
+#
+# Two jobs on purpose. `engine` is pure Node and deterministic — if it is red,
+# the engine is wrong. `page` drives a real browser, so a failure there is
+# either the page or the browser; keeping it separate means a browser problem
+# cannot be mistaken for an engine one.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    name: engine — tests, goldens, generated files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # the 11 node:test suites, including the fixture pool
+      - name: tests
+        run: node --test
+
+      # the 79 drawings, byte for byte
+      - name: goldens
+        run: node tools/golden.mjs
+
+      # the presets, the example workbooks and sld_sketchpad.html are generated:
+      # a source edit that was not rebuilt is a stale page shipping to users
+      - name: generated files are up to date
+        run: |
+          node tools/gen-fixtures.mjs --check
+          node tools/build-page.mjs --check
+
+  page:
+    name: page — browser checks and the entry baseline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # ubuntu-latest ships Chrome; say which one rather than letting the
+      # search in tools/lib/headless.mjs fall through to a bare name
+      - name: locate Chrome
+        run: |
+          CHROME=$(command -v google-chrome || command -v chromium-browser || command -v chromium)
+          test -n "$CHROME" || { echo "no Chrome on the runner"; exit 1; }
+          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
+          "$CHROME" --version
+
+      # the page must be the build of the modules before it is driven
+      - name: build the page
+        run: node tools/build-page.mjs
+
+      - name: smoke checks
+        run: node tools/smoke-page.mjs
+
+      # what the page costs a surveyor: fails if any count moves either way
+      - name: entry baseline
+        run: node tools/usage-baseline.mjs --check

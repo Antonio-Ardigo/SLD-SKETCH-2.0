@@ -410,6 +410,25 @@ any difference, so an improvement lands with the number it earned and a
 regression cannot land quietly. `testdata/usage/README.md` states the
 counting rule.
 
+**Continuous integration.** `.github/workflows/ci.yml` runs on every push and
+pull request, in two jobs so a failure says which half broke. `engine` is pure
+Node — the test suites, the 79 goldens byte for byte, and a check that the
+generated files (the presets, the example workbooks, `sld_sketchpad.html`) are
+not stale, because a source edit that was never rebuilt ships a stale page.
+`page` builds the page, drives it in headless Chrome for the smoke checks, and
+holds the entry baseline. Nothing is installed: there are no npm dependencies
+and SheetJS is vendored.
+
+**The demo film.** `node tools/demo-video.mjs` records
+`output/sld-demo.mp4` — a narrated run through drawing a small substation by
+dragging symbols, from the incomer to the last pump. It drives the same
+headless Chromium the smoke test uses, and every drop in it is a real `drop`
+event carrying a real `DataTransfer`, so the film cannot show behaviour the
+page does not have; a pointer, the carried chip and a caption bar are drawn
+over the page, and nothing else is touched. It needs `ffmpeg` and `espeak-ng`,
+the only two things in this repository that are not already needed to run the
+tests — which is why CI does not run it.
+
 `sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
 the modules into the page's single `<script>` (browsers refuse `import` from
 `file://`, and the page must open from a plain file) and inlines the vendored
