@@ -1,7 +1,7 @@
 {
   "name": "mcc_on_mv",
   "group": "warnings",
-  "description": "An MCC on MV gear, and an MCC on a feeder. The first is warned about; the second is an ordinary way of a board now that a feeder is a placeholder, and only its drawing is still wrong",
+  "description": "An MCC on MV gear, and an MCC on a feeder. The first is warned about; the second is an ordinary way of a board and now draws as one — the way carries it, so it stands under the way with the way's device above its own.",
   "info": {
     "site": "Warning path: mcc on mv",
     "date": "",
@@ -20,10 +20,10 @@
     },
     "check": {
       "items": "all",
-      "disconnected": 1,
       "via": 0,
       "overlaps": 0,
-      "falseNets": 0
+      "falseNets": 0,
+      "edges": "all"
     }
   }
 }

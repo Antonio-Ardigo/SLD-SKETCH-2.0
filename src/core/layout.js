@@ -101,6 +101,22 @@ function loadSlot(items, order, k){   /* slot width of one such load */
    transformer takes `placeTxLoads` so its own motors follow it down; anything
    else is one slot wide. A way carrying nothing does nothing here, which is
    what keeps a sheet without one byte-identical. */
+/* A way and what it carries stand in one column. The two layout paths reach
+   them from opposite ends — the MV board's own pass places the way and hands
+   its slot down (placeCarried), while the RMU-without-a-switchboard path
+   places the transformer under its board and leaves the way behind — so this
+   reconciles whichever came first rather than adding a third placement rule.
+   A way carrying nothing is untouched. */
+function shareWayColumn(items, order){
+  for(const id of order){
+    const f=items[id];
+    if(f.type!==FEEDER) continue;
+    const on=carriesOn(items,order,f);
+    if(!on.length) continue;
+    if(f.x===null){ const k=on.find(k=>k.x!==null); if(k) f.x=k.x; }
+    else for(const k of on) if(k.x===null) k.x=f.x;
+  }
+}
 function placeCarried(items, order, f, left, width){
   const on=carriesOn(items,order,f).filter(k=>k.x===null);
   if(!on.length) return;
@@ -460,6 +476,7 @@ function layoutMvBoards(items, order){
   spreadSupplies(items,order,mvbs.concat(rmus),sus,links);
   x=placeSuMid(items,order,x);
   x=placeLooseBoards(items,order,x);
+  shareWayColumn(items,order);
   for(const oid of order){
     const it=items[oid];
     if(it.x===null){
@@ -517,7 +534,8 @@ function layout(items, order){
     /* motor and outgoing ways sit beside the transformer ways, left to
        right; without a slot here they fall to the leftover row at the far
        right and drag their RMU's enclosure across the sheet */
-    const waysR=childrenOf(items,order,rmu.id,[PUMP].concat(LV_LOADS));
+    const waysR=childrenOf(items,order,rmu.id,[PUMP].concat(LV_LOADS))
+      .filter(k=>!carriesOn(items,order,k).length);   /* a carrying way shares its load's column */
     const txsR=childrenOf(items,order,rmu.id,[TRANSFORMER]);
     const placed=txsR.filter(k=>k.x!==null).map(k=>k.x);
     if(waysR.length && placed.length){
@@ -547,6 +565,7 @@ function layout(items, order){
   x=placeSuMid(items,order,x);
   x=placeLvSubs(items,order,x);
   x=placeLooseBoards(items,order,x);
+  shareWayColumn(items,order);
   for(const oid of order){
     const it=items[oid];
     if(it.x===null){
