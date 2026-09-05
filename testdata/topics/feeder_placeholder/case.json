@@ -1,0 +1,30 @@
+{
+  "name": "feeder_placeholder",
+  "group": "topics",
+  "description": "The feeder as a placeholder: a way with a pump on it, a way with an MCC, a way with a sub-board, a blank spare way and a way with a device of its own. A blank Protection cell draws no device, so the equipment hung on the way carries the only one; a written cell draws it, above the equipment's",
+  "info": {
+    "site": "Topic: feeder as a placeholder",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "ranks": {
+      "MSB": 0,
+      "DB1": 1
+    },
+    "legacy": {
+      "items": 11,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

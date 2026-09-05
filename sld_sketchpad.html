@@ -1418,6 +1418,30 @@ function lvKids(items, order, bb){
   return kids;
 }
 function subBoardsOf(items, order, f){ return childrenOf(items,order,f.id,[LV_BUSBAR]); }
+/* What a feeder carries other than a sub-board: the equipment hung on the way.
+   A sub-board has its own path (isSubBoard and the sub-board loop in render);
+   everything else — a motor, an MCC, a transformer, a terminal item, another
+   feeder — takes the feeder's own slot, because the feeder is the way and the
+   thing on the end of it is what the way goes to. */
+function hangingOf(items, order, f, seen=[]){
+  return f.type!==FEEDER || seen.includes(f.id) ? []
+    : childrenOf(items,order,f.id,LV_LOADS.concat([TRANSFORMER])).filter(k=>!seen.includes(k.id));
+}
+/* The board a feeder is a way of. A feeder on MV gear is an outgoing cable
+   way — drawn with its own arrow, in its own slot — not a placeholder, so it
+   has no board here and carries nothing but a sub-board. */
+function feederBoard(items, f){
+  if(!f || f.type!==FEEDER) return null;
+  return f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type)) || null;
+}
+/* Everything a feeder carries, sub-boards and equipment alike — the one
+   judgement the layout, the drawing and the checker all read (constitution
+   §5). A feeder that carries something is a link: a conductor with a device
+   on it, ending at what it feeds, not a symbol with an open end. */
+function carriesOn(items, order, f){
+  const subs=subBoardsOf(items,order,f);
+  return feederBoard(items,f) ? subs.concat(hangingOf(items,order,f)) : subs;
+}
 function isSubBoard(items, bb){
   /* an LV board fed from a feeder or another LV board hangs below it */
   return bb.type===LV_BUSBAR
@@ -1493,7 +1517,7 @@ function lvLevel(items, bb, seen){
   }
   return 0;
 }
-function lvKidWidth(items, order, k){
+function lvKidWidth(items, order, k, seen=[]){
   /* slot width of one way: a plain way, or the sub-board(s) under it */
   if(k.type===LV_BUSBAR || (k.type===MCC && mccLoads(items,order,k).length))
     return lvBoardWidth(items,order,k)+2*SUB_PAD;
@@ -1501,6 +1525,16 @@ function lvKidWidth(items, order, k){
   if(subs.length)
     return Math.max(FEEDER_SPACING,
       subs.reduce((a,b)=>a+lvBoardWidth(items,order,b)+2*SUB_PAD,0));
+  const hang=hangingOf(items,order,k,seen);
+  if(hang.length){
+    /* wide enough for the equipment hung on the way, and for the way's own
+       label beside its device — the equipment fills the column below, so
+       that label is written across rather than down, and needs the room (the
+       same allowance a board transformer gets, below) */
+    const lbl=[k.id,k.desc,k.rating].filter(Boolean).join(" · ");
+    return Math.max(FEEDER_SPACING, 8+lbl.length*5.8+8,
+      hang.reduce((a,h)=>a+lvKidWidth(items,order,h,seen.concat([k.id])),0));
+  }
   if(k.type===TRANSFORMER){   /* a board transformer: room for its label */
     const need=TX_R+10+Math.max(...txLines(k).map(t=>t.length))*7.2+8;
     return Math.max(FEEDER_SPACING, FEEDER_SPACING/2+need);
@@ -1569,6 +1603,22 @@ function placeLvBoard(items, order, bb, cx){
         for(const b of subs){
           const bw=lvBoardWidth(items,order,b)+2*SUB_PAD;
           placeLvBoard(items,order,b,c+bw/2); c+=bw;
+        }
+      }
+      /* the equipment hung on this way stands in the way's own slot */
+      const hang=hangingOf(items,order,k);
+      if(hang.length===1){
+        hang[0].x=k.x;
+        if(hang[0].type===LV_BUSBAR || (hang[0].type===MCC && mccLoads(items,order,hang[0]).length))
+          placeLvBoard(items,order,hang[0],k.x);
+      } else if(hang.length){
+        let c=cur;
+        for(const h of hang){
+          const hw=lvKidWidth(items,order,h,[k.id]);
+          h.x=c+hw/2;
+          if(h.type===LV_BUSBAR || (h.type===MCC && mccLoads(items,order,h).length))
+            placeLvBoard(items,order,h,h.x);
+          c+=hw;
         }
       }
     }
@@ -2377,6 +2427,21 @@ function render(info, items, order, width, canvas){
     return [Y_RMU_TOP+o, Y_RMU_BOT+o, (Y_RMU_TOP+Y_RMU_BOT)/2+o]; };
   const yBus=b=>Y_MVBUS+dy(b)+STEPUP_SHIFT;
   const by=t=>order.map(i=>items[i]).filter(o=>t.includes(o.type));
+  /* A feeder that carries equipment is a link: the way belongs to the thing
+     hung on it, so the run starts at the board the feeder leaves. `kind` is
+     the feeder's own device when its row names one — drawn at the top of the
+     run, above the equipment's; an empty cell adds nothing, which is why a
+     motor on a blank feeder draws exactly as a way of the board does.
+     HANG is how far the equipment moves down to make room for that device. */
+  const HANG=60;
+  const carriedBy=f=>{
+    if(!f || f.type!==FEEDER) return null;
+    const board=f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type));
+    if(!board) return null;
+    const [raw,k]=protFor(f,board.id);
+    const kind=k||(raw.trim()?"cb":null);
+    return { board, y:lvY(board), kind, drop:kind?HANG:0 };
+  };
   const busbars=by([LV_BUSBAR]), mvbs=by([MV_BUSBAR]), rmus=by([RMU]),
         lvsub=lvSubs(items,order), lvsubMid=suMid(items,order),
         txs=order.map(i=>items[i])
@@ -2730,11 +2795,14 @@ function render(info, items, order, width, canvas){
     /* an MV motor sits in the transformer row; a motor fed from an LV
        board or its own transformer hangs in the feeder band below it */
     const lvPar=p.parents.map(q=>items[q])
-      .filter(o=>[LV_BUSBAR,TRANSFORMER,MCC].includes(o.type));
+      .filter(o=>[LV_BUSBAR,TRANSFORMER,MCC,FEEDER].includes(o.type));
     if(lvPar.length && lvPar[0].type===TRANSFORMER && txBoard(items,lvPar[0]))
       lvPar[0]=txBoard(items,lvPar[0]);       /* a way of that board */
+    /* hung on a feeder: the motor sits in the row of the board that way leaves */
+    const onWay=lvPar.length?carriedBy(lvPar[0]):null;
+    if(onWay) lvPar[0]=onWay.board;
     let yc=lvPar.length?Y_ARROW-14:Y_PUMP; const r=lvPar.length?14:PUMP_R;
-    if(lvPar.length && [LV_BUSBAR,MCC].includes(lvPar[0].type)) yc=lvY(lvPar[0])+88-14;
+    if(lvPar.length && [LV_BUSBAR,MCC].includes(lvPar[0].type)) yc=lvY(lvPar[0])+88-14+(onWay?onWay.drop:0);
     else if(lvPar.length && boardTx(items,lvPar[0])) yc=lvY(items[lvPar[0].parents[0]])+190;
     const vsd=stateWords(p).has("vsd");
     for(const q of p.parents){
@@ -2751,6 +2819,12 @@ function render(info, items, order, width, canvas){
         const yb=lvY(par);
         svg.dot(p.x,yb);
         svg.drop(p.x,yb,yc-r,protFor(p,pid)[1]||(par.type===MCC?"contactor":"cb"),yb+30);
+      } else if(par.type===FEEDER){
+        /* the way out of the board carries this motor: one run, starting at
+           the foot of the way's own device — the way drew that device, and
+           the dot on the bar, in its own row */
+        const c=carriedBy(par);
+        if(c) svg.drop(p.x,c.y+c.drop,yc-r,protFor(p,pid)[1]||"contactor",c.y+c.drop+30);
       } else if(par.type===TRANSFORMER){     /* motor on its own transformer */
         if(boardTx(items,par)){              /* under its board's row */
           const yT=lvY(items[par.parents[0]])+70+27+TX_R;
@@ -3262,6 +3336,11 @@ function render(info, items, order, width, canvas){
     let par=f.parents.length?items[f.parents[0]]:null;
     const pid=par?par.id:null;
     if(par && par.type===TRANSFORMER && txBoard(items,par)) par=txBoard(items,par);  /* a way of the board it feeds */
+    /* hung on a feeder: this row lands on the board the feeder is a way of,
+       below the way's own device */
+    const onWay=(par && par.type===FEEDER && carriesOn(items,order,par).some(k=>k.id===f.id))
+      ? carriedBy(par) : null;
+    if(onWay) par=onWay.board;
     /* A feeder names its device or has none. It is the way out of a board —
        a placeholder to hang equipment on — so inventing a breaker for it puts
        two devices in series on a run where the surveyor asked for one. Every
@@ -3309,7 +3388,8 @@ function render(info, items, order, width, canvas){
       svg.end();
       continue;
     }
-    const yb=(par && (par.type===LV_BUSBAR||par.type===MCC))?lvY(par):Y_BUS;
+    const yb=onWay?onWay.y+onWay.drop
+           :(par && (par.type===LV_BUSBAR||par.type===MCC))?lvY(par):Y_BUS;
     let yDev=yb+30; const yArrow=yb+88; let yLbl=yb+106;
     let yFrom=yb;
     if(par && par.type===TRANSFORMER && f.type===MCC){
@@ -3317,7 +3397,7 @@ function render(info, items, order, width, canvas){
          down, no bar to land on */
       yFrom=(f.id in loadTop)?loadTop[f.id]:ytopTx;
       yDev=(yFrom+yArrow-26)/2;
-    } else svg.dot(f.x,yb);
+    } else if(!onWay) svg.dot(f.x,yb);   /* on a way: the way drew the dot and its own device */
     if(f.type===MCC){
       runDown(f.x,yFrom,yArrow-26,yDev);
       svg.rect(f.x-14,yArrow-26,28,26,2);
@@ -3336,9 +3416,16 @@ function render(info, items, order, width, canvas){
       runDown(f.x,yb,yArrow-24,yDev);
       const h=svg.terminal(f.type,f.x,yArrow-24);
       yLbl=yArrow-24+h+12;
-    } else if(subBoardsOf(items,order,f).length){
-      /* the drop carries on to the sub-board below (drawn with it) */
-      svg.text(f.x+8,yDev+30,lbl,{size:11,anchor:"start"});
+    } else if(carriesOn(items,order,f).length){
+      /* The drop carries on to what the way goes to, so there is no arrow:
+         the way is not an open end, and an arrowhead here would land on the
+         equipment. A sub-board's run is drawn whole by the sub-board loop
+         (both devices, `twoDevices`); anything else hangs from the foot of
+         the way's own device, which the way draws here so that it belongs to
+         the way's row and not to the equipment's. */
+      if(!subBoardsOf(items,order,f).length && kind)
+        svg.drop(f.x,yb,yb+HANG,kind,yb+30,dash);
+      svg.text(f.x+8,(subBoardsOf(items,order,f).length?yDev:yb)+30,lbl,{size:11,anchor:"start"});
       svg.end();
       continue;
     } else {

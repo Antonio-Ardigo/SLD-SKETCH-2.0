@@ -15,7 +15,7 @@
  * lines, arrows) claims the conductor ends that touch it, and a bar's own
  * nodes belong to the bar. Then paths are searched between items. */
 import { BUS_COUPLER, FEEDER, PUMP, MCC, LV_BUSBAR, TRANSFORMER } from "./types.js";
-import { txBoard, subBoardsOf } from "./layout.js";
+import { txBoard, carriesOn } from "./layout.js";
 import { couplerOf } from "./couplers.js";
 
 const TOL = 1.0, TOUCH = 2.2, LONG = 20;
@@ -80,9 +80,11 @@ export function expectedEdges(items, order) {
       let from = p;
       /* a motor or MCC named on a transformer that feeds a board is a way of that board */
       if ([PUMP, MCC].includes(it.type) && items[p].type === TRANSFORMER) { const b = txBoard(items, items[p]); if (b) from = b.id; }
-      /* a feeder that only carries on to sub-boards is a link, not a symbol: judge board → sub-board */
-      if (items[p].type === FEEDER && it.type === LV_BUSBAR) {
-        const pb = items[p].parents.map(q => items[q]).find(o => o && o.type === LV_BUSBAR);
+      /* a feeder that carries something on is a link, not a symbol — a
+         sub-board, a motor, an MCC, a transformer alike: judge board → what
+         the way goes to, naming the way */
+      if (items[p].type === FEEDER && carriesOn(items, order, items[p]).some(k => k.id === id)) {
+        const pb = items[p].parents.map(q => items[q]).find(o => o && [LV_BUSBAR, MCC].includes(o.type));
         if (pb) { out.push([pb.id, id, `${p}`]); continue; }
       }
       out.push([from, id, null]);
@@ -97,7 +99,7 @@ export function linkRows(items, order) {
   for (const id of order) {
     const it = items[id];
     if (it.type === BUS_COUPLER) s.add(id);
-    if (it.type === FEEDER && subBoardsOf(items, order, it).length) s.add(id);
+    if (it.type === FEEDER && carriesOn(items, order, it).length) s.add(id);
   }
   return s;
 }
