@@ -410,6 +410,37 @@ any difference, so an improvement lands with the number it earned and a
 regression cannot land quietly. `testdata/usage/README.md` states the
 counting rule.
 
+**Continuous integration.** `.github/workflows/ci.yml` runs on every push and
+pull request, in two jobs so a failure says which half broke. `engine` is pure
+Node — the test suites, the 79 goldens byte for byte, and a check that the
+generated files (the presets, the example workbooks, `sld_sketchpad.html`) are
+not stale, because a source edit that was never rebuilt ships a stale page.
+`page` builds the page, drives it in headless Chrome for the smoke checks, and
+holds the entry baseline. Nothing is installed: there are no npm dependencies
+and SheetJS is vendored.
+
+**The demo film.** `node tools/demo-video.mjs` records
+`output/sld-demo.mp4` — a narrated run through drawing a small substation by
+dragging symbols, from the incomer to the last pump. It drives the same
+headless Chromium the smoke test uses, and every drop in it is a real `drop`
+event carrying a real `DataTransfer`, so the film cannot show behaviour the
+page does not have; a pointer, the carried chip and a caption bar are drawn
+over the page, and nothing else is touched. It needs `ffmpeg` and `espeak-ng`,
+the only two things in this repository that are not already needed to run the
+tests — which is why CI does not run it.
+
+For the commentary it looks for three synthesisers, best first, and they are
+three different things. **piper** is a neural vocoder trained on recorded
+speech: it generates the waveform continuously, so there are no seams inside a
+word — `pip install piper-tts`, then put a voice model in `vendor/piper/`
+(gitignored, ~60 MB; `en_GB-alba-medium.onnx` and its `.json` from the
+`rhasspy/piper-voices` collection). **mbrola** (`apt-get install mbrola
+mbrola-en1`) is diphone synthesis — recorded fragments butted together, warmer
+than formant but you can hear the joins. **espeak-ng** alone is formant
+synthesis: nothing in it was ever spoken, and it is the metallic one, kept so
+the tool always runs. Either way the narration is EQ'd and levelled on the way
+out, lightly for piper and heavily for the others.
+
 `sld_sketchpad.html` is **built**: `node tools/build-page.mjs` concatenates
 the modules into the page's single `<script>` (browsers refuse `import` from
 `file://`, and the page must open from a plain file) and inlines the vendored

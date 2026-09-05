@@ -6,6 +6,12 @@
  * offline), and hand back `evaluate` for expressions in the page. Needs no npm
  * packages.
  *
+ * Needs **Node 22 or newer**: the DevTools protocol is spoken over the global
+ * `WebSocket`, which Node did not expose before 22. The engine and the CLI
+ * still run on 20 (package.json's `engines`, and CI keeps that honest) — it is
+ * only this harness, and so `npm run smoke` and `npm run baseline`, that wants
+ * the newer runtime.
+ *
  *   const pg = await openPage();
  *   const n = await pg.evaluate(`document.querySelectorAll('#eqbody tr').length`);
  *   pg.close();
