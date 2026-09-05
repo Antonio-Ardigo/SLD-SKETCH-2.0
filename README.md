@@ -270,7 +270,9 @@ an earthing transformer, ending in a resistor to earth instead of an "outgoing
 not defined" stub.
 
 **Notes that change the symbol.** *VSD* (or *VFD*, *drive*) in a motor's
-Description or Notes puts a drive box on its drop; Notes starting with
+Description or Notes puts a drive box on its drop, and *soft starter* (or
+*soft start*) a *Soft S.* box in the same place — a drive wins when a row
+says both; Notes starting with
 *spare*, *future* or *out of service* dash the way's conductor; *N.O.* or
 *normally open* in an RMU's Notes marks the open point of a ring with an
 "N.O." on the cable to the RMU it names (`N.O. towards RMU2`), or under the

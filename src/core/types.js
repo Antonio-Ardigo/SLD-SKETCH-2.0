@@ -85,11 +85,12 @@ function earthBelow(items, tx){
 }
 function stateWords(item){
   /* Notes that change how the item's way is drawn: spare / future / out of
-     service dash the conductor, VSD puts a drive box on a motor's drop,
-     N.O. marks an open way */
+     service dash the conductor, VSD puts a drive box on a motor's drop and
+     "soft starter" a Soft S. box in the same place, N.O. marks an open way */
   const n=item.notes.trim().toLowerCase(), out=new Set();
   if(["spare","future","out of service","o/s"].some(w=>n.startsWith(w))) out.add("spare");
   if(hasWord(words(item),["vsd","vfd","drive"])) out.add("vsd");
+  if(hasWord(words(item),["soft starter","soft-starter","softstarter","soft start","soft-start","softstart"])) out.add("softstart");
   if(hasWord(n,["n.o.","n.o","normally open","open point","ring open","open here"])) out.add("no");
   return out;
 }

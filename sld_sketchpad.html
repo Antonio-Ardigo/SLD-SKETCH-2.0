@@ -383,6 +383,7 @@
       <table>
         <tr><th>Write</th><th>Where</th><th>Effect</th></tr>
         <tr><td><code>VSD</code>, <code>VFD</code>, <code>drive</code></td><td>Description or Notes of a Pump</td><td>a drive box on the motor's drop</td></tr>
+        <tr><td><code>soft starter</code>, <code>soft start</code></td><td>Description or Notes of a Pump</td><td>a <em>Soft S.</em> box in the same place (a drive wins when both are written)</td></tr>
         <tr><td><code>Spare</code>, <code>Future</code>, <code>Out of service</code></td><td>at the start of Notes</td><td>the way's conductor drawn dashed</td></tr>
         <tr><td><code>N.O.</code>, <code>Normally open</code></td><td>Notes of a Bus Coupler</td><td>printed under the coupler</td></tr>
         <tr><td><code>N.O. towards RMU2</code>, <code>ring open here</code></td><td>Notes of an RMU</td><td>an N.O. marker on the cable to the RMU named, or under the box when none is named</td></tr>
@@ -576,11 +577,12 @@ function earthBelow(items, tx){
 }
 function stateWords(item){
   /* Notes that change how the item's way is drawn: spare / future / out of
-     service dash the conductor, VSD puts a drive box on a motor's drop,
-     N.O. marks an open way */
+     service dash the conductor, VSD puts a drive box on a motor's drop and
+     "soft starter" a Soft S. box in the same place, N.O. marks an open way */
   const n=item.notes.trim().toLowerCase(), out=new Set();
   if(["spare","future","out of service","o/s"].some(w=>n.startsWith(w))) out.add("spare");
   if(hasWord(words(item),["vsd","vfd","drive"])) out.add("vsd");
+  if(hasWord(words(item),["soft starter","soft-starter","softstarter","soft start","soft-start","softstart"])) out.add("softstart");
   if(hasWord(n,["n.o.","n.o","normally open","open point","ring open","open here"])) out.add("no");
   return out;
 }
@@ -2297,6 +2299,9 @@ class SVG {
   vsd(x,y){              /* drive box over a motor's drop, conductor running through */
     this.rect(x-12,y-7,24,14,1.5,null,"white"); this.text(x,y+3,"VSD",{size:7.5});
   }
+  softStart(x,y){        /* soft starter: the same box, in the same place, reading Soft S. */
+    this.rect(x-16,y-7,32,14,1.5,null,"white"); this.text(x,y+3,"Soft S.",{size:7.5});
+  }
   /* a generation source: the G circle, or its variants — an inverter (the
      ~ / = box in the circle) and a battery (two plates) */
   genMark(x,cy,r,variant){
@@ -3011,7 +3016,7 @@ function render(info, items, order, width, canvas){
     let yc=mvMotor?Y_PUMP:Y_ARROW-14; const r=mvMotor?PUMP_R:14;
     if(lvPar.length && [LV_BUSBAR,MCC].includes(lvPar[0].type)) yc=lvY(lvPar[0])+88-14+(onWay?onWay.drop:0);
     else if(lvPar.length && boardTx(items,lvPar[0])) yc=lvY(items[lvPar[0].parents[0]])+190;
-    const vsd=stateWords(p).has("vsd");
+    const vsd=stateWords(p).has("vsd"), soft=!vsd && stateWords(p).has("softstart");   /* a drive supersedes a soft starter */
     for(const q of p.parents){
       let par=items[q];
       const pid=par.id;                 /* the protection entry is the row's */
@@ -3042,6 +3047,7 @@ function render(info, items, order, width, canvas){
       }
     }
     if(vsd) svg.vsd(p.x,yc-r-14);           /* drive box on the drop */
+    else if(soft) svg.softStart(p.x,yc-r-14); /* soft starter box, same place */
     svg.circle(p.x,yc,r,2.2);
     svg.text(p.x,yc+1,"M",{size:r>13?13:11,bold:true});
     svg.text(p.x,r>13?yc+13:yc+11,"3~",{size:8.5});

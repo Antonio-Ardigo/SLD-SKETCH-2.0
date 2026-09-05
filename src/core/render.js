@@ -479,7 +479,7 @@ function render(info, items, order, width, canvas){
     let yc=mvMotor?Y_PUMP:Y_ARROW-14; const r=mvMotor?PUMP_R:14;
     if(lvPar.length && [LV_BUSBAR,MCC].includes(lvPar[0].type)) yc=lvY(lvPar[0])+88-14+(onWay?onWay.drop:0);
     else if(lvPar.length && boardTx(items,lvPar[0])) yc=lvY(items[lvPar[0].parents[0]])+190;
-    const vsd=stateWords(p).has("vsd");
+    const vsd=stateWords(p).has("vsd"), soft=!vsd && stateWords(p).has("softstart");   /* a drive supersedes a soft starter */
     for(const q of p.parents){
       let par=items[q];
       const pid=par.id;                 /* the protection entry is the row's */
@@ -510,6 +510,7 @@ function render(info, items, order, width, canvas){
       }
     }
     if(vsd) svg.vsd(p.x,yc-r-14);           /* drive box on the drop */
+    else if(soft) svg.softStart(p.x,yc-r-14); /* soft starter box, same place */
     svg.circle(p.x,yc,r,2.2);
     svg.text(p.x,yc+1,"M",{size:r>13?13:11,bold:true});
     svg.text(p.x,r>13?yc+13:yc+11,"3~",{size:8.5});

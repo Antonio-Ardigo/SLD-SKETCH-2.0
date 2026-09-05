@@ -45,6 +45,7 @@ export class SceneCanvas extends SVG {
   lbs(x, yt, yb) { const top = this.depth === 0; this.depth++; super.lbs(x, yt, yb); this.depth--; if (top) this._zone(x, (yt + yb) / 2, (yb - yt) / 2, "v", "lbs"); }
   fuseSwitch(x, yt, yb) { const top = this.depth === 0; this.depth++; super.fuseSwitch(x, yt, yb); this.depth--; if (top) this._zone(x, (yt + yb) / 2, (yb - yt) / 2, "v", "fuse-switch"); }
   vsd(x, y) { this.depth++; super.vsd(x, y); this.depth--; this._zone(x, y, 7, "v", "vsd"); }
+  softStart(x, y) { this.depth++; super.softStart(x, y); this.depth--; this._zone(x, y, 7, "v", "softstart"); }
 
   scene() { return { ops: this.ops, devices: this.devices, groups: this.groups }; }
 }
