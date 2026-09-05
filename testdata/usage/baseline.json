@@ -124,6 +124,17 @@
     "strokesOnTheWay": 0,
     "strokesOnTheMotor": 5
   },
+  "T9_transformer_on_an_mv_way": {
+    "actions": 2,
+    "drawing": "fresh",
+    "export": true,
+    "wayProt": "",
+    "txOnTheWay": true,
+    "warnings": 1,
+    "errors": 0,
+    "sameColumn": true,
+    "strokesOnTheWay": 0
+  },
   "W8_prototype_supply": {
     "outcome": {
       "errors": 1,

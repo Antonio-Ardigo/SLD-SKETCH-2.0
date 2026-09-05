@@ -1,0 +1,26 @@
+{
+  "name": "rmu_way_placeholder",
+  "group": "topics",
+  "description": "A way out of an RMU carrying a transformer. The RMU draws the device of every way inside its enclosure, so the way hands over a bare conductor from the bottom of the box: one device on the run, not two",
+  "info": {
+    "site": "Topic: a way out of an RMU",
+    "date": "",
+    "by": "",
+    "notes": ""
+  },
+  "expect": {
+    "diagnostics": [],
+    "golden": true,
+    "legacy": {
+      "items": 6,
+      "errors": 0,
+      "warnings": 0
+    },
+    "check": {
+      "items": "all",
+      "edges": "all",
+      "overlaps": 0,
+      "falseNets": 0
+    }
+  }
+}

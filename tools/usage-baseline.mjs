@@ -330,6 +330,32 @@ await task("T8_pump_on_a_way", async () => {
     strokesOnTheWay: await strokes(way), strokesOnTheMotor: await strokes(motor) };
 });
 
+/* T9 — the same placeholder pattern on the MV side: a way out of the MV
+   switchboard, then the transformer it goes to. Measured because it used to
+   cost the same two gestures and produce a transformer floating at the far
+   right of the sheet, with nothing said about it. */
+await task("T9_transformer_on_an_mv_way", async () => {
+  await loadRows(TWIN);
+  await gestures.drop("Feeder", "MVB1");
+  await settle();
+  const way = await evaluate(`state.rows.map(r=>r.id).filter(id=>!${q(TWIN.map(r => r.id))}.includes(id))[0]`);
+  await gestures.drop("Transformer", way);
+  await settle();
+  const s = await state();
+  const tx = await evaluate(`state.rows.filter(r=>r.type==='Transformer').map(r=>r.id).filter(id=>!${q(TWIN.map(r => r.id))}.includes(id))[0]`);
+  const strokes = id => evaluate(`document.querySelectorAll('#sheet svg g[data-id="'+${q(id)}+'"] line').length`);
+  return { wayProt: await evaluate(`state.rows[rowIndexOf(${q(way)})].prot`),
+    txOnTheWay: await evaluate(`state.rows[rowIndexOf(${q(tx)})].from`) === way,
+    warnings: s.warnings, errors: s.errors, drawing: s.drawing, export: s.export,
+    /* the transformer stands in the way's own column: the dot the way put on
+       the bar and the transformer's winding circles share an x */
+    sameColumn: await evaluate(`(function(){
+      const d=document.querySelector('#sheet svg g[data-id="'+${q(way)}+'"] circle');
+      const c=document.querySelector('#sheet svg g[data-id="'+${q(tx)}+'"] circle');
+      return !!(d&&c) && Math.abs(+d.getAttribute('cx') - +c.getAttribute('cx')) < 1; })()`),
+    strokesOnTheWay: await strokes(way) };
+});
+
 /* W8 — a supply named after something every object inherits */
 await scenario("W8_prototype_supply", async () => {
   await loadRows(TWIN);

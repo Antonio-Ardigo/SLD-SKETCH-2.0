@@ -1,7 +1,7 @@
 import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, ALIASES, CAP_WORDS, EARTH_WORDS, ARRESTER_WORDS, words, hasWord, earthBelow, PROT_ALIASES, TYPE_VARIANTS, idKey } from "./types.js";
 import { genFeeds } from "./geometry.js";
 import { canSupply, isRoot } from "./supplies.js";
-import { txBoard } from "./layout.js";
+import { txBoard, feederBoard } from "./layout.js";
 import { makeDiag } from "./diagnostics.js";
 
 /* ------------------------------------------------ model helpers */
@@ -169,6 +169,17 @@ function buildModel(rows){
       for(const p of it.parents)
         if(items[p] && items[p].type===TRANSFORMER && txBoard(items,items[p]))
           warn("LOAD_ON_BOARD_TX",[id,p],`"${id}" feeds from transformer "${p}", which feeds board "${txBoard(items,items[p]).id}" — drawn as a way of that board (put the board in Feeds From).`);
+    /* A way is a way out of a board, and what is named on one hangs there.
+       A "way" that is not on a board — a feeder off a motor, or one whose own
+       supply the sheet never resolved — has nowhere to hang anything, so the
+       row it carries draws floating. That used to be silent: the drawing said
+       "supply not defined" and no message named the cell (constitution §6). */
+    for(const p of it.parents){
+      const f=items[p];
+      if(f && f.type===FEEDER && !feederBoard(items,f))
+        warn("WAY_NOT_ON_BOARD",[id,p],
+          `"${id}" feeds from "${p}", which is not a way of any board — drawn without that supply.`);
+    }
     if(it.type===MCC)
       for(const p of it.parents)
         if(items[p] && [MV_BUSBAR,RMU].includes(items[p].type))
