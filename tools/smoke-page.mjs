@@ -66,6 +66,20 @@ try {
      s.dispatchEvent(new Event('input',{bubbles:true})); s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
   check("switching back to Feeder clears it again", await evaluate(`document.querySelector('tr[data-i="8"] [data-f="prot"]').value`) === "");
 
+  /* the Protection picker follows the row's Type: the whole vocabulary every
+     time, the gear that Type usually carries first */
+  const protList = async i => {
+    await evaluate(`(function(){ const el=document.querySelector('tr[data-i="${i}"] [data-f="prot"]');
+      el.dispatchEvent(new FocusEvent('focusin',{bubbles:true})); })()`);
+    return JSON.parse(await evaluate(`JSON.stringify([...document.querySelectorAll('#protlist option')].map(o=>o.value))`));
+  };
+  const wayList = await protList(8);
+  check("the Protection picker offers the whole vocabulary, not six words",
+    wayList.length >= 14 && wayList.includes("MCCB") && wayList.includes("ACB") && wayList.includes("Unknown"), wayList.join(","));
+  check("and puts a way's own gear first on a feeder", wayList[0] === "MCCB", wayList.join(","));
+  const txRow = await evaluate(`rowIndexOf('TX1')`);
+  check("a transformer is offered its own gear first", (await protList(txRow))[0] === "Fuse-switch");
+
   /* a bad Feeds from highlights the row and lists a clickable problem */
   await evaluate(`(function(){ const el=document.querySelector('tr[data-i="8"] [data-f="id"]'); el.value='F9'; el.dispatchEvent(new Event('input',{bubbles:true}));
      const f=document.querySelector('tr[data-i="8"] [data-f="from"]'); f.value='NOPE'; f.dispatchEvent(new Event('input',{bubbles:true})); })()`);

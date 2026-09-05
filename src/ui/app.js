@@ -9,7 +9,8 @@ import { renderPdf } from "../core/pdf.js";
 import { SVG } from "../core/svg.js";
 import { symbolForType } from "../core/symbols/registry.js";
 import { proposeRow, nextId } from "../core/propose.js";
-import { supplyCandidates } from "../core/supplies.js";
+import { supplyCandidates, typeLabel } from "../core/supplies.js";
+import { protCandidates } from "../core/protection.js";
 import { renameReferences, canFollowRename } from "../core/edit.js";
 import { couplerDiagnostics } from "../core/couplers.js";
 import { HEADERS, FIELDS, rowsToCsv, readCsv, readTable } from "../io/csv.js";
@@ -383,8 +384,15 @@ function refreshIdList(input){
   idListFor=key;
   const taken=prefix.split(",").map(s=>s.trim()).filter(Boolean);
   const canon=ALIASES[type.toLowerCase().replace(/\s+/g," ")]||null;
-  if(!canon){   /* no Type yet, or the whole list for the drawing: plain IDs */
-    fillList("idlist", ids.filter(i=>i!==own && !taken.includes(i)).map(i=>prefix+i));
+  if(!canon){
+    /* No Type on this row yet, so there is nothing to rank the supplies by —
+       but every item on the sheet is still offered, each saying what it is,
+       so the list is a search of the equipment and not a wall of IDs. */
+    const [items]=currentModel();
+    fillList("idlist", ids.filter(i=>i!==own && !taken.includes(i)).map(i=>{
+      const it=items[i];
+      return { value:prefix+i, label: it ? typeLabel(it.type)+(it.desc?" · "+it.desc:"") : "" };
+    }));
     return;
   }
   const [items,order]=currentModel();
@@ -413,6 +421,8 @@ eqbody.addEventListener("focusin",e=>{
   const type=(state.rows[+e.target.closest("tr").dataset.i]||{}).type||"";
   if(f==="voltage") fillList("voltlist", quickVolt(type));
   else if(f==="rating") fillList("ratinglist", quickRating(type));
+  else if(f==="prot") fillList("protlist",
+    protCandidates(canonType(type), variantOf(type)).map(c=>({value:c.value, label:c.label})));
   else if(f==="from") refreshIdList(e.target);
 });
 eqbody.addEventListener("change",e=>{

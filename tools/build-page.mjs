@@ -18,7 +18,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /* the original script order: every module only reads earlier ones at load time */
 export const BUNDLE_ORDER = [
-  "src/core/types.js", "src/core/diagnostics.js", "src/core/views.js", "src/core/geometry.js", "src/core/supplies.js", "src/core/model.js",
+  "src/core/types.js", "src/core/diagnostics.js", "src/core/views.js", "src/core/geometry.js", "src/core/supplies.js", "src/core/protection.js", "src/core/model.js",
   "src/core/layout.js", "src/core/svg.js", "src/core/symbols/registry.js", "src/core/couplers.js", "src/core/render.js",
   "src/core/eqtable.js", "src/core/dxf.js", "src/core/pdf.js",
   "src/core/graph.js", "src/io/csv.js", "src/core/pipeline.js", "src/core/propose.js", "src/core/edit.js",

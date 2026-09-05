@@ -39,8 +39,15 @@ same kind. **Voltage** and
 **Rating** offer standard values for what the row *is*, however its Type is
 spelled — a `PFC` or a `Cap bank` is a capacitor bank and is offered kvar, a
 `Genset` kVA, a `Trafo` the transformer ratios (11 kV, 400 V, 11/0.4 kV,
-1000 kVA, 250 A, 55 kW, 300 kvar, …); choosing a **Type** fills the usual Protection if
-the cell is empty. `Enter` moves down a row (a new one after the last),
+1000 kVA, 250 A, 55 kW, 300 kvar, …). **Protection** does the same for the
+switchgear: the whole vocabulary every time — ACB, CB, MCCB, MCB, VCB, RCBO,
+LBS, Isolator, Fuse, Fuse-switch, Contactor, Fuse-contactor, Motor starter —
+with the gear that Type usually carries first (an RMU is offered `LBS`, a
+motor `Contactor`, a way `MCCB`, a transformer `Fuse-switch`) and the rest
+marked *unusual here*. Nothing is hidden: the order is the advice, not a rule.
+The last entry is **Unknown** — for a device you can see is there but whose
+type you did not get; the default symbol is drawn and nothing is reported.
+Choosing a **Type** fills the usual Protection if the cell is empty. `Enter` moves down a row (a new one after the last),
 `Alt`+`↑`/`↓` moves the row, `Ctrl`+`Z` / `Ctrl`+`Y` undo and redo. A message
 in the problems box marks the row it is about and clicking it jumps there.
 **Import…** (or dropping a file on the table) loads a survey workbook, a CSV
@@ -153,7 +160,7 @@ diagram's title block.
 | Description | Free text | `Oil-immersed, Dyn11` |
 | Rating | From the nameplate | `1000 kVA`, `630 A` |
 | Voltage | From the nameplate | `11/0.4 kV`, `400 V` |
-| Protection | Device on **this item's supply side**: CB, LBS, Fuse, Fuse-switch, Contactor. Blank = the usual default. Comma list matches Feeds From order. Free text on a busbar (e.g. `87B differential`) is printed as a label annotation | `CB` or `LBS, CB` |
+| Protection | Device on **this item's supply side**, from a drop-down that follows the row's Type: ACB, CB, MCCB, MCB, VCB, RCBO, LBS, Isolator, Fuse, Fuse-switch, Contactor, Fuse-contactor, Motor starter, or **Unknown** for a device whose type you did not get. Blank = the usual default for that Type, and on a **Feeder** it means no device at all (see *The feeder is a placeholder*). Comma list matches Feeds From order. Free text on a busbar (e.g. `87B differential`) is printed as a label annotation | `CB` or `LBS, CB` |
 | Feeds From | ID of the item supplying this one; comma for two supplies | `RMU1` or `BB1, BB2` |
 | Notes | Anything else | `Normally open` |
 
@@ -488,7 +495,15 @@ blade: an × at the hinge is a circuit breaker, a circle at the hinge (blade
 onto a contact bar) is a load-break switch (switch-disconnector), an arc at
 the hinge is a contactor, a small rectangle with the conductor through it is
 a fuse (switch + rectangle = fuse-switch), and a Fuse-contactor (an MV motor
-starter) is the fuse in series with the contactor. Protection never changes the topology — only `Feeds
+starter) is the fuse in series with the contactor. The words are read
+loosely, so a sheet may say what it says: `MCCB`, `MCB`, `ACB`, `VCB`, `RCBO`,
+`Breaker` all draw the breaker; `Isolator`, `Disconnector`, `Switch` the
+load-break switch; `SFU`, `Switch-fuse` the fuse-switch; `Starter`,
+`Motor starter` the fused contactor; `Unknown` or `TBC` the default symbol,
+without a complaint. A word outside that vocabulary still draws the default
+symbol and is reported, so `Thermal relay` — a relay, not a switching device —
+is drawn as the breaker it trips and named in the problems box.
+Protection never changes the topology — only `Feeds
 From` does — it only changes which symbol sits on the connection. Protection
 on an MV Incomer is the utility's device and is not drawn (you get a warning).
 RMU-to-RMU interconnecting cables draw a load-break switch inside each

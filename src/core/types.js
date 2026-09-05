@@ -102,6 +102,13 @@ const PROT_ALIASES = {
   "fuse-switch":"fuse-switch", "fuse switch":"fuse-switch",
   "switch-fuse":"fuse-switch", "switch fuse":"fuse-switch",
   "sfu":"fuse-switch",
+  /* a breaker that also trips on earth leakage: the switching device is a
+     breaker and draws as one — the leakage element has no symbol of its own */
+  "rcbo":"cb", "rccb":"cb", "rcd":"cb", "elcb":"cb",
+  /* a device is there and its type was not recorded. The default symbol is
+     drawn, exactly as UNKNOWN_PROT promises for a word nobody knows — but
+     this is a deliberate answer, not a typo, so it is not reported */
+  "unknown":"cb", "not known":"cb", "tbc":"cb",
   "contactor":"contactor", "vacuum contactor":"contactor",
   "fuse-contactor":"fuse-contactor", "fuse contactor":"fuse-contactor",
   "fused contactor":"fuse-contactor", "contactor-fuse":"fuse-contactor",
