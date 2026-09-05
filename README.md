@@ -216,6 +216,23 @@ LV board over the bar; several supplies share one spread. A standby set on a
 generator (`MSB3, G1`, Notes `ATS`): the generator drops onto the board
 through the coupler's device, with the coupler's ID and Notes beside it.
 
+**The feeder is a placeholder.** A `Feeder` on an LV Busbar or an MCC is the
+way out of that board — somewhere to hang equipment on. Anything may feed
+from one: a `Pump`, an `MCC`, a `Transformer`, another board, a terminal
+item. What hangs there takes the way's place in the row of ways, and the way
+stops drawing its arrow, because it is no longer an open end.
+
+Its **Protection cell decides whether the way carries a device of its own**.
+Leave it empty and none is drawn, so a motor on a way has one device — its
+own starter — and not two in series. Write one (`MCCB`, `Fuse`, `LBS`…) and
+it is drawn above the equipment's, which is what a real board way feeding an
+MCC or a sub-board looks like. A new feeder is proposed with the cell empty.
+
+> If you are bringing in a spreadsheet where the Protection column was left
+> blank on ways that do have breakers, those breakers will not be drawn. The
+> cell is visibly empty and the equipment table prints it empty, so the
+> drawing and the table agree — fill the column in and they appear.
+
 **Sub-boards.** An `LV Busbar` fed from a **Feeder** (`DBL1` feeds from `F1`)
 or straight from another **LV Busbar** hangs on a row below its supply board,
 under the way that feeds it, with its own feeders under it; the feeder's

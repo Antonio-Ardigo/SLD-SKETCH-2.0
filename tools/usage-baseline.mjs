@@ -303,6 +303,33 @@ await scenario("W7_decoy_id_column", async () => {
     errors: s.errors, drawing: s.drawing };
 });
 
+/* T8 — the placeholder pattern: a way out of the board, then the motor it
+   goes to. The way is what the surveyor writes first while walking the
+   switchroom; the equipment is named later, from the plate on the machine.
+   What is measured is that this costs two gestures and produces one device
+   on the run, not two in series. */
+await task("T8_pump_on_a_way", async () => {
+  await loadRows(TWIN);
+  await gestures.drop("Feeder", "BB1");
+  await settle();
+  /* the new way is spliced in after the board's last existing one, not at the
+     end of the sheet — ask which ID appeared */
+  const way = await evaluate(`state.rows.map(r=>r.id).filter(id=>!${q(TWIN.map(r => r.id))}.includes(id))[0]`);
+  await gestures.drop("Pump", way);
+  await settle();
+  const s = await state();
+  /* the way's group holds a dot and a label and nothing else while its
+      Protection cell is empty: no device was asked for, so none is drawn and
+      the only one on the run is the motor's */
+  const strokes = id => evaluate(`document.querySelectorAll('#sheet svg g[data-id="'+${q(id)}+'"] line').length`);
+  const motor = await evaluate(`(state.rows.find(r=>r.type==='Pump')||{}).id||""`);
+  return { wayProt: await evaluate(`state.rows[rowIndexOf(${q(way)})].prot`),
+    motorOnTheWay: await evaluate(`(state.rows.find(r=>r.type==='Pump')||{}).from`) === way,
+    warnings: s.warnings, errors: s.errors, drawing: s.drawing, export: s.export,
+    wayIsDrawn: await evaluate(`!!document.querySelector('#sheet svg g[data-id=${JSON.stringify(way)}]')`),
+    strokesOnTheWay: await strokes(way), strokesOnTheMotor: await strokes(motor) };
+});
+
 /* W8 — a supply named after something every object inherits */
 await scenario("W8_prototype_supply", async () => {
   await loadRows(TWIN);
