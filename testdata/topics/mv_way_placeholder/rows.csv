@@ -1,0 +1,9 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Utility,,33 kV,,,
+MVB,MV Busbar,MV switchboard,1250 A,33 kV,CB,MV1,
+W1,Feeder,Way to the substation,630 A,33 kV,CB,MVB,
+TX1,Transformer,Substation,1000 kVA,33/0.4 kV,CB,W1,
+BB1,LV Busbar,Main LV board,1600 A,400 V,CB,TX1,
+W2,Feeder,Way to the MV motor,250 A,33 kV,CB,MVB,
+P1,Pump,Raw water pump,500 kW,33 kV,Fuse-contactor,W2,
+W3,Feeder,Cable to the farm,160 A,33 kV,CB,MVB,

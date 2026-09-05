@@ -1,7 +1,7 @@
 import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, LV_LOADS, hasWord, earthBelow, stateWords, protFor } from "./types.js";
 import { Y_LABEL, Y_MV_TOP, Y_RMU_TOP, Y_RMU_BOT, Y_MVBUS, PUMP_R, TX_R, STEPUP_H, GEN_H, LV_SUB_H, Y_GEN, Y_SU_C1, Y_SU_C2, STEPUP_SHIFT, Y_PUMP, Y_TX_C1, Y_TX_C2, Y_BUS, Y_ARROW, DIAG_H, LABEL_CHAR, extendSheet, labelClearance, allocLanes, setTiers, VIEW, genFeeds, mvGens, rmuHang, hangHas, suMid, lvSubs, stepUps, genBelow, mvDepth, levelLinks, tierOffsets } from "./geometry.js";
 import { childrenOf } from "./model.js";
-import { mccLoads, subBoardsOf, carriesOn, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
+import { mccLoads, subBoardsOf, carriesOn, feederBoard, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
 import { SVG } from "./svg.js";
 import { legendEntries, drawSymbol } from "./symbols/registry.js";
 import { couplerOf } from "./couplers.js";
@@ -102,12 +102,16 @@ function render(info, items, order, width, canvas){
      HANG is how far the equipment moves down to make room for that device. */
   const HANG=60;
   const carriedBy=f=>{
-    if(!f || f.type!==FEEDER) return null;
-    const board=f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type));
-    if(!board) return null;
+    const board=feederBoard(items,f);
+    if(!board || board.x===null) return null;
     const [raw,k]=protFor(f,board.id);
     const kind=k||(raw.trim()?"cb":null);
-    return { board, y:lvY(board), kind, drop:kind?HANG:0 };
+    /* An RMU draws the device of every way *inside* its enclosure, so a way
+       out of one hands over a bare conductor from the bottom of the box —
+       drawing a second device below it would be the same switch twice. */
+    if(board.type===RMU) return { board, y:yRmu(board)[1], kind:null, drop:0 };
+    const y=board.type===MV_BUSBAR?yBus(board):lvY(board);
+    return { board, y, kind, drop:kind?HANG:0 };
   };
   const busbars=by([LV_BUSBAR]), mvbs=by([MV_BUSBAR]), rmus=by([RMU]),
         lvsub=lvSubs(items,order), lvsubMid=suMid(items,order),
@@ -468,7 +472,11 @@ function render(info, items, order, width, canvas){
     /* hung on a feeder: the motor sits in the row of the board that way leaves */
     const onWay=lvPar.length?carriedBy(lvPar[0]):null;
     if(onWay) lvPar[0]=onWay.board;
-    let yc=lvPar.length?Y_ARROW-14:Y_PUMP; const r=lvPar.length?14:PUMP_R;
+    /* a way does not move a motor to another row: one carried by a way out of
+       an MV board is an MV motor, in the transformer row, exactly as it would
+       be named on the bar itself */
+    const mvMotor=!lvPar.length || [MV_BUSBAR,RMU].includes(lvPar[0].type);
+    let yc=mvMotor?Y_PUMP:Y_ARROW-14; const r=mvMotor?PUMP_R:14;
     if(lvPar.length && [LV_BUSBAR,MCC].includes(lvPar[0].type)) yc=lvY(lvPar[0])+88-14+(onWay?onWay.drop:0);
     else if(lvPar.length && boardTx(items,lvPar[0])) yc=lvY(items[lvPar[0].parents[0]])+190;
     const vsd=stateWords(p).has("vsd");
@@ -491,7 +499,9 @@ function render(info, items, order, width, canvas){
            the foot of the way's own device — the way drew that device, and
            the dot on the bar, in its own row */
         const c=carriedBy(par);
-        if(c) svg.drop(p.x,c.y+c.drop,yc-r,protFor(p,pid)[1]||"contactor",c.y+c.drop+30);
+        if(c) svg.drop(p.x,c.y+c.drop,yc-r,
+          protFor(p,pid)[1]||([MV_BUSBAR,RMU].includes(c.board.type)?"cb":"contactor"),
+          c.y+c.drop+30);
       } else if(par.type===TRANSFORMER){     /* motor on its own transformer */
         if(boardTx(items,par)){              /* under its board's row */
           const yT=lvY(items[par.parents[0]])+70+27+TX_R;
@@ -758,6 +768,14 @@ function render(info, items, order, width, canvas){
         svg.drop(tx.x,yBus(par),Y_TX_C1-TX_R,protFor(tx,par.id)[1]||"cb");
         svg.dot(tx.x,yBus(par));
       }
+      else if(par.type===FEEDER){
+        /* carried by a way out of a board: the way drew the bar dot and its
+           own device, and this run starts at the foot of it. The transformer
+           still draws the device its own row names — two cells, two devices,
+           the same rule as everywhere else. */
+        const c=carriedBy(par);
+        if(c) svg.drop(tx.x,c.y+c.drop,Y_TX_C1-TX_R,protFor(tx,par.id)[1]||"cb");
+      }
       else if(par.type===LV_BUSBAR && par.xLeft!==null){
         /* supply comes back up from an LV board on the same row */
         const kind=protFor(tx,par.id)[1]||"cb";
@@ -776,8 +794,11 @@ function render(info, items, order, width, canvas){
         svg.dot(xLand,Y_BUS);
       }
     }
-    if(!tx.parents.some(p=>[RMU,MV_BUSBAR,LV_BUSBAR,MV_INCOMER].includes(items[p].type)
-                           && items[p].x!==null))
+    /* a way counts as a supply only when it resolved to a board that was
+       placed: a way the drawing could not follow leaves the open end, because
+       the note is then the truth */
+    if(!tx.parents.some(p=>([RMU,MV_BUSBAR,LV_BUSBAR,MV_INCOMER].includes(items[p].type) && items[p].x!==null)
+                           || (items[p].type===FEEDER && carriedBy(items[p]))))
       svg.openEnd(tx.x,Y_TX_C1-TX_R,Y_TX_C1-TX_R-36,"supply not defined");
     if(earthBelow(items,tx)){       /* earthing transformer / NER */
       svg.line(tx.x,Y_TX_C2+TX_R,tx.x,Y_TX_C2+TX_R+10);
@@ -1047,11 +1068,28 @@ function render(info, items, order, width, canvas){
       /* an outgoing way of an MV board: arrow in the transformer row */
       const yTip=Y_PUMP;
       const yEnd=(f.type===FEEDER)?yTip-10:(f.type===MCC)?yTip-26:yTip-24;
-      if(par.type===MV_BUSBAR){
-        const y0=yBus(par);
+      /* A way that carries something is not an open end here either: it runs
+         from the bar to its own device and hands the rest to what it feeds,
+         which is drawn with that row. Without this the arrowhead lands on the
+         equipment and the run is drawn twice down the same x. */
+      if(f.type===FEEDER && carriesOn(items,order,f).length){
+        const c=carriedBy(f);
+        if(c){
+          if(par.type===MV_BUSBAR) svg.dot(f.x,c.y);
+          if(c.kind) svg.drop(f.x,c.y,c.y+c.drop,c.kind,c.y+30,dash);
+          svg.text(f.x+8,c.y+(c.drop?30:16),lbl,{size:11,anchor:"start"});
+        }
+        svg.end();
+        continue;
+      }
+      /* a row that is itself on a way starts at the foot of the way's device */
+      const y0=onWay?onWay.y+onWay.drop
+             :(par.type===MV_BUSBAR)?yBus(par):yRmu(par)[1];
+      if(par.type===MV_BUSBAR && !onWay){
         svg.dot(f.x,y0);
         runDown(f.x,y0,yEnd,undefined);
-      } else svg.line(f.x,yRmu(par)[1],f.x,yEnd,2,dash);  /* device in the enclosure */
+      } else if(onWay) runDown(f.x,y0,yEnd,undefined);
+      else svg.line(f.x,y0,f.x,yEnd,2,dash);  /* device in the enclosure */
       if(f.type===FEEDER){
         svg.arrowDown(f.x,yTip);
         svg.text(f.x+4,yTip+14,lbl,{size:11,anchor:"start",rotate:90});

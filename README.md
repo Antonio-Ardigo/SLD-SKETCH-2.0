@@ -223,17 +223,27 @@ LV board over the bar; several supplies share one spread. A standby set on a
 generator (`MSB3, G1`, Notes `ATS`): the generator drops onto the board
 through the coupler's device, with the coupler's ID and Notes beside it.
 
-**The feeder is a placeholder.** A `Feeder` on an LV Busbar or an MCC is the
-way out of that board — somewhere to hang equipment on. Anything may feed
-from one: a `Pump`, an `MCC`, a `Transformer`, another board, a terminal
-item. What hangs there takes the way's place in the row of ways, and the way
-stops drawing its arrow, because it is no longer an open end.
+**The feeder is a placeholder.** A `Feeder` is the way out of the board it
+names — an `LV Busbar`, an `MCC`, an `MV Busbar` or an `RMU` alike —
+somewhere to hang equipment on. Anything may feed from one: a `Pump`, an
+`MCC`, a `Transformer`, another board, a terminal item. What hangs there
+takes the way's place in the row of ways, and the way stops drawing its
+arrow, because it is no longer an open end. A way that carries **nothing**
+is the outgoing cable it always was, and keeps its arrow.
 
 Its **Protection cell decides whether the way carries a device of its own**.
 Leave it empty and none is drawn, so a motor on a way has one device — its
 own starter — and not two in series. Write one (`MCCB`, `Fuse`, `LBS`…) and
 it is drawn above the equipment's, which is what a real board way feeding an
 MCC or a sub-board looks like. A new feeder is proposed with the cell empty.
+The one exception is an **RMU**, which draws the device of every way inside
+its enclosure: a way out of one hands over a bare conductor from the bottom
+of the box, because a second device below it would be the same switch drawn
+twice.
+
+A "way" that is **not on a board** — one named on a motor, or one whose own
+supply the sheet never resolved — has nothing to hang anything from, so what
+it carries draws floating and the row is named in the problems box.
 
 > If you are bringing in a spreadsheet where the Protection column was left
 > blank on ways that do have breakers, those breakers will not be drawn. The
@@ -415,8 +425,9 @@ src/core/     the engine, as ES modules: types, supplies (which supply can feed
 src/io/       csv and xlsx (SheetJS) ⇄ table rows
 src/ui/       page.html (template), app.js (table, viewer, import), presets.generated.js
 src/cli/      sld.js — draw | dxf
-tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page, usage-baseline
+tools/        import-xlsx, golden, gen-fixtures, build-page, smoke-page, usage-baseline, proposal-audit
 testdata/usage/  the entry baseline: actions per task, outcomes when the topology is wrong
+testdata/proposals/  the proposal audit: what a surveyor has to correct after a drop, ranked
 testdata/     the cases; test/ the node --test suites
 ```
 
@@ -433,6 +444,20 @@ a supply too many, a spreadsheet with a decoy ID column. `--check` fails on
 any difference, so an improvement lands with the number it earned and a
 regression cannot land quietly. `testdata/usage/README.md` states the
 counting rule.
+
+**The proposal audit.** `testdata/proposals/AUDIT.md` is whether what the
+engine pre-fills is what the sheet wanted, measured: `node
+tools/proposal-audit.mjs` generates two hundred plausible sites from a seeded
+grammar, scores each for plausibility (its shape's frequency among the real
+fixtures × hard consistency checks × how often the pool writes each value),
+builds each the way a surveyor does — drop the item on its supply, read the
+proposal, correct it, fill the rest — and ranks the corrections by how often
+they happen on how plausible a site. Every correction is labelled against the
+pool, and only the ones the pool backs make the headline; the generator's
+opinion is kept apart. `--check` fails if any class moves, `--page` rebuilds
+one sheet per shape in the browser and confirms the page hands over exactly
+what the engine returns. The audit proposes the engine change that would
+remove each class; it does not make it (`testdata/proposals/README.md`).
 
 **Continuous integration.** `.github/workflows/ci.yml` runs on every push and
 pull request, in two jobs so a failure says which half broke. `engine` is pure

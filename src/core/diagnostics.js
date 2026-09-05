@@ -32,6 +32,7 @@ export const DIAG = {
   LOAD_ON_BOARD_TX:  { level: "warning", about: "a motor or MCC named on a transformer that feeds a board; drawn as a way of that board" },
   MCC_ON_MV:         { level: "warning", about: "an MCC fed from MV gear" },
   MCC_BAD_SUPPLY:    { level: "warning", about: "an MCC fed from something other than an LV board, an MCC or a transformer" },
+  WAY_NOT_ON_BOARD:  { level: "warning", about: "a row fed from a feeder that is not a way of any board, so there is nothing to hang it on" },
   GEN_NO_LOAD:       { level: "warning", about: "a generator that feeds nothing" },
   /* the network: couplers */
   COUPLER_INVALID:   { level: "warning", about: "a bus coupler not between two busbars of the same kind; drawn from the end it has, the other open" },

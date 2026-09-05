@@ -1,0 +1,17 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+INC1,MV Incomer,Utility incomer B,,3.3 kV,,,
+MVB1,MV Busbar,11 kV board A,630 A,3.3 kV,CB,INC1,
+TX1,Transformer,"Riser R2, Dyn11",2000 kVA,3.3/0.4 kV,CB,MVB1,
+MSB1,LV Busbar,Annexe DB,3200 A,400 V,CB,TX1,
+F1,Feeder,HVAC,250 A,400 V,CB,MSB1,
+F2,Feeder,Backwash valves,63 A,400 V,MCCB,MSB1,
+F3,Feeder,Chemical building DB,160 A,400 V,CB,MSB1,
+F4,Feeder,Sockets east,250 A,400 V,CB,MSB1,
+F5,Feeder,Spare,250 A,400 V,CB,MSB1,Spare
+F6,Feeder,Spare 2,250 A,400 V,MCB,MSB1,
+F7,Feeder,Intake lighting,32 A,400 V,CB,MSB1,
+F8,Feeder,Backwash valves 2,630 A,400 V,CB,MSB1,
+F9,Feeder,HVAC 2,250 A,400 V,CB,MSB1,
+F10,Feeder,Intake lighting 2,630 A,400 V,CB,MSB1,
+F11,Feeder,Intake lighting 3,250 A,400 V,CB,MSB1,
+F12,Feeder,HVAC 3,63 A,400 V,MCCB,MSB1,

@@ -31,17 +31,27 @@ function hangingOf(items, order, f, seen=[]){
   return f.type!==FEEDER || seen.includes(f.id) ? []
     : childrenOf(items,order,f.id,LV_LOADS.concat([TRANSFORMER])).filter(k=>!seen.includes(k.id));
 }
-/* The board a feeder is a way of. A feeder on MV gear is an outgoing cable
-   way — drawn with its own arrow, in its own slot — not a placeholder, so it
-   has no board here and carries nothing but a sub-board. */
+/* The board a feeder is a way of — the one place that decides it, so that the
+   layout, the drawing and the checker cannot each hold a different opinion
+   (constitution §5).
+
+   A way is a way on either side of the transformer. This used to answer only
+   for an LV board or an MCC, which made a way out of an MV switchboard a
+   terminating cable and nothing else: a transformer named on one was given no
+   slot, landed in the leftover column past the end of the sheet, drew no
+   conductor at all and said "supply not defined" — while the table plainly
+   named its supply, and nothing was reported.
+
+   The LV types stay first, so an LV way resolves exactly as it always did
+   when a row names two supplies. */
+const WAY_BOARDS=[LV_BUSBAR,MCC,MV_BUSBAR,RMU];
 function feederBoard(items, f){
   if(!f || f.type!==FEEDER) return null;
-  return f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type)) || null;
+  return f.parents.map(q=>items[q]).find(o=>o && WAY_BOARDS.includes(o.type)) || null;
 }
-/* Everything a feeder carries, sub-boards and equipment alike — the one
-   judgement the layout, the drawing and the checker all read (constitution
-   §5). A feeder that carries something is a link: a conductor with a device
-   on it, ending at what it feeds, not a symbol with an open end. */
+/* Everything a feeder carries, sub-boards and equipment alike. A feeder that
+   carries something is a link: a conductor with a device on it, ending at
+   what it feeds, not a symbol with an open end. */
 function carriesOn(items, order, f){
   const subs=subBoardsOf(items,order,f);
   return feederBoard(items,f) ? subs.concat(hangingOf(items,order,f)) : subs;
@@ -86,6 +96,38 @@ function loadSlot(items, order, k){   /* slot width of one such load */
   if(k.type===MCC && mccLoads(items,order,k).length)
     return lvBoardWidth(items,order,k)+2*SUB_PAD;
   return k.type===PUMP?PUMP_SLOT:FEEDER_SPACING;
+}
+/* What a way carries, laid across the way's own slot [left, left+width]. A
+   transformer takes `placeTxLoads` so its own motors follow it down; anything
+   else is one slot wide. A way carrying nothing does nothing here, which is
+   what keeps a sheet without one byte-identical. */
+/* A way and what it carries stand in one column. The two layout paths reach
+   them from opposite ends — the MV board's own pass places the way and hands
+   its slot down (placeCarried), while the RMU-without-a-switchboard path
+   places the transformer under its board and leaves the way behind — so this
+   reconciles whichever came first rather than adding a third placement rule.
+   A way carrying nothing is untouched. */
+function shareWayColumn(items, order){
+  for(const id of order){
+    const f=items[id];
+    if(f.type!==FEEDER) continue;
+    const on=carriesOn(items,order,f);
+    if(!on.length) continue;
+    if(f.x===null){ const k=on.find(k=>k.x!==null); if(k) f.x=k.x; }
+    else for(const k of on) if(k.x===null) k.x=f.x;
+  }
+}
+function placeCarried(items, order, f, left, width){
+  const on=carriesOn(items,order,f).filter(k=>k.x===null);
+  if(!on.length) return;
+  const need=on.reduce((a,k)=>a+slotWidth(items,order,k),0);
+  let cur=left+(width-need)/2;
+  for(const k of on){
+    const w=slotWidth(items,order,k);
+    if(k.type===TRANSFORMER) placeTxLoads(items,order,k,cur,w);
+    else k.x=cur+w/2;
+    cur+=w;
+  }
 }
 function placeLoad(items, order, k, left){
   /* place one transformer load from `left`; returns the next cursor */
@@ -246,6 +288,15 @@ function slotWidth(items, order, item){
       w=Math.max(w, txLoads(items,order,item).reduce((a,k)=>a+loadSlot(items,order,k),0));
     return w;
   }
+  /* a way with something on it needs room for it: the way is the way, and
+     what is on the end of it stands in the way's own slot (the same rule
+     lvKidWidth applies on the LV side) */
+  if(item.type===FEEDER){
+    const on=carriesOn(items,order,item);
+    if(on.length)
+      return Math.max(FEEDER_SPACING,
+        on.reduce((a,k)=>a+slotWidth(items,order,k),0));
+  }
   if(LV_LOADS.includes(item.type)) return FEEDER_SPACING;
   return 130;
 }
@@ -367,6 +418,9 @@ function placeOwn(items, order, node, left, width, depth){
     else {
       if(k.type===TRANSFORMER) placeTxLoads(items,order,k,cursor,w);
       else k.x=cursor+w/2;
+      /* a way carries its equipment across its own slot: the way's x is where
+         its device sits on the bar, and what it feeds stands under it */
+      if(k.type===FEEDER) placeCarried(items,order,k,cursor,w);
       span.push(k.x);
     }
     cursor+=w+SLOT_GAP;
@@ -422,6 +476,7 @@ function layoutMvBoards(items, order){
   spreadSupplies(items,order,mvbs.concat(rmus),sus,links);
   x=placeSuMid(items,order,x);
   x=placeLooseBoards(items,order,x);
+  shareWayColumn(items,order);
   for(const oid of order){
     const it=items[oid];
     if(it.x===null){
@@ -479,7 +534,8 @@ function layout(items, order){
     /* motor and outgoing ways sit beside the transformer ways, left to
        right; without a slot here they fall to the leftover row at the far
        right and drag their RMU's enclosure across the sheet */
-    const waysR=childrenOf(items,order,rmu.id,[PUMP].concat(LV_LOADS));
+    const waysR=childrenOf(items,order,rmu.id,[PUMP].concat(LV_LOADS))
+      .filter(k=>!carriesOn(items,order,k).length);   /* a carrying way shares its load's column */
     const txsR=childrenOf(items,order,rmu.id,[TRANSFORMER]);
     const placed=txsR.filter(k=>k.x!==null).map(k=>k.x);
     if(waysR.length && placed.length){
@@ -509,6 +565,7 @@ function layout(items, order){
   x=placeSuMid(items,order,x);
   x=placeLvSubs(items,order,x);
   x=placeLooseBoards(items,order,x);
+  shareWayColumn(items,order);
   for(const oid of order){
     const it=items[oid];
     if(it.x===null){

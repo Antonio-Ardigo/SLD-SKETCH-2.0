@@ -1,0 +1,17 @@
+ID,Type,Description,Rating,Voltage,Protection,Feeds From,Notes
+MV1,MV Incomer,Primary substation,,11 kV,,,
+MVB1,MV Busbar,11 kV main board,1250 A,11 kV,CB,MV1,
+T1,Transformer,"Chemical tx, Dyn11",1000 kVA,11/0.4 kV,CB,MVB1,
+LVB1,LV Busbar,Chemical MSB,1600 A,400 V,MCCB,T1,
+F1,Feeder,Chemical building DB,100 A,400 V,MCCB,LVB1,
+F2,Feeder,Gallery lighting,100 A,400 V,CB,LVB1,
+F3,Feeder,Sockets east,63 A,400 V,CB,LVB1,
+M1,Pump,Dosing pump 1,22 kW,400 V,Contactor,LVB1,
+F4,Feeder,Filter gallery DB,32 A,400 V,CB,LVB1,
+F5,Feeder,Backwash valves,630 A,400 V,MCCB,LVB1,
+F6,Feeder,Chemical building DB 2,250 A,400 V,MCB,LVB1,
+F7,Feeder,HVAC,100 A,400 V,MCB,LVB1,
+F8,Feeder,Backwash valves 2,160 A,400 V,CB,LVB1,
+F9,Feeder,Gallery lighting 2,32 A,400 V,MCB,LVB1,
+F10,Feeder,Spare,400 A,400 V,CB,LVB1,Spare
+F11,Feeder,Backwash valves 3,630 A,400 V,MCB,LVB1,

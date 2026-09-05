@@ -147,6 +147,26 @@
   table.eq tr.warn td:first-child { box-shadow: inset 3px 0 0 #d9a441; }
   table.eq tr.flash input, table.eq tr.flash select { background: var(--field); transition: background .6s; }
   /* cells the engine proposed when the row was added; the tint goes on the first keystroke */
+  /* the value list for the cell being filled in. A native <datalist> hid most
+     of itself: the browser narrows its popup to the entries matching whatever
+     the cell already says, so opening the Feeds from of a row reading "BB1"
+     offered one line. This one is the page's own, and shows every candidate
+     with what it is. */
+  #picker {
+    position: absolute; z-index: 60; max-height: 264px; overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 5px; box-shadow: var(--sheet-shadow);
+    padding: 3px; min-width: 180px; max-width: 460px;
+  }
+  #picker .opt {
+    display: flex; gap: 10px; align-items: baseline; white-space: nowrap;
+    padding: 4px 8px; border-radius: 3px; cursor: pointer;
+  }
+  #picker .opt b { font: 600 12.5px "IBM Plex Mono", ui-monospace, monospace; }
+  #picker .opt span { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+  #picker .opt:hover { background: var(--field); }
+  #picker .opt.on { background: var(--field); outline: 1px solid var(--accent); outline-offset: -1px; }
+
   table.eq input.proposed {
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent) 45%, transparent);
@@ -410,11 +430,6 @@
         </thead>
         <tbody id="eqbody"></tbody>
       </table>
-      <!-- filled by the page: the IDs on the sheet, and standard values for the row's type -->
-      <datalist id="protlist"></datalist>
-      <datalist id="idlist"></datalist>
-      <datalist id="voltlist"></datalist>
-      <datalist id="ratinglist"></datalist>
     </div>
     <div class="tbl-foot">
       <button id="addrow" class="primary">+ Add row</button>
@@ -465,6 +480,11 @@
     ctrl+wheel zoom it. Your table and your view are kept in this browser between visits.
   </footer>
 </div>
+
+<!-- the value list for the cell being filled in: drawn by the page, so that a
+     cell that already has a value still offers everything (see the pickers in
+     the script below) -->
+<div id="picker" hidden role="listbox" aria-label="Values for this cell"></div>
 
 <script>
 "use strict";
@@ -632,6 +652,7 @@ const DIAG = {
   LOAD_ON_BOARD_TX:  { level: "warning", about: "a motor or MCC named on a transformer that feeds a board; drawn as a way of that board" },
   MCC_ON_MV:         { level: "warning", about: "an MCC fed from MV gear" },
   MCC_BAD_SUPPLY:    { level: "warning", about: "an MCC fed from something other than an LV board, an MCC or a transformer" },
+  WAY_NOT_ON_BOARD:  { level: "warning", about: "a row fed from a feeder that is not a way of any board, so there is nothing to hang it on" },
   GEN_NO_LOAD:       { level: "warning", about: "a generator that feeds nothing" },
   /* the network: couplers */
   COUPLER_INVALID:   { level: "warning", about: "a bus coupler not between two busbars of the same kind; drawn from the end it has, the other open" },
@@ -1484,6 +1505,17 @@ function buildModel(rows){
       for(const p of it.parents)
         if(items[p] && items[p].type===TRANSFORMER && txBoard(items,items[p]))
           warn("LOAD_ON_BOARD_TX",[id,p],`"${id}" feeds from transformer "${p}", which feeds board "${txBoard(items,items[p]).id}" — drawn as a way of that board (put the board in Feeds From).`);
+    /* A way is a way out of a board, and what is named on one hangs there.
+       A "way" that is not on a board — a feeder off a motor, or one whose own
+       supply the sheet never resolved — has nowhere to hang anything, so the
+       row it carries draws floating. That used to be silent: the drawing said
+       "supply not defined" and no message named the cell (constitution §6). */
+    for(const p of it.parents){
+      const f=items[p];
+      if(f && f.type===FEEDER && !feederBoard(items,f))
+        warn("WAY_NOT_ON_BOARD",[id,p],
+          `"${id}" feeds from "${p}", which is not a way of any board — drawn without that supply.`);
+    }
     if(it.type===MCC)
       for(const p of it.parents)
         if(items[p] && [MV_BUSBAR,RMU].includes(items[p].type))
@@ -1537,17 +1569,27 @@ function hangingOf(items, order, f, seen=[]){
   return f.type!==FEEDER || seen.includes(f.id) ? []
     : childrenOf(items,order,f.id,LV_LOADS.concat([TRANSFORMER])).filter(k=>!seen.includes(k.id));
 }
-/* The board a feeder is a way of. A feeder on MV gear is an outgoing cable
-   way — drawn with its own arrow, in its own slot — not a placeholder, so it
-   has no board here and carries nothing but a sub-board. */
+/* The board a feeder is a way of — the one place that decides it, so that the
+   layout, the drawing and the checker cannot each hold a different opinion
+   (constitution §5).
+
+   A way is a way on either side of the transformer. This used to answer only
+   for an LV board or an MCC, which made a way out of an MV switchboard a
+   terminating cable and nothing else: a transformer named on one was given no
+   slot, landed in the leftover column past the end of the sheet, drew no
+   conductor at all and said "supply not defined" — while the table plainly
+   named its supply, and nothing was reported.
+
+   The LV types stay first, so an LV way resolves exactly as it always did
+   when a row names two supplies. */
+const WAY_BOARDS=[LV_BUSBAR,MCC,MV_BUSBAR,RMU];
 function feederBoard(items, f){
   if(!f || f.type!==FEEDER) return null;
-  return f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type)) || null;
+  return f.parents.map(q=>items[q]).find(o=>o && WAY_BOARDS.includes(o.type)) || null;
 }
-/* Everything a feeder carries, sub-boards and equipment alike — the one
-   judgement the layout, the drawing and the checker all read (constitution
-   §5). A feeder that carries something is a link: a conductor with a device
-   on it, ending at what it feeds, not a symbol with an open end. */
+/* Everything a feeder carries, sub-boards and equipment alike. A feeder that
+   carries something is a link: a conductor with a device on it, ending at
+   what it feeds, not a symbol with an open end. */
 function carriesOn(items, order, f){
   const subs=subBoardsOf(items,order,f);
   return feederBoard(items,f) ? subs.concat(hangingOf(items,order,f)) : subs;
@@ -1592,6 +1634,38 @@ function loadSlot(items, order, k){   /* slot width of one such load */
   if(k.type===MCC && mccLoads(items,order,k).length)
     return lvBoardWidth(items,order,k)+2*SUB_PAD;
   return k.type===PUMP?PUMP_SLOT:FEEDER_SPACING;
+}
+/* What a way carries, laid across the way's own slot [left, left+width]. A
+   transformer takes `placeTxLoads` so its own motors follow it down; anything
+   else is one slot wide. A way carrying nothing does nothing here, which is
+   what keeps a sheet without one byte-identical. */
+/* A way and what it carries stand in one column. The two layout paths reach
+   them from opposite ends — the MV board's own pass places the way and hands
+   its slot down (placeCarried), while the RMU-without-a-switchboard path
+   places the transformer under its board and leaves the way behind — so this
+   reconciles whichever came first rather than adding a third placement rule.
+   A way carrying nothing is untouched. */
+function shareWayColumn(items, order){
+  for(const id of order){
+    const f=items[id];
+    if(f.type!==FEEDER) continue;
+    const on=carriesOn(items,order,f);
+    if(!on.length) continue;
+    if(f.x===null){ const k=on.find(k=>k.x!==null); if(k) f.x=k.x; }
+    else for(const k of on) if(k.x===null) k.x=f.x;
+  }
+}
+function placeCarried(items, order, f, left, width){
+  const on=carriesOn(items,order,f).filter(k=>k.x===null);
+  if(!on.length) return;
+  const need=on.reduce((a,k)=>a+slotWidth(items,order,k),0);
+  let cur=left+(width-need)/2;
+  for(const k of on){
+    const w=slotWidth(items,order,k);
+    if(k.type===TRANSFORMER) placeTxLoads(items,order,k,cur,w);
+    else k.x=cur+w/2;
+    cur+=w;
+  }
 }
 function placeLoad(items, order, k, left){
   /* place one transformer load from `left`; returns the next cursor */
@@ -1752,6 +1826,15 @@ function slotWidth(items, order, item){
       w=Math.max(w, txLoads(items,order,item).reduce((a,k)=>a+loadSlot(items,order,k),0));
     return w;
   }
+  /* a way with something on it needs room for it: the way is the way, and
+     what is on the end of it stands in the way's own slot (the same rule
+     lvKidWidth applies on the LV side) */
+  if(item.type===FEEDER){
+    const on=carriesOn(items,order,item);
+    if(on.length)
+      return Math.max(FEEDER_SPACING,
+        on.reduce((a,k)=>a+slotWidth(items,order,k),0));
+  }
   if(LV_LOADS.includes(item.type)) return FEEDER_SPACING;
   return 130;
 }
@@ -1873,6 +1956,9 @@ function placeOwn(items, order, node, left, width, depth){
     else {
       if(k.type===TRANSFORMER) placeTxLoads(items,order,k,cursor,w);
       else k.x=cursor+w/2;
+      /* a way carries its equipment across its own slot: the way's x is where
+         its device sits on the bar, and what it feeds stands under it */
+      if(k.type===FEEDER) placeCarried(items,order,k,cursor,w);
       span.push(k.x);
     }
     cursor+=w+SLOT_GAP;
@@ -1928,6 +2014,7 @@ function layoutMvBoards(items, order){
   spreadSupplies(items,order,mvbs.concat(rmus),sus,links);
   x=placeSuMid(items,order,x);
   x=placeLooseBoards(items,order,x);
+  shareWayColumn(items,order);
   for(const oid of order){
     const it=items[oid];
     if(it.x===null){
@@ -1985,7 +2072,8 @@ function layout(items, order){
     /* motor and outgoing ways sit beside the transformer ways, left to
        right; without a slot here they fall to the leftover row at the far
        right and drag their RMU's enclosure across the sheet */
-    const waysR=childrenOf(items,order,rmu.id,[PUMP].concat(LV_LOADS));
+    const waysR=childrenOf(items,order,rmu.id,[PUMP].concat(LV_LOADS))
+      .filter(k=>!carriesOn(items,order,k).length);   /* a carrying way shares its load's column */
     const txsR=childrenOf(items,order,rmu.id,[TRANSFORMER]);
     const placed=txsR.filter(k=>k.x!==null).map(k=>k.x);
     if(waysR.length && placed.length){
@@ -2015,6 +2103,7 @@ function layout(items, order){
   x=placeSuMid(items,order,x);
   x=placeLvSubs(items,order,x);
   x=placeLooseBoards(items,order,x);
+  shareWayColumn(items,order);
   for(const oid of order){
     const it=items[oid];
     if(it.x===null){
@@ -2545,12 +2634,16 @@ function render(info, items, order, width, canvas){
      HANG is how far the equipment moves down to make room for that device. */
   const HANG=60;
   const carriedBy=f=>{
-    if(!f || f.type!==FEEDER) return null;
-    const board=f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type));
-    if(!board) return null;
+    const board=feederBoard(items,f);
+    if(!board || board.x===null) return null;
     const [raw,k]=protFor(f,board.id);
     const kind=k||(raw.trim()?"cb":null);
-    return { board, y:lvY(board), kind, drop:kind?HANG:0 };
+    /* An RMU draws the device of every way *inside* its enclosure, so a way
+       out of one hands over a bare conductor from the bottom of the box —
+       drawing a second device below it would be the same switch twice. */
+    if(board.type===RMU) return { board, y:yRmu(board)[1], kind:null, drop:0 };
+    const y=board.type===MV_BUSBAR?yBus(board):lvY(board);
+    return { board, y, kind, drop:kind?HANG:0 };
   };
   const busbars=by([LV_BUSBAR]), mvbs=by([MV_BUSBAR]), rmus=by([RMU]),
         lvsub=lvSubs(items,order), lvsubMid=suMid(items,order),
@@ -2911,7 +3004,11 @@ function render(info, items, order, width, canvas){
     /* hung on a feeder: the motor sits in the row of the board that way leaves */
     const onWay=lvPar.length?carriedBy(lvPar[0]):null;
     if(onWay) lvPar[0]=onWay.board;
-    let yc=lvPar.length?Y_ARROW-14:Y_PUMP; const r=lvPar.length?14:PUMP_R;
+    /* a way does not move a motor to another row: one carried by a way out of
+       an MV board is an MV motor, in the transformer row, exactly as it would
+       be named on the bar itself */
+    const mvMotor=!lvPar.length || [MV_BUSBAR,RMU].includes(lvPar[0].type);
+    let yc=mvMotor?Y_PUMP:Y_ARROW-14; const r=mvMotor?PUMP_R:14;
     if(lvPar.length && [LV_BUSBAR,MCC].includes(lvPar[0].type)) yc=lvY(lvPar[0])+88-14+(onWay?onWay.drop:0);
     else if(lvPar.length && boardTx(items,lvPar[0])) yc=lvY(items[lvPar[0].parents[0]])+190;
     const vsd=stateWords(p).has("vsd");
@@ -2934,7 +3031,9 @@ function render(info, items, order, width, canvas){
            the foot of the way's own device — the way drew that device, and
            the dot on the bar, in its own row */
         const c=carriedBy(par);
-        if(c) svg.drop(p.x,c.y+c.drop,yc-r,protFor(p,pid)[1]||"contactor",c.y+c.drop+30);
+        if(c) svg.drop(p.x,c.y+c.drop,yc-r,
+          protFor(p,pid)[1]||([MV_BUSBAR,RMU].includes(c.board.type)?"cb":"contactor"),
+          c.y+c.drop+30);
       } else if(par.type===TRANSFORMER){     /* motor on its own transformer */
         if(boardTx(items,par)){              /* under its board's row */
           const yT=lvY(items[par.parents[0]])+70+27+TX_R;
@@ -3201,6 +3300,14 @@ function render(info, items, order, width, canvas){
         svg.drop(tx.x,yBus(par),Y_TX_C1-TX_R,protFor(tx,par.id)[1]||"cb");
         svg.dot(tx.x,yBus(par));
       }
+      else if(par.type===FEEDER){
+        /* carried by a way out of a board: the way drew the bar dot and its
+           own device, and this run starts at the foot of it. The transformer
+           still draws the device its own row names — two cells, two devices,
+           the same rule as everywhere else. */
+        const c=carriedBy(par);
+        if(c) svg.drop(tx.x,c.y+c.drop,Y_TX_C1-TX_R,protFor(tx,par.id)[1]||"cb");
+      }
       else if(par.type===LV_BUSBAR && par.xLeft!==null){
         /* supply comes back up from an LV board on the same row */
         const kind=protFor(tx,par.id)[1]||"cb";
@@ -3219,8 +3326,11 @@ function render(info, items, order, width, canvas){
         svg.dot(xLand,Y_BUS);
       }
     }
-    if(!tx.parents.some(p=>[RMU,MV_BUSBAR,LV_BUSBAR,MV_INCOMER].includes(items[p].type)
-                           && items[p].x!==null))
+    /* a way counts as a supply only when it resolved to a board that was
+       placed: a way the drawing could not follow leaves the open end, because
+       the note is then the truth */
+    if(!tx.parents.some(p=>([RMU,MV_BUSBAR,LV_BUSBAR,MV_INCOMER].includes(items[p].type) && items[p].x!==null)
+                           || (items[p].type===FEEDER && carriedBy(items[p]))))
       svg.openEnd(tx.x,Y_TX_C1-TX_R,Y_TX_C1-TX_R-36,"supply not defined");
     if(earthBelow(items,tx)){       /* earthing transformer / NER */
       svg.line(tx.x,Y_TX_C2+TX_R,tx.x,Y_TX_C2+TX_R+10);
@@ -3490,11 +3600,28 @@ function render(info, items, order, width, canvas){
       /* an outgoing way of an MV board: arrow in the transformer row */
       const yTip=Y_PUMP;
       const yEnd=(f.type===FEEDER)?yTip-10:(f.type===MCC)?yTip-26:yTip-24;
-      if(par.type===MV_BUSBAR){
-        const y0=yBus(par);
+      /* A way that carries something is not an open end here either: it runs
+         from the bar to its own device and hands the rest to what it feeds,
+         which is drawn with that row. Without this the arrowhead lands on the
+         equipment and the run is drawn twice down the same x. */
+      if(f.type===FEEDER && carriesOn(items,order,f).length){
+        const c=carriedBy(f);
+        if(c){
+          if(par.type===MV_BUSBAR) svg.dot(f.x,c.y);
+          if(c.kind) svg.drop(f.x,c.y,c.y+c.drop,c.kind,c.y+30,dash);
+          svg.text(f.x+8,c.y+(c.drop?30:16),lbl,{size:11,anchor:"start"});
+        }
+        svg.end();
+        continue;
+      }
+      /* a row that is itself on a way starts at the foot of the way's device */
+      const y0=onWay?onWay.y+onWay.drop
+             :(par.type===MV_BUSBAR)?yBus(par):yRmu(par)[1];
+      if(par.type===MV_BUSBAR && !onWay){
         svg.dot(f.x,y0);
         runDown(f.x,y0,yEnd,undefined);
-      } else svg.line(f.x,yRmu(par)[1],f.x,yEnd,2,dash);  /* device in the enclosure */
+      } else if(onWay) runDown(f.x,y0,yEnd,undefined);
+      else svg.line(f.x,y0,f.x,yEnd,2,dash);  /* device in the enclosure */
       if(f.type===FEEDER){
         svg.arrowDown(f.x,yTip);
         svg.text(f.x+4,yTip+14,lbl,{size:11,anchor:"start",rotate:90});
@@ -4689,6 +4816,9 @@ function typeSelect(value){
   return `<select data-f="type" aria-label="Type">${opts.join("")}</select>`;
 }
 const PROPOSED_TITLE="proposed by the engine — edit to confirm";
+/* the four cells with a list of their own: the page draws it (see the value
+   pickers below), so the browser's autofill must keep out of the way */
+const LIST=' autocomplete="off"';
 function rebuildTable(){
   eqbody.innerHTML=state.rows.map((r,i)=>{
     const p=new Set(r._p||[]);
@@ -4697,10 +4827,10 @@ function rebuildTable(){
     <td><input data-f="id" value="${esc(r.id)}" aria-label="ID"${mk("id")}></td>
     <td>${typeSelect(r.type)}</td>
     <td><input data-f="desc" value="${esc(r.desc)}" aria-label="Description"${mk("desc")}></td>
-    <td><input data-f="rating" value="${esc(r.rating)}" aria-label="Rating" list="ratinglist"${mk("rating")}></td>
-    <td><input data-f="voltage" value="${esc(r.voltage)}" aria-label="Voltage" list="voltlist"${mk("voltage")}></td>
-    <td><input data-f="prot" value="${esc(r.prot||"")}" aria-label="Protection" list="protlist"${mk("prot")}></td>
-    <td><input data-f="from" value="${esc(r.from)}" aria-label="Feeds from" list="idlist"${mk("from")}></td>
+    <td><input data-f="rating" value="${esc(r.rating)}" aria-label="Rating"${LIST}${mk("rating")}></td>
+    <td><input data-f="voltage" value="${esc(r.voltage)}" aria-label="Voltage"${LIST}${mk("voltage")}></td>
+    <td><input data-f="prot" value="${esc(r.prot||"")}" aria-label="Protection"${LIST}${mk("prot")}></td>
+    <td><input data-f="from" value="${esc(r.from)}" aria-label="Feeds from"${LIST}${mk("from")}></td>
     <td><input data-f="notes" value="${esc(r.notes)}" aria-label="Notes"></td>
     <td class="rowops">
       <button data-op="up" title="Move up">&uarr;</button><button data-op="down" title="Move down">&darr;</button><button data-op="del" class="del" title="Delete row">&times;</button>
@@ -4765,7 +4895,6 @@ function modelRev(){
 }
 function redraw(){
   const {items,order,warnings,diagnostics}=buildModel(state.rows);
-  refreshIdList();
   if(!order.length){
     $("#sheet").innerHTML="";
     const probs=$("#problems");
@@ -5011,49 +5140,142 @@ function quickRating(type){
   if(c===FEEDER) return QUICK.rating.feeder;
   return QUICK.rating.board.concat(QUICK.rating.tx);
 }
-/* values are plain strings, or {value,label} when the option says what it is */
-function fillList(id, values){
-  $("#"+id).innerHTML=values.map(v=>typeof v==="string"
-    ? `<option value="${esc(v)}"></option>`
-    : `<option value="${esc(v.value)}" label="${esc(v.label)}"></option>`).join("");
-}
-/* the Feeds from picker: every ID on the sheet except the row's own, ordered
-   by what can feed this row's Type — the usual supplies first, then what is
-   merely possible, then what cannot (supplies.js). Nothing is hidden; the
-   order and the labels are the advice. Typing "BB1, " then offers
-   "BB1, <id>" for the second supply, preferring another board of the same
-   kind (the far end of a coupler, the second link of a ring). */
-let idListFor=null;
-function refreshIdList(input){
+/* ------------------------------------------------ the value list for a cell
+ *
+ * Feeds from, Protection, Voltage and Rating each have a list of values worth
+ * offering, and each used a native <datalist>. Every option reached the DOM
+ * and the browser then showed only the ones matching what the cell already
+ * said: open the Feeds from of a row that reads "BB1" and the list is one
+ * line long. The engine's ranking and its labels — "LV Busbar · Board A",
+ * "MCCB — a way out of a board", "unusual for a pump" — were never seen on a
+ * cell that had been filled in, which is most of them.
+ *
+ * So the page draws the list itself. It opens on the cell, shows every
+ * candidate whatever the cell says, and narrows only on what is typed after
+ * the cell was entered — the one thing a person means by narrowing.
+ */
+const PICK_FIELDS=["from","prot","voltage","rating"];
+const picker=$("#picker");
+let pick={input:null, opts:[], shown:[], at:-1, opened:""}, accepting=false;
+
+/* Every ID on the sheet except the row's own, ordered by what can feed this
+   row's Type — the usual supplies first, then what merely draws, then what
+   the reader would call impossible (supplies.js). Nothing is hidden; the
+   order and the labels are the advice. Typing "BB1, " then offers the second
+   supply, preferring another board of the same kind (the far end of a
+   coupler, the second link of a ring). */
+function supplyOptions(row, input){
   const ids=state.rows.map(r=>r.id.trim()).filter(Boolean);
-  let own="", prefix="", type="";
-  if(input){
-    const tr=input.closest("tr"), row=state.rows[+tr.dataset.i]||{};
-    own=(row.id||"").trim(); type=(row.type||"").trim();
-    const v=input.value; const k=v.lastIndexOf(",");
-    if(k>=0) prefix=v.slice(0,k+1).replace(/\s*$/," ");
-  }
-  const key=type+"|"+prefix+"|"+own+"|"+ids.join("|");
-  if(key===idListFor) return;
-  idListFor=key;
+  const own=(row.id||"").trim(), type=(row.type||"").trim();
+  const v=input?input.value:"", k=v.lastIndexOf(",");
+  const prefix=k>=0?v.slice(0,k+1).replace(/\s*$/," "):"";
   const taken=prefix.split(",").map(s=>s.trim()).filter(Boolean);
   const canon=ALIASES[type.toLowerCase().replace(/\s+/g," ")]||null;
-  if(!canon){
-    /* No Type on this row yet, so there is nothing to rank the supplies by —
-       but every item on the sheet is still offered, each saying what it is,
-       so the list is a search of the equipment and not a wall of IDs. */
-    const [items]=currentModel();
-    fillList("idlist", ids.filter(i=>i!==own && !taken.includes(i)).map(i=>{
+  const [items,order]=currentModel();
+  /* No Type on this row yet, so there is nothing to rank the supplies by —
+     but every item is still offered, each saying what it is, so the list is
+     a search of the equipment and not a wall of IDs. */
+  if(!canon)
+    return ids.filter(i=>i!==own && !taken.includes(i)).map(i=>{
       const it=items[i];
       return { value:prefix+i, label: it ? typeLabel(it.type)+(it.desc?" · "+it.desc:"") : "" };
-    }));
-    return;
-  }
-  const [items,order]=currentModel();
+    });
   const first=taken.length&&items[taken[0]]?items[taken[0]].type:null;
-  fillList("idlist", supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
-    .map(c=>({value:prefix+c.id, label:c.label})));
+  return supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
+    .map(c=>({value:prefix+c.id, label:c.label}));
 }
+function optionsFor(f, i, input){
+  const row=state.rows[i]||{}, type=(row.type||"").trim();
+  if(f==="from") return supplyOptions(row,input);
+  if(f==="prot") return protCandidates(canonType(type),variantOf(type)).map(c=>({value:c.value,label:c.label}));
+  if(f==="voltage") return quickVolt(type).map(v=>({value:v,label:""}));
+  if(f==="rating") return quickRating(type).map(v=>({value:v,label:""}));
+  return [];
+}
+/* what is typed after the cell was entered, and only that: a value already in
+   the cell is what you came to change, not what you are searching for */
+function pickShown(){
+  const v=pick.input.value;
+  if(v===pick.opened) return pick.opts;
+  const k=v.lastIndexOf(",");
+  const frag=(k>=0?v.slice(k+1):v).trim().toLowerCase();
+  if(!frag) return pick.opts;
+  return pick.opts.filter(o=>{
+    const val=o.value.slice(o.value.lastIndexOf(",")+1).trim().toLowerCase();
+    return val.includes(frag) || o.label.toLowerCase().includes(frag);
+  });
+}
+function openPicker(input){
+  const tr=input.closest("tr"); if(!tr) return;
+  pick={ input, opts:optionsFor(input.dataset.f, +tr.dataset.i, input), shown:[], at:-1, opened:input.value };
+  drawPicker();
+}
+function drawPicker(){
+  if(!pick.input) return;
+  pick.shown=pickShown();
+  if(!pick.shown.length){ closePicker(); return; }
+  if(pick.at>=pick.shown.length) pick.at=pick.shown.length-1;
+  picker.innerHTML=pick.shown.map((o,n)=>
+    `<div class="opt${n===pick.at?" on":""}" role="option" data-n="${n}"><b>${esc(o.value)}</b>`+
+    (o.label?`<span>${esc(o.label)}</span>`:"")+`</div>`).join("");
+  const r=pick.input.getBoundingClientRect();
+  picker.style.left=(r.left+window.scrollX)+"px";
+  picker.style.top=(r.bottom+window.scrollY+2)+"px";
+  picker.style.minWidth=r.width+"px";
+  picker.hidden=false;
+  const on=picker.querySelector(".opt.on"); if(on) on.scrollIntoView({block:"nearest"});
+}
+function closePicker(){ picker.hidden=true; picker.innerHTML=""; pick.input=null; pick.shown=[]; pick.at=-1; }
+/* accepting writes the cell the way typing does, so the snapshot, the tint and
+   the redraw are the ones every other edit goes through */
+function acceptPick(n){
+  const o=pick.shown[n], el=pick.input;
+  if(!o || !el) return;
+  closePicker();
+  accepting=true;
+  el.value=o.value;
+  el.dispatchEvent(new Event("input",{bubbles:true}));
+  el.dispatchEvent(new Event("change",{bubbles:true}));
+  accepting=false;
+  el.focus();
+}
+picker.addEventListener("mousedown",e=>e.preventDefault());   /* the cell keeps the focus */
+picker.addEventListener("click",e=>{
+  const d=e.target.closest(".opt"); if(d) acceptPick(+d.dataset.n);
+});
+eqbody.addEventListener("click",e=>{
+  const f=e.target.dataset&&e.target.dataset.f;
+  if(PICK_FIELDS.includes(f) && !pick.input) openPicker(e.target);
+});
+/* before the row-navigation keys below: while the list is open, Up/Down move
+   in it, Enter and Tab take the highlighted value, Escape puts it away */
+eqbody.addEventListener("keydown",e=>{
+  if(!pick.input || e.target!==pick.input) return;
+  if(e.key==="Escape"){ e.stopPropagation(); closePicker(); return; }
+  if((e.key==="ArrowDown"||e.key==="ArrowUp") && !e.altKey && !e.ctrlKey && !e.metaKey){
+    if(!pick.shown.length) return;
+    e.preventDefault(); e.stopPropagation();
+    const n=pick.shown.length;
+    pick.at=e.key==="ArrowDown" ? (pick.at+1)%n : (pick.at<=0?n-1:pick.at-1);
+    drawPicker();
+  } else if(pick.at>=0 && (e.key==="Enter"||e.key==="Tab")){
+    if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); }   /* Tab still moves on */
+    acceptPick(pick.at);
+  }
+},true);
+/* the list follows its cell rather than vanishing: focusing a cell can scroll
+   the table to reach it, and closing on that scroll shut the list the moment
+   it opened */
+function movePicker(){
+  if(!pick.input) return;
+  const r=pick.input.getBoundingClientRect();
+  if(r.bottom<0 || r.top>innerHeight){ closePicker(); return; }   /* scrolled out of sight */
+  picker.style.left=(r.left+window.scrollX)+"px";
+  picker.style.top=(r.bottom+window.scrollY+2)+"px";
+}
+addEventListener("scroll",movePicker,true);
+addEventListener("resize",movePicker);
+
 /* renaming an ID: the name it had when the cell was entered, so that on
    commit every Feeds From that named it can follow (src/core/edit.js) */
 let idBefore="";
@@ -5072,12 +5294,8 @@ eqbody.addEventListener("change",e=>{
 eqbody.addEventListener("focusin",e=>{
   const f=e.target.dataset.f; if(!f) return;
   if(f==="id") idBefore=(state.rows[+e.target.closest("tr").dataset.i]||{}).id||"";
-  const type=(state.rows[+e.target.closest("tr").dataset.i]||{}).type||"";
-  if(f==="voltage") fillList("voltlist", quickVolt(type));
-  else if(f==="rating") fillList("ratinglist", quickRating(type));
-  else if(f==="prot") fillList("protlist",
-    protCandidates(canonType(type), variantOf(type)).map(c=>({value:c.value, label:c.label})));
-  else if(f==="from") refreshIdList(e.target);
+  if(PICK_FIELDS.includes(f)) openPicker(e.target);
+  else closePicker();
 });
 eqbody.addEventListener("change",e=>{
   if(e.target.dataset.f!=="type") return;
@@ -5387,7 +5605,7 @@ eqbody.addEventListener("input",e=>{
   const row=state.rows[+tr.dataset.i];
   row[f]=e.target.value;
   clearMark(row,f); e.target.classList.remove("proposed");   /* typed: no longer a proposal */
-  if(f==="from") refreshIdList(e.target);
+  if(!accepting && pick.input===e.target) drawPicker();
   queue();
 });
 eqbody.addEventListener("click",e=>{

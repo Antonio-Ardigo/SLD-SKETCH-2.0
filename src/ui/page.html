@@ -135,6 +135,26 @@
   table.eq tr.warn td:first-child { box-shadow: inset 3px 0 0 #d9a441; }
   table.eq tr.flash input, table.eq tr.flash select { background: var(--field); transition: background .6s; }
   /* cells the engine proposed when the row was added; the tint goes on the first keystroke */
+  /* the value list for the cell being filled in. A native <datalist> hid most
+     of itself: the browser narrows its popup to the entries matching whatever
+     the cell already says, so opening the Feeds from of a row reading "BB1"
+     offered one line. This one is the page's own, and shows every candidate
+     with what it is. */
+  #picker {
+    position: absolute; z-index: 60; max-height: 264px; overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 5px; box-shadow: var(--sheet-shadow);
+    padding: 3px; min-width: 180px; max-width: 460px;
+  }
+  #picker .opt {
+    display: flex; gap: 10px; align-items: baseline; white-space: nowrap;
+    padding: 4px 8px; border-radius: 3px; cursor: pointer;
+  }
+  #picker .opt b { font: 600 12.5px "IBM Plex Mono", ui-monospace, monospace; }
+  #picker .opt span { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+  #picker .opt:hover { background: var(--field); }
+  #picker .opt.on { background: var(--field); outline: 1px solid var(--accent); outline-offset: -1px; }
+
   table.eq input.proposed {
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent) 45%, transparent);
@@ -398,11 +418,6 @@
         </thead>
         <tbody id="eqbody"></tbody>
       </table>
-      <!-- filled by the page: the IDs on the sheet, and standard values for the row's type -->
-      <datalist id="protlist"></datalist>
-      <datalist id="idlist"></datalist>
-      <datalist id="voltlist"></datalist>
-      <datalist id="ratinglist"></datalist>
     </div>
     <div class="tbl-foot">
       <button id="addrow" class="primary">+ Add row</button>
@@ -453,6 +468,11 @@
     ctrl+wheel zoom it. Your table and your view are kept in this browser between visits.
   </footer>
 </div>
+
+<!-- the value list for the cell being filled in: drawn by the page, so that a
+     cell that already has a value still offers everything (see the pickers in
+     the script below) -->
+<div id="picker" hidden role="listbox" aria-label="Values for this cell"></div>
 
 <script>
 @@BUNDLE@@
