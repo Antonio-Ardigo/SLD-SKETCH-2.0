@@ -35,6 +35,9 @@ function typeSelect(value){
   return `<select data-f="type" aria-label="Type">${opts.join("")}</select>`;
 }
 const PROPOSED_TITLE="proposed by the engine — edit to confirm";
+/* the four cells with a list of their own: the page draws it (see the value
+   pickers below), so the browser's autofill must keep out of the way */
+const LIST=' autocomplete="off"';
 function rebuildTable(){
   eqbody.innerHTML=state.rows.map((r,i)=>{
     const p=new Set(r._p||[]);
@@ -43,10 +46,10 @@ function rebuildTable(){
     <td><input data-f="id" value="${esc(r.id)}" aria-label="ID"${mk("id")}></td>
     <td>${typeSelect(r.type)}</td>
     <td><input data-f="desc" value="${esc(r.desc)}" aria-label="Description"${mk("desc")}></td>
-    <td><input data-f="rating" value="${esc(r.rating)}" aria-label="Rating" list="ratinglist"${mk("rating")}></td>
-    <td><input data-f="voltage" value="${esc(r.voltage)}" aria-label="Voltage" list="voltlist"${mk("voltage")}></td>
-    <td><input data-f="prot" value="${esc(r.prot||"")}" aria-label="Protection" list="protlist"${mk("prot")}></td>
-    <td><input data-f="from" value="${esc(r.from)}" aria-label="Feeds from" list="idlist"${mk("from")}></td>
+    <td><input data-f="rating" value="${esc(r.rating)}" aria-label="Rating"${LIST}${mk("rating")}></td>
+    <td><input data-f="voltage" value="${esc(r.voltage)}" aria-label="Voltage"${LIST}${mk("voltage")}></td>
+    <td><input data-f="prot" value="${esc(r.prot||"")}" aria-label="Protection"${LIST}${mk("prot")}></td>
+    <td><input data-f="from" value="${esc(r.from)}" aria-label="Feeds from"${LIST}${mk("from")}></td>
     <td><input data-f="notes" value="${esc(r.notes)}" aria-label="Notes"></td>
     <td class="rowops">
       <button data-op="up" title="Move up">&uarr;</button><button data-op="down" title="Move down">&darr;</button><button data-op="del" class="del" title="Delete row">&times;</button>
@@ -111,7 +114,6 @@ function modelRev(){
 }
 function redraw(){
   const {items,order,warnings,diagnostics}=buildModel(state.rows);
-  refreshIdList();
   if(!order.length){
     $("#sheet").innerHTML="";
     const probs=$("#problems");
@@ -357,49 +359,142 @@ function quickRating(type){
   if(c===FEEDER) return QUICK.rating.feeder;
   return QUICK.rating.board.concat(QUICK.rating.tx);
 }
-/* values are plain strings, or {value,label} when the option says what it is */
-function fillList(id, values){
-  $("#"+id).innerHTML=values.map(v=>typeof v==="string"
-    ? `<option value="${esc(v)}"></option>`
-    : `<option value="${esc(v.value)}" label="${esc(v.label)}"></option>`).join("");
-}
-/* the Feeds from picker: every ID on the sheet except the row's own, ordered
-   by what can feed this row's Type — the usual supplies first, then what is
-   merely possible, then what cannot (supplies.js). Nothing is hidden; the
-   order and the labels are the advice. Typing "BB1, " then offers
-   "BB1, <id>" for the second supply, preferring another board of the same
-   kind (the far end of a coupler, the second link of a ring). */
-let idListFor=null;
-function refreshIdList(input){
+/* ------------------------------------------------ the value list for a cell
+ *
+ * Feeds from, Protection, Voltage and Rating each have a list of values worth
+ * offering, and each used a native <datalist>. Every option reached the DOM
+ * and the browser then showed only the ones matching what the cell already
+ * said: open the Feeds from of a row that reads "BB1" and the list is one
+ * line long. The engine's ranking and its labels — "LV Busbar · Board A",
+ * "MCCB — a way out of a board", "unusual for a pump" — were never seen on a
+ * cell that had been filled in, which is most of them.
+ *
+ * So the page draws the list itself. It opens on the cell, shows every
+ * candidate whatever the cell says, and narrows only on what is typed after
+ * the cell was entered — the one thing a person means by narrowing.
+ */
+const PICK_FIELDS=["from","prot","voltage","rating"];
+const picker=$("#picker");
+let pick={input:null, opts:[], shown:[], at:-1, opened:""}, accepting=false;
+
+/* Every ID on the sheet except the row's own, ordered by what can feed this
+   row's Type — the usual supplies first, then what merely draws, then what
+   the reader would call impossible (supplies.js). Nothing is hidden; the
+   order and the labels are the advice. Typing "BB1, " then offers the second
+   supply, preferring another board of the same kind (the far end of a
+   coupler, the second link of a ring). */
+function supplyOptions(row, input){
   const ids=state.rows.map(r=>r.id.trim()).filter(Boolean);
-  let own="", prefix="", type="";
-  if(input){
-    const tr=input.closest("tr"), row=state.rows[+tr.dataset.i]||{};
-    own=(row.id||"").trim(); type=(row.type||"").trim();
-    const v=input.value; const k=v.lastIndexOf(",");
-    if(k>=0) prefix=v.slice(0,k+1).replace(/\s*$/," ");
-  }
-  const key=type+"|"+prefix+"|"+own+"|"+ids.join("|");
-  if(key===idListFor) return;
-  idListFor=key;
+  const own=(row.id||"").trim(), type=(row.type||"").trim();
+  const v=input?input.value:"", k=v.lastIndexOf(",");
+  const prefix=k>=0?v.slice(0,k+1).replace(/\s*$/," "):"";
   const taken=prefix.split(",").map(s=>s.trim()).filter(Boolean);
   const canon=ALIASES[type.toLowerCase().replace(/\s+/g," ")]||null;
-  if(!canon){
-    /* No Type on this row yet, so there is nothing to rank the supplies by —
-       but every item on the sheet is still offered, each saying what it is,
-       so the list is a search of the equipment and not a wall of IDs. */
-    const [items]=currentModel();
-    fillList("idlist", ids.filter(i=>i!==own && !taken.includes(i)).map(i=>{
+  const [items,order]=currentModel();
+  /* No Type on this row yet, so there is nothing to rank the supplies by —
+     but every item is still offered, each saying what it is, so the list is
+     a search of the equipment and not a wall of IDs. */
+  if(!canon)
+    return ids.filter(i=>i!==own && !taken.includes(i)).map(i=>{
       const it=items[i];
       return { value:prefix+i, label: it ? typeLabel(it.type)+(it.desc?" · "+it.desc:"") : "" };
-    }));
-    return;
-  }
-  const [items,order]=currentModel();
+    });
   const first=taken.length&&items[taken[0]]?items[taken[0]].type:null;
-  fillList("idlist", supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
-    .map(c=>({value:prefix+c.id, label:c.label})));
+  return supplyCandidates(items,order,canon,{exclude:[own,...taken],sameKindAs:first})
+    .map(c=>({value:prefix+c.id, label:c.label}));
 }
+function optionsFor(f, i, input){
+  const row=state.rows[i]||{}, type=(row.type||"").trim();
+  if(f==="from") return supplyOptions(row,input);
+  if(f==="prot") return protCandidates(canonType(type),variantOf(type)).map(c=>({value:c.value,label:c.label}));
+  if(f==="voltage") return quickVolt(type).map(v=>({value:v,label:""}));
+  if(f==="rating") return quickRating(type).map(v=>({value:v,label:""}));
+  return [];
+}
+/* what is typed after the cell was entered, and only that: a value already in
+   the cell is what you came to change, not what you are searching for */
+function pickShown(){
+  const v=pick.input.value;
+  if(v===pick.opened) return pick.opts;
+  const k=v.lastIndexOf(",");
+  const frag=(k>=0?v.slice(k+1):v).trim().toLowerCase();
+  if(!frag) return pick.opts;
+  return pick.opts.filter(o=>{
+    const val=o.value.slice(o.value.lastIndexOf(",")+1).trim().toLowerCase();
+    return val.includes(frag) || o.label.toLowerCase().includes(frag);
+  });
+}
+function openPicker(input){
+  const tr=input.closest("tr"); if(!tr) return;
+  pick={ input, opts:optionsFor(input.dataset.f, +tr.dataset.i, input), shown:[], at:-1, opened:input.value };
+  drawPicker();
+}
+function drawPicker(){
+  if(!pick.input) return;
+  pick.shown=pickShown();
+  if(!pick.shown.length){ closePicker(); return; }
+  if(pick.at>=pick.shown.length) pick.at=pick.shown.length-1;
+  picker.innerHTML=pick.shown.map((o,n)=>
+    `<div class="opt${n===pick.at?" on":""}" role="option" data-n="${n}"><b>${esc(o.value)}</b>`+
+    (o.label?`<span>${esc(o.label)}</span>`:"")+`</div>`).join("");
+  const r=pick.input.getBoundingClientRect();
+  picker.style.left=(r.left+window.scrollX)+"px";
+  picker.style.top=(r.bottom+window.scrollY+2)+"px";
+  picker.style.minWidth=r.width+"px";
+  picker.hidden=false;
+  const on=picker.querySelector(".opt.on"); if(on) on.scrollIntoView({block:"nearest"});
+}
+function closePicker(){ picker.hidden=true; picker.innerHTML=""; pick.input=null; pick.shown=[]; pick.at=-1; }
+/* accepting writes the cell the way typing does, so the snapshot, the tint and
+   the redraw are the ones every other edit goes through */
+function acceptPick(n){
+  const o=pick.shown[n], el=pick.input;
+  if(!o || !el) return;
+  closePicker();
+  accepting=true;
+  el.value=o.value;
+  el.dispatchEvent(new Event("input",{bubbles:true}));
+  el.dispatchEvent(new Event("change",{bubbles:true}));
+  accepting=false;
+  el.focus();
+}
+picker.addEventListener("mousedown",e=>e.preventDefault());   /* the cell keeps the focus */
+picker.addEventListener("click",e=>{
+  const d=e.target.closest(".opt"); if(d) acceptPick(+d.dataset.n);
+});
+eqbody.addEventListener("click",e=>{
+  const f=e.target.dataset&&e.target.dataset.f;
+  if(PICK_FIELDS.includes(f) && !pick.input) openPicker(e.target);
+});
+/* before the row-navigation keys below: while the list is open, Up/Down move
+   in it, Enter and Tab take the highlighted value, Escape puts it away */
+eqbody.addEventListener("keydown",e=>{
+  if(!pick.input || e.target!==pick.input) return;
+  if(e.key==="Escape"){ e.stopPropagation(); closePicker(); return; }
+  if((e.key==="ArrowDown"||e.key==="ArrowUp") && !e.altKey && !e.ctrlKey && !e.metaKey){
+    if(!pick.shown.length) return;
+    e.preventDefault(); e.stopPropagation();
+    const n=pick.shown.length;
+    pick.at=e.key==="ArrowDown" ? (pick.at+1)%n : (pick.at<=0?n-1:pick.at-1);
+    drawPicker();
+  } else if(pick.at>=0 && (e.key==="Enter"||e.key==="Tab")){
+    if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); }   /* Tab still moves on */
+    acceptPick(pick.at);
+  }
+},true);
+/* the list follows its cell rather than vanishing: focusing a cell can scroll
+   the table to reach it, and closing on that scroll shut the list the moment
+   it opened */
+function movePicker(){
+  if(!pick.input) return;
+  const r=pick.input.getBoundingClientRect();
+  if(r.bottom<0 || r.top>innerHeight){ closePicker(); return; }   /* scrolled out of sight */
+  picker.style.left=(r.left+window.scrollX)+"px";
+  picker.style.top=(r.bottom+window.scrollY+2)+"px";
+}
+addEventListener("scroll",movePicker,true);
+addEventListener("resize",movePicker);
+
 /* renaming an ID: the name it had when the cell was entered, so that on
    commit every Feeds From that named it can follow (src/core/edit.js) */
 let idBefore="";
@@ -418,12 +513,8 @@ eqbody.addEventListener("change",e=>{
 eqbody.addEventListener("focusin",e=>{
   const f=e.target.dataset.f; if(!f) return;
   if(f==="id") idBefore=(state.rows[+e.target.closest("tr").dataset.i]||{}).id||"";
-  const type=(state.rows[+e.target.closest("tr").dataset.i]||{}).type||"";
-  if(f==="voltage") fillList("voltlist", quickVolt(type));
-  else if(f==="rating") fillList("ratinglist", quickRating(type));
-  else if(f==="prot") fillList("protlist",
-    protCandidates(canonType(type), variantOf(type)).map(c=>({value:c.value, label:c.label})));
-  else if(f==="from") refreshIdList(e.target);
+  if(PICK_FIELDS.includes(f)) openPicker(e.target);
+  else closePicker();
 });
 eqbody.addEventListener("change",e=>{
   if(e.target.dataset.f!=="type") return;
@@ -733,7 +824,7 @@ eqbody.addEventListener("input",e=>{
   const row=state.rows[+tr.dataset.i];
   row[f]=e.target.value;
   clearMark(row,f); e.target.classList.remove("proposed");   /* typed: no longer a proposal */
-  if(f==="from") refreshIdList(e.target);
+  if(!accepting && pick.input===e.target) drawPicker();
   queue();
 });
 eqbody.addEventListener("click",e=>{

@@ -16,34 +16,62 @@ if (process.env.DEBUG) console.log(await evaluate(`location.href + ' ' + documen
 let failed = 0;
 const check = (name, cond, detail = "") => { console.log(`${cond ? "ok  " : "FAIL"} ${name}${detail ? "  " + detail : ""}`); if (!cond) failed++; };
 const sleep = ms => new Promise(ok => setTimeout(ok, ms));
+const q = v => JSON.stringify(v);
 const csv = fs.readFileSync(path.join(ROOT, "testdata", "sites", "c1_wtw", "rows.csv"), "utf8");
 
 try {
   check("page loaded with preset 1", await evaluate(`document.querySelectorAll('#eqbody tr').length`) === 8);
   check("drawing rendered", await evaluate(`!!document.querySelector('#sheet svg')`));
-  check("Feeds from has the ID picker", await evaluate(`document.querySelector('[data-f="from"]').getAttribute('list')`) === "idlist");
-  check("ID list holds the sheet's IDs", await evaluate(`document.querySelectorAll('#idlist option').length`) >= 7);
-  /* the picker orders the sheet's IDs by what can feed the row: F1 is a feeder,
+  /* The value list a cell offers. It used to be a native <datalist>, and the
+     browser narrowed its own popup to whatever the cell already said — open
+     the Feeds from of a row reading "BB1" and one line came back. The page
+     draws the list now, so these read what a person would actually see. */
+  const openList = async (sel) => {
+    await evaluate(`(function(){ const el=document.querySelector(${q(sel)});
+      el.dispatchEvent(new FocusEvent('focusin',{bubbles:true})); })()`);
+    return JSON.parse(await evaluate(`JSON.stringify(document.querySelector('#picker').hidden ? []
+      : [...document.querySelectorAll('#picker .opt')].map(o=>o.querySelector('b').textContent
+        + '|' + (o.querySelector('span') ? o.querySelector('span').textContent : '')))`));
+  };
+  check("no cell is left pointing at a datalist that no longer exists",
+    await evaluate(`[...document.querySelectorAll('#eqbody [data-f]')].every(el=>!el.getAttribute('list'))`));
+  /* the list orders the sheet's IDs by what can feed the row: F1 is a feeder,
      so its LV board leads and the MV incomer that cannot feed it is last */
-  await evaluate(`document.querySelector('tr[data-i="4"] [data-f="from"]').dispatchEvent(new FocusEvent('focusin',{bubbles:true}))`);
-  const idlist = await evaluate(`JSON.stringify([...document.querySelectorAll('#idlist option')].map(o=>o.value+'|'+o.label))`);
+  const idlist = JSON.stringify(await openList('tr[data-i="4"] [data-f="from"]'));
   check("the ID list is ordered by what can feed the row", /^\["BB1\|LV Busbar · Main LV board".*"MV1\|MV Incomer · Utility supply — cannot feed a Feeder"\]$/.test(idlist), idlist);
   check("the row's own ID is not offered", !JSON.parse(idlist).some(o => o.startsWith("F1|")), idlist);
+  check("the ID list holds the sheet's IDs", JSON.parse(idlist).length >= 7, idlist);
+
+  /* the regression this replaced the datalist for: a cell that already has a
+     value still offers everything, not just the entries matching it */
+  const filled = await evaluate(`state.rows[4].from`);
+  check("a cell that already has a value still offers every ID",
+    filled !== "" && JSON.parse(idlist).length >= 7, `${filled} -> ${JSON.parse(idlist).length}`);
+  const protFilled = await openList('tr[data-i="3"] [data-f="prot"]');
+  check("and every device, on a Protection cell that is already filled in",
+    (await evaluate(`state.rows[3].prot`)) !== "" && protFilled.length >= 14, protFilled.join(", "));
+
+  /* typing after the cell was entered is the one thing that narrows it */
+  await openList('tr[data-i="4"] [data-f="from"]');
+  await evaluate(`(function(){ const el=document.querySelector('tr[data-i="4"] [data-f="from"]');
+    el.value='bb'; el.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+  const narrowed = JSON.parse(await evaluate(`JSON.stringify([...document.querySelectorAll('#picker .opt b')].map(b=>b.textContent))`));
+  check("typing narrows the list", narrowed.length && narrowed.every(v => /bb/i.test(v)), narrowed.join(", "));
+  await evaluate(`(function(){ const el=document.querySelector('tr[data-i="4"] [data-f="from"]');
+    el.value=${q("BB1")}; el.dispatchEvent(new Event('input',{bubbles:true})); el.blur(); })()`);
+  await sleep(300);
 
   /* quick values follow the row's type */
-  await evaluate(`document.querySelector('tr[data-i="2"] [data-f="voltage"]').dispatchEvent(new FocusEvent('focusin',{bubbles:true})); document.querySelectorAll('#voltlist option').length`);
-  check("transformer voltage list", await evaluate(`[...document.querySelectorAll('#voltlist option')].map(o=>o.value).includes('11/0.4 kV')`));
-  await evaluate(`document.querySelector('tr[data-i="4"] [data-f="rating"]').dispatchEvent(new FocusEvent('focusin',{bubbles:true}))`);
-  check("feeder rating list", await evaluate(`[...document.querySelectorAll('#ratinglist option')].map(o=>o.value).includes('250 A')`));
+  check("transformer voltage list", (await openList('tr[data-i="2"] [data-f="voltage"]')).some(o => o.startsWith("11/0.4 kV|")));
+  check("feeder rating list", (await openList('tr[data-i="4"] [data-f="rating"]')).some(o => o.startsWith("250 A|")));
 
   /* the quick values follow what a row is, not how its Type is spelled, and a
      Type the sheet wrote its own way is kept rather than shown as an empty cell */
   await evaluate(`(function(){ state.rows.push(R("CAPX","PFC","Power factor correction","","400 V","BB1","","CB")); rebuildTable(); redraw(); })()`);
   await sleep(300);
-  await evaluate(`(function(){ const i=state.rows.length-1; document.querySelector('tr[data-i="'+i+'"] [data-f="rating"]').dispatchEvent(new FocusEvent('focusin',{bubbles:true})); })()`);
+  const capRatings = await openList(`tr[data-i="${await evaluate(`state.rows.length-1`)}"] [data-f="rating"]`);
   check("an aliased capacitor bank is offered kvar",
-    await evaluate(`[...document.querySelectorAll('#ratinglist option')].every(o=>o.value.endsWith(' kvar'))`),
-    await evaluate(`[...document.querySelectorAll('#ratinglist option')].map(o=>o.value).join(', ')`));
+    capRatings.length > 0 && capRatings.every(o => o.split("|")[0].endsWith(" kvar")), capRatings.join(", "));
   check("the sheet's own Type label is kept",
     await evaluate(`document.querySelector('tr[data-i="'+(state.rows.length-1)+'"] [data-f="type"]').value`) === "PFC");
   await evaluate(`(function(){ state.rows.pop(); rebuildTable(); redraw(); })()`);
@@ -68,11 +96,7 @@ try {
 
   /* the Protection picker follows the row's Type: the whole vocabulary every
      time, the gear that Type usually carries first */
-  const protList = async i => {
-    await evaluate(`(function(){ const el=document.querySelector('tr[data-i="${i}"] [data-f="prot"]');
-      el.dispatchEvent(new FocusEvent('focusin',{bubbles:true})); })()`);
-    return JSON.parse(await evaluate(`JSON.stringify([...document.querySelectorAll('#protlist option')].map(o=>o.value))`));
-  };
+  const protList = async i => (await openList(`tr[data-i="${i}"] [data-f="prot"]`)).map(o => o.split("|")[0]);
   const wayList = await protList(8);
   check("the Protection picker offers the whole vocabulary, not six words",
     wayList.length >= 14 && wayList.includes("MCCB") && wayList.includes("ACB") && wayList.includes("Unknown"), wayList.join(","));
