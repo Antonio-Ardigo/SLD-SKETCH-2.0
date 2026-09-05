@@ -41,9 +41,9 @@ spelled — a `PFC` or a `Cap bank` is a capacitor bank and is offered kvar, a
 `Genset` kVA, a `Trafo` the transformer ratios (11 kV, 400 V, 11/0.4 kV,
 1000 kVA, 250 A, 55 kW, 300 kvar, …). **Protection** does the same for the
 switchgear: the whole vocabulary every time — ACB, CB, MCCB, MCB, VCB, RCBO,
-LBS, Isolator, Fuse, Fuse-switch, Contactor, Fuse-contactor, Motor starter —
+LBS, Isolator, Fuse, Fuse-switch, Contactor, Fused contactor, Motor starter —
 with the gear that Type usually carries first (an RMU is offered `LBS`, a
-motor `Contactor`, a way `MCCB`, a transformer `Fuse-switch`) and the rest
+motor `Fused contactor`, a way `MCCB`, a transformer `Fuse-switch`) and the rest
 marked *unusual here*. Nothing is hidden: the order is the advice, not a rule.
 The last entry is **Unknown** — for a device you can see is there but whose
 type you did not get; the default symbol is drawn and nothing is reported.
@@ -160,7 +160,7 @@ diagram's title block.
 | Description | Free text | `Oil-immersed, Dyn11` |
 | Rating | From the nameplate | `1000 kVA`, `630 A` |
 | Voltage | From the nameplate | `11/0.4 kV`, `400 V` |
-| Protection | Device on **this item's supply side**, from a drop-down that follows the row's Type: ACB, CB, MCCB, MCB, VCB, RCBO, LBS, Isolator, Fuse, Fuse-switch, Contactor, Fuse-contactor, Motor starter, or **Unknown** for a device whose type you did not get. Blank = the usual default for that Type, and on a **Feeder** it means no device at all (see *The feeder is a placeholder*). Comma list matches Feeds From order. Free text on a busbar (e.g. `87B differential`) is printed as a label annotation | `CB` or `LBS, CB` |
+| Protection | Device on **this item's supply side**, from a drop-down that follows the row's Type: ACB, CB, MCCB, MCB, VCB, RCBO, LBS, Isolator, Fuse, Fuse-switch, Contactor, Fused contactor, Motor starter, or **Unknown** for a device whose type you did not get. Blank = the usual default for that Type, and on a **Feeder** it means no device at all (see *The feeder is a placeholder*). Comma list matches Feeds From order. Free text on a busbar (e.g. `87B differential`) is printed as a label annotation | `CB` or `LBS, CB` |
 | Feeds From | ID of the item supplying this one; comma for two supplies | `RMU1` or `BB1, BB2` |
 | Notes | Anything else | `Normally open` |
 
@@ -519,8 +519,8 @@ IEC 60617 notation, where the function mark sits at the hinge of the switch
 blade: an × at the hinge is a circuit breaker, a circle at the hinge (blade
 onto a contact bar) is a load-break switch (switch-disconnector), an arc at
 the hinge is a contactor, a small rectangle with the conductor through it is
-a fuse (switch + rectangle = fuse-switch), and a Fuse-contactor (an MV motor
-starter) is the fuse in series with the contactor. The words are read
+a fuse (switch + rectangle = fuse-switch), and a Fused contactor (a motor
+starter, on an MCC way or an MV motor) is the fuse in series with the contactor. The words are read
 loosely, so a sheet may say what it says: `MCCB`, `MCB`, `ACB`, `VCB`, `RCBO`,
 `Breaker` all draw the breaker; `Isolator`, `Disconnector`, `Switch` the
 load-break switch; `SFU`, `Switch-fuse` the fuse-switch; `Starter`,

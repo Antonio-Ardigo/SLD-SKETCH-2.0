@@ -37,7 +37,7 @@ export const PROT_LABELS = [
   ["Fuse", "fuse"],
   ["Fuse-switch", "switch-fuse unit"],
   ["Contactor", "contactor, a motor starter"],
-  ["Fuse-contactor", "fused contactor, an MV motor starter"],
+  ["Fused contactor", "fused contactor, a motor starter (MCC way, MV motor)"],
   ["Motor starter", "fused contactor"],
   ["Unknown", "a device is there, its type was not recorded"],
 ];
@@ -54,7 +54,7 @@ export const USUAL_PROT = {
   [GENERATOR]:   ["ACB", "CB"],
   [LV_BUSBAR]:   ["ACB", "CB", "MCCB", "LBS"],
   [MCC]:         ["MCCB", "CB", "ACB"],
-  [PUMP]:        ["Contactor", "Fuse-contactor", "MCCB", "CB"],
+  [PUMP]:        ["Fused contactor", "Contactor", "MCCB", "CB"],
   [FEEDER]:      ["MCCB", "MCB", "CB", "Fuse", "LBS", "RCBO"],
   [BUS_COUPLER]: ["ACB", "CB", "LBS"],
   [CAPACITOR]:   ["Contactor", "MCCB", "Fuse"],

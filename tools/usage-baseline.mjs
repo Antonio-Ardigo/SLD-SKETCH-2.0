@@ -278,12 +278,15 @@ await scenario("W5_coupler_extra_supply", async () => {
     saysWhichIsNotDrawn: await evaluate(`/"TX1" is also named but is not drawn/.test(document.querySelector('#problems').textContent)`) };
 });
 
-/* W6 — a coupler with only one end written */
+/* W6 — a coupler with only one end written (the drop proposes both ends of a
+   twin board, so the far end is taken away again) */
 await scenario("W6_coupler_one_end", async () => {
   await loadRows(TWIN);
   await gestures.drop("Bus Coupler", "BB1");
   await settle();
   const id = await evaluate(`state.rows.find(r=>r.type==='Bus Coupler').id`);
+  await gestures.type(await rowIndex(id), "from", "BB1");
+  await settle();
   const s = await state();
   return { warnings: s.warnings, errors: s.errors, drawing: s.drawing, export: s.export,
     drawn: await evaluate(`!!document.querySelector('#sheet svg g[data-id=${JSON.stringify(id)}]')`),

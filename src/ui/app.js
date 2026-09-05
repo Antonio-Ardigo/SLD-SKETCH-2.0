@@ -316,11 +316,11 @@ const QUICK={
     dc:["110 V DC","220 V DC","48 V DC","24 V DC"],
   },
   rating:{
-    board:["630 A","800 A","1250 A","1600 A","2000 A","2500 A","3200 A","4000 A"],
-    feeder:["63 A","100 A","160 A","250 A","400 A","630 A","800 A"],
-    tx:["315 kVA","500 kVA","630 kVA","800 kVA","1000 kVA","1250 kVA","1600 kVA","2000 kVA","2500 kVA"],
-    motor:["11 kW","22 kW","37 kW","55 kW","75 kW","110 kW","160 kW","250 kW","315 kW","500 kW"],
-    gen:["250 kVA","500 kVA","800 kVA","1000 kVA","1600 kVA","2000 kVA"],
+    board:["160 A","250 A","400 A","630 A","800 A","1250 A","1600 A","2000 A","2500 A","3200 A","4000 A"],
+    feeder:["32 A","63 A","100 A","160 A","250 A","400 A","630 A","800 A"],
+    tx:["315 kVA","500 kVA","630 kVA","800 kVA","1000 kVA","1250 kVA","1600 kVA","2000 kVA","2500 kVA","10 MVA"],
+    motor:["11 kW","15 kW","22 kW","30 kW","37 kW","45 kW","55 kW","75 kW","110 kW","160 kW","250 kW","315 kW","355 kW","500 kW","1.5 MW"],
+    gen:["250 kVA","500 kVA","800 kVA","1000 kVA","1250 kVA","1600 kVA","2000 kVA"],
     cap:["50 kvar","100 kvar","150 kvar","200 kvar","300 kvar","400 kvar","500 kvar","800 kvar"],
     ups:["10 kVA","20 kVA","40 kVA","60 kVA","100 kVA","200 kVA"],
     battery:["100 Ah","200 Ah","300 Ah","500 Ah"],
@@ -666,8 +666,25 @@ function rewire(id, targetId, also){
   row.from=next.join(", ");
   clearMark(row,"from");
   const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="from"]`); if(el){ el.value=row.from; el.classList.remove("proposed"); }
+  reproposeFor(row,i);
   redraw(); persist(); selectId(id);
   return true;
+}
+/* the supply just changed under a row whose device or voltage is still the
+   engine's: propose them again for the new supply. An RMU that gains its
+   second link this way gets "LBS, LBS"; a coupler finished on the far board
+   keeps its breaker; a cell the surveyor typed is never touched. */
+function reproposeFor(row, i){
+  const marks=new Set(row._p||[]);
+  if(!marks.has("prot") && !marks.has("voltage")) return;
+  const [items,order]=currentModel();
+  const p=proposeRow(items,order,{type:row.type,targetId:row.from.trim()});
+  for(const f of ["prot","voltage"]){
+    if(!marks.has(f) || row[f]===p[f]) continue;
+    row[f]=p[f];
+    const el=eqbody.querySelector(`tr[data-i="${i}"] [data-f="${f}"]`); if(el) el.value=p[f];
+    if(!p[f]) clearMark(row,f);
+  }
 }
 (function bindViewer(){
   const pointers=new Map();

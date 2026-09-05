@@ -52,9 +52,11 @@ work and the ranking a floor.
 ## How a correction is scored
 
 Cost is the entry baseline's unit: 0 when the proposal was right, 1 when the
-intended value is picked from the top four of a list or typed, 2 when picked
-further down, **1.5 when the proposal was wrong** — a blank is always noticed,
-a wrong value can ship. `desc` and `notes` always cost 1 and are never a
+intended value is picked from a list or typed (one action wherever it sits —
+the picker shows the whole list, and pricing a lower rank higher made every
+value added to a list cost something), **1.5 when the proposal was wrong** — a
+blank is always noticed, a wrong value can ship. The pick's rank is reported,
+not priced. `desc` and `notes` always cost 1 and are never a
 finding.
 
 `potential = breadth × depth × mean P`: sites affected over sites, mean cost
@@ -81,9 +83,9 @@ headline:
 |---|---|
 | `PROT_DEFAULT` | the device rule, by type × supply type |
 | `VOLT_DEFAULT` | the voltage rule |
-| `PLACEHOLDER_CHAIN` | an item dropped on a feeder: the engine reads the feeder as LV gear whatever board the way leaves |
-| `SECOND_SUPPLY` | a comma list — the second end of a coupler, the other side of a ring — is never proposed |
-| `SECOND_END_STALE_PROT` | an RMU's `LBS, LBS` needs the comma to be there *at drop time* |
+| `PLACEHOLDER_CHAIN` | an item dropped on a feeder whose label or device does not follow the board the way leaves (the proposal resolves the way to its board since round 2; anything left is a case that resolution misses) |
+| `SECOND_SUPPLY` | a comma list the proposal did not complete: a coupler's far end is proposed when the sheet has exactly one other board of the kind (or one genset); a ring's other link never is |
+| `SECOND_END_STALE_PROT` | an RMU's `LBS, LBS` once needed the comma *at drop time*; the page now proposes the device again when the second supply is added, and the replay judges the device on both ends named |
 | `DELETE_PROPOSED` | the sheet blanks a proposal (labelled BLANK, never headline) |
 | `SUPPLY_RANK` / `SUPPLY_LAST_WINS` | click mode: the wrong *kind* of supply, or the right kind but the bottom-most one |
 | `SPELLING` | `Fused contactor` for `Fuse-contactor` — cost 0, the reader understands both |

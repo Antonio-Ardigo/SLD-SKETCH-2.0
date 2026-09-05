@@ -79,10 +79,54 @@ test("a board fed from a transformer takes the secondary", () => {
 
 test("MV loads and motors", () => {
   assert.equal(propose(SHEET, { type: "Pump", targetId: "MVB1" }).voltage, "11 kV");
-  assert.equal(propose(SHEET, { type: "Pump", targetId: "MVB1" }).prot, "Fuse-contactor");
+  assert.equal(propose(SHEET, { type: "Pump", targetId: "MVB1" }).prot, "Fused contactor");
   assert.equal(propose(SHEET, { type: "Pump", targetId: "BB1" }).prot, "CB");
   assert.equal(propose(SHEET, { type: "Feeder", targetId: "MVB1" }).voltage, "11 kV");
   assert.equal(propose(SHEET, { type: "MCC", targetId: "BB1" }).voltage, "400 V");
+});
+
+test("a coupler dropped on one of two boards ties them; in any doubt it names one end", () => {
+  const twin = SHEET.concat([
+    { id: "TX2", type: "Transformer", voltage: "11/0.4 kV", from: "MVB1", prot: "CB" },
+    { id: "BB2", type: "LV Busbar", voltage: "400 V", from: "TX2", prot: "CB" },
+  ]);
+  const tie = propose(twin, { type: "Bus Coupler", targetId: "BB2" });
+  assert.deepEqual([tie.from, tie.prot, tie.voltage], ["BB1, BB2", "CB", "400 V"]);   /* sheet order, whichever end was dropped on */
+  assert.equal(propose(twin, { type: "Bus Coupler" }).from, "BB1, BB2");                /* the palette click too */
+  /* the only board and a genset: the changeover */
+  const gen = SHEET.concat([{ id: "G1", type: "Generator", voltage: "400 V", from: "" }]);
+  assert.equal(propose(gen, { type: "Bus Coupler", targetId: "BB1" }).from, "BB1, G1");
+  /* two boards and a genset: nothing certain, one end */
+  assert.equal(propose(twin.concat([{ id: "G1", type: "Generator", voltage: "400 V", from: "" }]), { type: "Bus Coupler", targetId: "BB1" }).from, "BB1");
+  /* a distribution board under one of them is not a third end: the tie is still certain */
+  assert.equal(propose(twin.concat([{ id: "DB1", type: "LV Busbar", voltage: "400 V", from: "F1", prot: "CB" }]), { type: "Bus Coupler", targetId: "BB1" }).from, "BB1, BB2");
+  assert.equal(propose(twin.concat([{ id: "DB1", type: "LV Busbar", voltage: "400 V", from: "BB2", prot: "CB" }]), { type: "Bus Coupler", targetId: "BB1" }).from, "BB1, BB2");
+  /* three main boards: nothing certain */
+  assert.equal(propose(twin.concat([{ id: "TX3", type: "Transformer", voltage: "11/0.4 kV", from: "MVB1", prot: "CB" }, { id: "BB3", type: "LV Busbar", voltage: "400 V", from: "TX3", prot: "CB" }]), { type: "Bus Coupler", targetId: "BB1" }).from, "BB1");
+  assert.equal(propose(SHEET, { type: "Bus Coupler", targetId: "BB1" }).from, "BB1");
+  /* a generator behind its step-up is not a changeover's end */
+  const su = SHEET.concat([{ id: "G1", type: "Generator", voltage: "400 V", from: "TX9" }, { id: "TX9", type: "Transformer", voltage: "0.4/11 kV", from: "G1" }]);
+  assert.equal(propose(su, { type: "Bus Coupler", targetId: "BB1" }).from, "BB1");
+});
+
+test("what is dropped on a way is labelled and protected as if on the way's board", () => {
+  const ways = SHEET.concat([
+    { id: "W1", type: "Feeder", voltage: "11 kV", from: "MVB1" },
+    { id: "RMU1", type: "RMU", voltage: "11 kV", from: "MV1", prot: "LBS" },
+    { id: "W2", type: "Feeder", from: "RMU1" },
+    { id: "MCC1", type: "MCC", voltage: "400 V", from: "BB1", prot: "CB" },
+  ]);
+  const P = (type, targetId) => { const r = propose(ways, { type, targetId }); return [r.prot, r.voltage]; };
+  assert.deepEqual(P("Transformer", "W1"), ["CB", "11/0.4 kV"]);            /* the ratio the sheet uses, off the MV board's way */
+  assert.deepEqual(P("Transformer", "W2"), ["Fuse-switch", "11/0.4 kV"]);   /* an RMU's tee-off */
+  assert.deepEqual(P("Transformer", "F1"), ["CB", ""]);                      /* LV/LV: the ratio stays the surveyor's */
+  assert.deepEqual(P("MCC", "F1"), ["CB", "400 V"]);
+  /* a motor keeps its starter: fused on MV gear, a contactor on an LV way */
+  assert.deepEqual(P("Pump", "W1"), ["Fused contactor", "11 kV"]);
+  assert.deepEqual(P("Pump", "F1"), ["Contactor", "400 V"]);
+  /* the motor ways of an MCC are fused contactors, as every field sheet wrote them */
+  assert.deepEqual(P("Pump", "MCC1"), ["Fused contactor", "400 V"]);
+  assert.equal(propose(ways, { type: "Pump" }).from, "MCC1");               /* and a palette click lands there first */
 });
 
 test("an RMU fed from two supplies gets a device per supply", () => {
