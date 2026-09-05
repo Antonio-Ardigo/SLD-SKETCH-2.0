@@ -1,7 +1,7 @@
 import { MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER, CAPACITOR, EARTHING, ARRESTER, TERMINALS, LV_LOADS, hasWord, earthBelow, stateWords, protFor } from "./types.js";
 import { Y_LABEL, Y_MV_TOP, Y_RMU_TOP, Y_RMU_BOT, Y_MVBUS, PUMP_R, TX_R, STEPUP_H, GEN_H, LV_SUB_H, Y_GEN, Y_SU_C1, Y_SU_C2, STEPUP_SHIFT, Y_PUMP, Y_TX_C1, Y_TX_C2, Y_BUS, Y_ARROW, DIAG_H, LABEL_CHAR, extendSheet, labelClearance, allocLanes, setTiers, VIEW, genFeeds, mvGens, rmuHang, hangHas, suMid, lvSubs, stepUps, genBelow, mvDepth, levelLinks, tierOffsets } from "./geometry.js";
 import { childrenOf } from "./model.js";
-import { mccLoads, subBoardsOf, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
+import { mccLoads, subBoardsOf, carriesOn, isSubBoard, boardTx, txLines, txBoard, txLoads, lvLevel, barLabel, crossingXs, labelX, subLevels } from "./layout.js";
 import { SVG } from "./svg.js";
 import { legendEntries, drawSymbol } from "./symbols/registry.js";
 import { couplerOf } from "./couplers.js";
@@ -94,6 +94,21 @@ function render(info, items, order, width, canvas){
     return [Y_RMU_TOP+o, Y_RMU_BOT+o, (Y_RMU_TOP+Y_RMU_BOT)/2+o]; };
   const yBus=b=>Y_MVBUS+dy(b)+STEPUP_SHIFT;
   const by=t=>order.map(i=>items[i]).filter(o=>t.includes(o.type));
+  /* A feeder that carries equipment is a link: the way belongs to the thing
+     hung on it, so the run starts at the board the feeder leaves. `kind` is
+     the feeder's own device when its row names one — drawn at the top of the
+     run, above the equipment's; an empty cell adds nothing, which is why a
+     motor on a blank feeder draws exactly as a way of the board does.
+     HANG is how far the equipment moves down to make room for that device. */
+  const HANG=60;
+  const carriedBy=f=>{
+    if(!f || f.type!==FEEDER) return null;
+    const board=f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type));
+    if(!board) return null;
+    const [raw,k]=protFor(f,board.id);
+    const kind=k||(raw.trim()?"cb":null);
+    return { board, y:lvY(board), kind, drop:kind?HANG:0 };
+  };
   const busbars=by([LV_BUSBAR]), mvbs=by([MV_BUSBAR]), rmus=by([RMU]),
         lvsub=lvSubs(items,order), lvsubMid=suMid(items,order),
         txs=order.map(i=>items[i])
@@ -447,11 +462,14 @@ function render(info, items, order, width, canvas){
     /* an MV motor sits in the transformer row; a motor fed from an LV
        board or its own transformer hangs in the feeder band below it */
     const lvPar=p.parents.map(q=>items[q])
-      .filter(o=>[LV_BUSBAR,TRANSFORMER,MCC].includes(o.type));
+      .filter(o=>[LV_BUSBAR,TRANSFORMER,MCC,FEEDER].includes(o.type));
     if(lvPar.length && lvPar[0].type===TRANSFORMER && txBoard(items,lvPar[0]))
       lvPar[0]=txBoard(items,lvPar[0]);       /* a way of that board */
+    /* hung on a feeder: the motor sits in the row of the board that way leaves */
+    const onWay=lvPar.length?carriedBy(lvPar[0]):null;
+    if(onWay) lvPar[0]=onWay.board;
     let yc=lvPar.length?Y_ARROW-14:Y_PUMP; const r=lvPar.length?14:PUMP_R;
-    if(lvPar.length && [LV_BUSBAR,MCC].includes(lvPar[0].type)) yc=lvY(lvPar[0])+88-14;
+    if(lvPar.length && [LV_BUSBAR,MCC].includes(lvPar[0].type)) yc=lvY(lvPar[0])+88-14+(onWay?onWay.drop:0);
     else if(lvPar.length && boardTx(items,lvPar[0])) yc=lvY(items[lvPar[0].parents[0]])+190;
     const vsd=stateWords(p).has("vsd");
     for(const q of p.parents){
@@ -468,6 +486,12 @@ function render(info, items, order, width, canvas){
         const yb=lvY(par);
         svg.dot(p.x,yb);
         svg.drop(p.x,yb,yc-r,protFor(p,pid)[1]||(par.type===MCC?"contactor":"cb"),yb+30);
+      } else if(par.type===FEEDER){
+        /* the way out of the board carries this motor: one run, starting at
+           the foot of the way's own device — the way drew that device, and
+           the dot on the bar, in its own row */
+        const c=carriedBy(par);
+        if(c) svg.drop(p.x,c.y+c.drop,yc-r,protFor(p,pid)[1]||"contactor",c.y+c.drop+30);
       } else if(par.type===TRANSFORMER){     /* motor on its own transformer */
         if(boardTx(items,par)){              /* under its board's row */
           const yT=lvY(items[par.parents[0]])+70+27+TX_R;
@@ -822,16 +846,29 @@ function render(info, items, order, width, canvas){
   }
 
   /* sub-boards: fed from a feeder or straight from the board above */
-  const twoDevices=(x,y0,y1,k0,k1,dash)=>{
-    /* a drop with the outgoing device by the upper bar and, when the fed
-       board names one, its incoming device by the lower bar */
-    const g0=svg.device(k0,x,y0+30);
-    svg.line(x,y0,x,y0+30-g0,2,dash||null);
+  const twoDevices=(x,y0,y1,k0,k1,dash,o0,o1)=>{
+    /* the outgoing device by the upper bar when the feeder names one, and the
+       incoming device by the lower bar when the fed board names one — a real
+       main-board way and a real sub-board incomer are two breakers, and both
+       are drawn; neither is invented when its cell is empty.
+       Each half is drawn inside its own row's group, so the way's breaker
+       answers for the way and the incomer for the board it feeds — the same
+       attribution every other symbol on the sheet has. */
+    let yFrom=y0;
+    if(k0){
+      svg.begin(o0.id,o0.type);
+      const g0=svg.device(k0,x,y0+30);
+      svg.line(x,y0,x,y0+30-g0,2,dash||null);
+      svg.end();
+      yFrom=y0+30+g0;
+    }
+    svg.begin(o1.id,o1.type);
     if(k1){
       const g1=svg.device(k1,x,y1-30);
-      svg.line(x,y0+30+g0,x,y1-30-g1,2,dash||null);
+      svg.line(x,yFrom,x,y1-30-g1,2,dash||null);
       svg.line(x,y1-30+g1,x,y1,2,dash||null);
-    } else svg.line(x,y0+30+g0,x,y1,2,dash||null);
+    } else svg.line(x,yFrom,x,y1,2,dash||null);
+    svg.end();
   };
   const splitDone=new Set();
   for(const bb of busbars){
@@ -844,35 +881,44 @@ function render(info, items, order, width, canvas){
       if(!par || par.x===null) continue;
       if(par.type===LV_BUSBAR){
         const yPar=lvY(par);
-        svg.dot(bb.x,yPar);
-        twoDevices(bb.x,yPar,ySub,protFor(bb,p)[1]||"cb",null);
-        svg.dot(bb.x,ySub);
+        svg.begin(bb.id,bb.type); svg.dot(bb.x,yPar); svg.end();
+        twoDevices(bb.x,yPar,ySub,protFor(bb,p)[1]||"cb",null,null,bb,bb);
+        svg.begin(bb.id,bb.type); svg.dot(bb.x,ySub); svg.end();
       } else if(par.type===FEEDER){
         const pb=par.parents.map(q=>items[q]).find(o=>o && o.type===LV_BUSBAR);
         if(!pb) continue;
         const yPar=lvY(pb);
         const dash=stateWords(par).has("spare")?"5 4":null;
-        const k0=protFor(par,pb.id)[1]||"cb", k1=protFor(bb,p)[1];
-        svg.dot(par.x,yPar);
+        /* the same rule as the feeders loop: a filled cell draws, an empty
+           one does not, whether or not the engine knew the word */
+        const [k0raw,k0kind]=protFor(par,pb.id);
+        const k0=k0kind||(k0raw.trim()?"cb":null), k1=protFor(bb,p)[1];
+        svg.begin(par.id,par.type); svg.dot(par.x,yPar); svg.end();
         const i=fsup.indexOf(p), n=fsup.length;
         const xTo=n===1?bb.x:bb.xLeft+(bb.xRight-bb.xLeft)*(i+0.5)/n;
-        if(Math.abs(par.x-xTo)<1) twoDevices(par.x,yPar,ySub,k0,k1,dash);
+        if(Math.abs(par.x-xTo)<1) twoDevices(par.x,yPar,ySub,k0,k1,dash,par,bb);
         else {            /* several boards under one feeder, or feeders into one */
           const ySplit=ySub-60-12*i;
           if(!splitDone.has(p)){
             splitDone.add(p);
-            const g0=svg.device(k0,par.x,yPar+30);
-            svg.line(par.x,yPar,par.x,yPar+30-g0,2,dash);
-            svg.line(par.x,yPar+30+g0,par.x,ySplit,2,dash);
+            svg.begin(par.id,par.type);
+            if(k0){
+              const g0=svg.device(k0,par.x,yPar+30);
+              svg.line(par.x,yPar,par.x,yPar+30-g0,2,dash);
+              svg.line(par.x,yPar+30+g0,par.x,ySplit,2,dash);
+            } else svg.line(par.x,yPar,par.x,ySplit,2,dash);
+            svg.end();
           }
+          svg.begin(bb.id,bb.type);
           svg.line(par.x,ySplit,xTo,ySplit,2,dash);
           if(k1){
             const g1=svg.device(k1,xTo,ySub-30);
             svg.line(xTo,ySplit,xTo,ySub-30-g1);
             svg.line(xTo,ySub-30+g1,xTo,ySub);
           } else svg.line(xTo,ySplit,xTo,ySub);
+          svg.end();
         }
-        svg.dot(xTo,ySub);
+        svg.begin(bb.id,bb.type); svg.dot(xTo,ySub); svg.end();
       }
     }
   }
@@ -968,8 +1014,24 @@ function render(info, items, order, width, canvas){
     let par=f.parents.length?items[f.parents[0]]:null;
     const pid=par?par.id:null;
     if(par && par.type===TRANSFORMER && txBoard(items,par)) par=txBoard(items,par);  /* a way of the board it feeds */
-    const kind=protFor(f,pid)[1]||"cb";
+    /* hung on a feeder: this row lands on the board the feeder is a way of,
+       below the way's own device */
+    const onWay=(par && par.type===FEEDER && carriesOn(items,order,par).some(k=>k.id===f.id))
+      ? carriedBy(par) : null;
+    if(onWay) par=onWay.board;
+    /* A feeder names its device or has none. It is the way out of a board —
+       a placeholder to hang equipment on — so inventing a breaker for it puts
+       two devices in series on a run where the surveyor asked for one. Every
+       other type here keeps its usual default.
+       What counts is whether the cell was filled in, not whether the engine
+       recognised what was written: "Thermal relay" or "RCBO" is a device the
+       surveyor asked for, drawn with the default glyph and already reported by
+       UNKNOWN_PROT. Only an empty cell means no device. */
+    const [praw,pkind]=protFor(f,pid);
+    const kind=pkind||((f.type===FEEDER && !praw.trim())?null:"cb");
     const dash=stateWords(f).has("spare")?"5 4":null;
+    /* the drop, or a bare conductor when no device was named */
+    const runDown=(x,y0,y1,ydev)=>kind?svg.drop(x,y0,y1,kind,ydev,dash):svg.line(x,y0,x,y1,2,dash||null);
     const lbl=[f.id,f.desc,f.rating].filter(Boolean).join(" · ");
     if(par && par.type===TRANSFORMER && TERMINALS.includes(f.type)){
       /* hung on a transformer's secondary: an NER under an earthing
@@ -988,7 +1050,7 @@ function render(info, items, order, width, canvas){
       if(par.type===MV_BUSBAR){
         const y0=yBus(par);
         svg.dot(f.x,y0);
-        svg.drop(f.x,y0,yEnd,kind,undefined,dash);
+        runDown(f.x,y0,yEnd,undefined);
       } else svg.line(f.x,yRmu(par)[1],f.x,yEnd,2,dash);  /* device in the enclosure */
       if(f.type===FEEDER){
         svg.arrowDown(f.x,yTip);
@@ -1004,7 +1066,8 @@ function render(info, items, order, width, canvas){
       svg.end();
       continue;
     }
-    const yb=(par && (par.type===LV_BUSBAR||par.type===MCC))?lvY(par):Y_BUS;
+    const yb=onWay?onWay.y+onWay.drop
+           :(par && (par.type===LV_BUSBAR||par.type===MCC))?lvY(par):Y_BUS;
     let yDev=yb+30; const yArrow=yb+88; let yLbl=yb+106;
     let yFrom=yb;
     if(par && par.type===TRANSFORMER && f.type===MCC){
@@ -1012,9 +1075,9 @@ function render(info, items, order, width, canvas){
          down, no bar to land on */
       yFrom=(f.id in loadTop)?loadTop[f.id]:ytopTx;
       yDev=(yFrom+yArrow-26)/2;
-    } else svg.dot(f.x,yb);
+    } else if(!onWay) svg.dot(f.x,yb);   /* on a way: the way drew the dot and its own device */
     if(f.type===MCC){
-      svg.drop(f.x,yFrom,yArrow-26,kind,yDev,dash);
+      runDown(f.x,yFrom,yArrow-26,yDev);
       svg.rect(f.x-14,yArrow-26,28,26,2);
       svg.text(f.x,yArrow-8,"MCC",{size:8});
       if(mccLoads(items,order,f).length && f.xLeft!==null){
@@ -1028,16 +1091,23 @@ function render(info, items, order, width, canvas){
         continue;
       }
     } else if(TERMINALS.includes(f.type)){
-      svg.drop(f.x,yb,yArrow-24,kind,yDev,dash);
+      runDown(f.x,yb,yArrow-24,yDev);
       const h=svg.terminal(f.type,f.x,yArrow-24);
       yLbl=yArrow-24+h+12;
-    } else if(subBoardsOf(items,order,f).length){
-      /* the drop carries on to the sub-board below (drawn with it) */
-      svg.text(f.x+8,yDev+30,lbl,{size:11,anchor:"start"});
+    } else if(carriesOn(items,order,f).length){
+      /* The drop carries on to what the way goes to, so there is no arrow:
+         the way is not an open end, and an arrowhead here would land on the
+         equipment. A sub-board's run is drawn whole by the sub-board loop
+         (both devices, `twoDevices`); anything else hangs from the foot of
+         the way's own device, which the way draws here so that it belongs to
+         the way's row and not to the equipment's. */
+      if(!subBoardsOf(items,order,f).length && kind)
+        svg.drop(f.x,yb,yb+HANG,kind,yb+30,dash);
+      svg.text(f.x+8,(subBoardsOf(items,order,f).length?yDev:yb)+30,lbl,{size:11,anchor:"start"});
       svg.end();
       continue;
     } else {
-      svg.drop(f.x,yb,yArrow-10,kind,yDev,dash);
+      runDown(f.x,yb,yArrow-10,yDev);
       svg.arrowDown(f.x,yArrow);
     }
     svg.text(f.x+4,yLbl,lbl,{size:11,anchor:"start",rotate:90});

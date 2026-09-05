@@ -173,7 +173,7 @@ function buildModel(rows){
       for(const p of it.parents)
         if(items[p] && [MV_BUSBAR,RMU].includes(items[p].type))
           warn("MCC_ON_MV",[id,p],`MCC "${id}" feeds from MV gear "${p}" — an MCC is an LV assembly; add a transformer and an LV board in between.`);
-        else if(items[p] && ![LV_BUSBAR,MCC,TRANSFORMER].includes(items[p].type))
+        else if(items[p] && ![LV_BUSBAR,MCC,TRANSFORMER,FEEDER].includes(items[p].type))
           warn("MCC_BAD_SUPPLY",[id,p],`MCC "${id}" feeds from "${p}" (${items[p].type}) — an MCC takes its supply from an LV board, an MCC or a transformer.`);
     if(it.type===TRANSFORMER && it.parents.length
        && !order.some(q=>items[q].parents.includes(it.id))

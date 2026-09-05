@@ -22,6 +22,30 @@ function lvKids(items, order, bb){
   return kids;
 }
 function subBoardsOf(items, order, f){ return childrenOf(items,order,f.id,[LV_BUSBAR]); }
+/* What a feeder carries other than a sub-board: the equipment hung on the way.
+   A sub-board has its own path (isSubBoard and the sub-board loop in render);
+   everything else — a motor, an MCC, a transformer, a terminal item, another
+   feeder — takes the feeder's own slot, because the feeder is the way and the
+   thing on the end of it is what the way goes to. */
+function hangingOf(items, order, f, seen=[]){
+  return f.type!==FEEDER || seen.includes(f.id) ? []
+    : childrenOf(items,order,f.id,LV_LOADS.concat([TRANSFORMER])).filter(k=>!seen.includes(k.id));
+}
+/* The board a feeder is a way of. A feeder on MV gear is an outgoing cable
+   way — drawn with its own arrow, in its own slot — not a placeholder, so it
+   has no board here and carries nothing but a sub-board. */
+function feederBoard(items, f){
+  if(!f || f.type!==FEEDER) return null;
+  return f.parents.map(q=>items[q]).find(o=>o && [LV_BUSBAR,MCC].includes(o.type)) || null;
+}
+/* Everything a feeder carries, sub-boards and equipment alike — the one
+   judgement the layout, the drawing and the checker all read (constitution
+   §5). A feeder that carries something is a link: a conductor with a device
+   on it, ending at what it feeds, not a symbol with an open end. */
+function carriesOn(items, order, f){
+  const subs=subBoardsOf(items,order,f);
+  return feederBoard(items,f) ? subs.concat(hangingOf(items,order,f)) : subs;
+}
 function isSubBoard(items, bb){
   /* an LV board fed from a feeder or another LV board hangs below it */
   return bb.type===LV_BUSBAR
@@ -97,7 +121,7 @@ function lvLevel(items, bb, seen){
   }
   return 0;
 }
-function lvKidWidth(items, order, k){
+function lvKidWidth(items, order, k, seen=[]){
   /* slot width of one way: a plain way, or the sub-board(s) under it */
   if(k.type===LV_BUSBAR || (k.type===MCC && mccLoads(items,order,k).length))
     return lvBoardWidth(items,order,k)+2*SUB_PAD;
@@ -105,6 +129,16 @@ function lvKidWidth(items, order, k){
   if(subs.length)
     return Math.max(FEEDER_SPACING,
       subs.reduce((a,b)=>a+lvBoardWidth(items,order,b)+2*SUB_PAD,0));
+  const hang=hangingOf(items,order,k,seen);
+  if(hang.length){
+    /* wide enough for the equipment hung on the way, and for the way's own
+       label beside its device — the equipment fills the column below, so
+       that label is written across rather than down, and needs the room (the
+       same allowance a board transformer gets, below) */
+    const lbl=[k.id,k.desc,k.rating].filter(Boolean).join(" · ");
+    return Math.max(FEEDER_SPACING, 8+lbl.length*5.8+8,
+      hang.reduce((a,h)=>a+lvKidWidth(items,order,h,seen.concat([k.id])),0));
+  }
   if(k.type===TRANSFORMER){   /* a board transformer: room for its label */
     const need=TX_R+10+Math.max(...txLines(k).map(t=>t.length))*7.2+8;
     return Math.max(FEEDER_SPACING, FEEDER_SPACING/2+need);
@@ -173,6 +207,22 @@ function placeLvBoard(items, order, bb, cx){
         for(const b of subs){
           const bw=lvBoardWidth(items,order,b)+2*SUB_PAD;
           placeLvBoard(items,order,b,c+bw/2); c+=bw;
+        }
+      }
+      /* the equipment hung on this way stands in the way's own slot */
+      const hang=hangingOf(items,order,k);
+      if(hang.length===1){
+        hang[0].x=k.x;
+        if(hang[0].type===LV_BUSBAR || (hang[0].type===MCC && mccLoads(items,order,hang[0]).length))
+          placeLvBoard(items,order,hang[0],k.x);
+      } else if(hang.length){
+        let c=cur;
+        for(const h of hang){
+          const hw=lvKidWidth(items,order,h,[k.id]);
+          h.x=c+hw/2;
+          if(h.type===LV_BUSBAR || (h.type===MCC && mccLoads(items,order,h).length))
+            placeLvBoard(items,order,h,h.x);
+          c+=hw;
         }
       }
     }
@@ -474,4 +524,4 @@ function layout(items, order){
   return Math.max(x-BUS_GAP+MARGIN,far+MARGIN,640)+230;
 }
 
-export { mccLoads, lvKids, subBoardsOf, isSubBoard, boardTx, txLines, txBoard, txLoads, loadSlot, placeLoad, placeTxLoads, lvLevel, lvKidWidth, nSupOf, barLabel, crossingXs, labelX, lvBoardWidth, placeLvBoard, subLevels, slotWidth, ringGroup, mvChildren, mvOwnWidth, mvWidth, placeMvNode, placeOwn, layoutMvBoards, layout };
+export { mccLoads, lvKids, subBoardsOf, hangingOf, feederBoard, carriesOn, isSubBoard, boardTx, txLines, txBoard, txLoads, loadSlot, placeLoad, placeTxLoads, lvLevel, lvKidWidth, nSupOf, barLabel, crossingXs, labelX, lvBoardWidth, placeLvBoard, subLevels, slotWidth, ringGroup, mvChildren, mvOwnWidth, mvWidth, placeMvNode, placeOwn, layoutMvBoards, layout };

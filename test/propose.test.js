@@ -44,11 +44,19 @@ test("IDs are numbered from the type's prefix and skip the used ones", () => {
   assert.equal(nextId("Nonsense", ["X1"]), "X2");
 });
 
-test("a feeder dropped on an LV board takes its voltage, a breaker and the board", () => {
+test("a feeder dropped on an LV board takes its voltage and the board, and no device", () => {
+  /* a feeder is the way out of a board — a placeholder to hang equipment on.
+     Proposing a breaker for it would put two devices in series the moment a
+     pump is attached, so its Protection is left for the surveyor to fill in. */
   const r = propose(SHEET, { type: "Feeder", targetId: "BB1" });
-  assert.deepEqual([r.id, r.type, r.from, r.prot, r.voltage], ["F2", "Feeder", "BB1", "CB", "400 V"]);
-  assert.deepEqual(r.proposed.sort(), ["from", "id", "prot", "voltage"]);
+  assert.deepEqual([r.id, r.type, r.from, r.prot, r.voltage], ["F2", "Feeder", "BB1", "", "400 V"]);
+  assert.deepEqual(r.proposed.sort(), ["from", "id", "voltage"]);
   assert.deepEqual([r.desc, r.rating, r.notes], ["", "", ""]);
+  /* every other type keeps its usual device: a way of a board is a breaker,
+     and a motor hung somewhere that is not a board is a contactor */
+  assert.equal(propose(SHEET, { type: "MCC", targetId: "BB1" }).prot, "CB");
+  assert.equal(propose(SHEET, { type: "Pump", targetId: "BB1" }).prot, "CB");
+  assert.equal(propose(SHEET, { type: "Pump", targetId: "F1" }).prot, "Contactor");
 });
 
 test("a transformer dropped on MV gear gets the ratio the sheet uses", () => {

@@ -37,7 +37,9 @@ export class SceneCanvas extends SVG {
   path(d, sw = 2) { super.path(d, sw); this._rec({ t: "path", d, sw }); }
 
   /* devices: the glyph's primitives are marks, the zone is recorded once */
-  _zone(x, y, g, orient, kind) { this.devices.push({ x, y, g, orient, kind, owner: this._owner().id }); }
+  /* the layer is recorded like it is on an op: check.js skips the legend's
+     devices by it, and a legend glyph is not a device on anyone's run */
+  _zone(x, y, g, orient, kind) { this.devices.push({ x, y, g, orient, kind, owner: this._owner().id, layer: this.layer }); }
   device(kind, x, y) { this.depth++; const g = super.device(kind, x, y); this.depth--; this._zone(x, y, g, "v", kind || "cb"); return g; }
   deviceH(kind, x, y) { this.depth++; const g = super.deviceH(kind, x, y); this.depth--; this._zone(x, y, g, "h", kind || "cb"); return g; }
   lbs(x, yt, yb) { const top = this.depth === 0; this.depth++; super.lbs(x, yt, yb); this.depth--; if (top) this._zone(x, (yt + yb) / 2, (yb - yt) / 2, "v", "lbs"); }

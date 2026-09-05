@@ -14,7 +14,7 @@
     "legacy": {
       "items": 31,
       "errors": 0,
-      "warnings": 1
+      "warnings": 0
     },
     "check": {
       "items": "all",

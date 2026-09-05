@@ -1,7 +1,7 @@
 {
   "name": "w08_wrongloads",
   "group": "audit",
-  "description": "ADVERSARIAL: a pump on an MV incomer, a feeder on a motor, an MCC on a feeder and on an RMU, motor/MCC named on a transformer. Five edges must stay disconnected and every bad row must draw a message",
+  "description": "ADVERSARIAL: a pump on an MV incomer, a feeder on a motor, an MCC on a feeder and on an RMU, motor/MCC named on a transformer. Three edges must stay disconnected and every bad row must draw a message. An MCC on a feeder is no longer one of them: a feeder is the way out of a board, so MCCF hangs on FD and the pump under it follows",
   "source": "tests/audit/w08_wrongloads.xlsx",
   "info": {
     "site": "Tester2 W8 - Loads on the wrong thing",
@@ -14,7 +14,7 @@
     "legacy": {
       "items": 16,
       "errors": 0,
-      "warnings": 6
+      "warnings": 5
     },
     "ranks": {
       "RMU": 0,
@@ -32,7 +32,7 @@
     },
     "check": {
       "items": "all",
-      "disconnected": 5,
+      "disconnected": 3,
       "via": 0,
       "overlaps": 0,
       "falseNets": 0

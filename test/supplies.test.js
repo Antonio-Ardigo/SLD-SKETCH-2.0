@@ -19,10 +19,10 @@ const ids = list => list.map(c => c.id);
 
 test("rank 0 is exactly the reader's impossible supply", () => {
   const ALL = [MV_INCOMER, RMU, MV_BUSBAR, TRANSFORMER, PUMP, GENERATOR, LV_BUSBAR, FEEDER, MCC, BUS_COUPLER].concat(TERMINALS);
-  /* the predicate model.js used to spell out inline */
+  /* the predicate model.js used to spell out inline. A feeder is no longer in
+     it: it is the way out of a board, so anything may hang on it. */
   const impossible = (pt, ct) =>
     [PUMP, BUS_COUPLER].concat(TERMINALS).includes(pt)
-    || (pt === FEEDER && ![LV_BUSBAR, MCC].includes(ct))
     || (pt === MV_INCOMER && [PUMP, FEEDER, MCC, LV_BUSBAR].concat(TERMINALS).includes(ct));
   for (const pt of ALL) for (const ct of ALL) {
     assert.equal(supplyRank(pt, ct) === 0, impossible(pt, ct), `${pt} → ${ct}`);
@@ -39,7 +39,11 @@ test("rank 2 is the usual arrangement, rank 1 what merely draws", () => {
   assert.equal(supplyRank(MCC, PUMP), 2);
   assert.equal(supplyRank(TRANSFORMER, GENERATOR), 2);      /* a generator through its step-up */
   assert.equal(supplyRank(RMU, MCC), 1);                    /* MCC_ON_MV: drawn, and warned about */
-  assert.equal(supplyRank(FEEDER, MCC), 1);                 /* MCC_BAD_SUPPLY */
+  assert.equal(supplyRank(FEEDER, MCC), 1);                 /* a placeholder: drawn, not warned about */
+  assert.equal(supplyRank(FEEDER, PUMP), 1);                /* hang a motor on a way of the board */
+  assert.equal(supplyRank(FEEDER, TRANSFORMER), 1);
+  assert.equal(supplyRank(FEEDER, LV_BUSBAR), 2);           /* the sub-board: the usual arrangement */
+  assert.equal(supplyRank(PUMP, FEEDER), 0);                /* a pump still supplies nothing */
   assert.equal(supplyRank(TRANSFORMER, FEEDER), 1);         /* put the board in between */
   assert.deepEqual(USUAL_SUPPLIES[MV_INCOMER], []);         /* an incomer is a root */
 });
@@ -56,10 +60,12 @@ test("every canonical type has a row in the table and a label", () => {
 
 test("candidates are the usual supplies first, then the possible, then the impossible", () => {
   const [items, order] = model(SHEET);
-  assert.deepEqual(ids(supplyCandidates(items, order, FEEDER)), ["BB1", "RMU1", "TX1", "F1", "MV1"]);
-  assert.deepEqual(supplyCandidates(items, order, FEEDER).map(c => c.rank), [2, 2, 1, 0, 0]);
+  assert.deepEqual(ids(supplyCandidates(items, order, FEEDER)), ["BB1", "RMU1", "F1", "TX1", "MV1"]);
+  /* a feeder may now carry another feeder (rank 1, offered but not preferred);
+     between two equals the bottom-most row wins, so F1 comes before TX1 */
+  assert.deepEqual(supplyCandidates(items, order, FEEDER).map(c => c.rank), [2, 2, 1, 1, 0]);
   /* the table's own order decides between two usual supplies: MV gear before an LV board for a transformer */
-  assert.deepEqual(ids(supplyCandidates(items, order, TRANSFORMER)), ["RMU1", "BB1", "MV1", "TX1", "F1"]);
+  assert.deepEqual(ids(supplyCandidates(items, order, TRANSFORMER)), ["RMU1", "BB1", "MV1", "F1", "TX1"]);
   /* nothing is hidden: every ID on the sheet is offered */
   assert.equal(supplyCandidates(items, order, FEEDER).length, order.length);
   assert.deepEqual(ids(supplyCandidates(items, order, FEEDER, { exclude: ["F1"] })), ["BB1", "RMU1", "TX1", "MV1"]);
