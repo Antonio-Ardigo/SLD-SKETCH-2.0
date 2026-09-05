@@ -289,17 +289,25 @@ function render(info, items, order, width, canvas){
         svg.dot(m.x,yBus(k));
       }
     }
-    /* transformers fed straight from the utility, with no MV gear between:
-       one drop each, split from the incomer when they differ */
+    /* Transformers fed straight from the utility, with no MV gear between:
+       one drop each, split from the incomer when they differ.
+       The transformer's own Protection is drawn on this run when it names a
+       device. It used to be a plain conductor whatever the row said, so a
+       transformer hung on an incomer was the one supply whose Protection the
+       drawing threw away — written, read by the model, and never drawn. An
+       empty cell still draws a bare conductor: there is no board here to make
+       a way of, so nothing invents a device the surveyor did not ask for. */
     const direct=kids.filter(k=>k.type===TRANSFORMER && k.x!==null);
+    const run=(x,y0,y1,t)=>{ const kind=protFor(t,m.id)[1];
+      if(kind) svg.drop(x,y0,y1,kind); else svg.line(x,y0,x,y1); };
     if(direct.length===1 && Math.abs(direct[0].x-m.x)<1)
-      svg.line(m.x,yTop,m.x,Y_TX_C1-TX_R);
+      run(m.x,yTop,Y_TX_C1-TX_R,direct[0]);
     else if(direct.length){
       const ySplit=yTop+40;
       svg.line(m.x,yTop,m.x,ySplit);
       const xs=direct.map(t=>t.x).concat([m.x]);
       svg.line(Math.min(...xs),ySplit,Math.max(...xs),ySplit);
-      for(const t of direct){ svg.dot(t.x,ySplit); svg.line(t.x,ySplit,t.x,Y_TX_C1-TX_R); }
+      for(const t of direct){ svg.dot(t.x,ySplit); run(t.x,ySplit,Y_TX_C1-TX_R,t); }
     }
     svg.end();
   }
